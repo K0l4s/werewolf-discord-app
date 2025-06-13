@@ -1,0 +1,13 @@
+{
+    "name": "werewolf-discord-bot",
+    "version": "1.0.0",
+    "description": "Werewoft Discord Bot",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "discord.js": "^14.11.0",
+        "dotenv": "^16.3.1"
+    }
+}
