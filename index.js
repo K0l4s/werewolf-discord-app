@@ -2,18 +2,20 @@
 require("dotenv").config();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder } = require("discord.js");
 const roles = require("./roles");
-
+// const logic = require("./logic")
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.DirectMessages
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.DirectMessageReactions
+
     ],
-    partials: [Partials.Channel]
+    partials: [Partials.Channel, Partials.Message, Partials.Reaction, Partials.User]
 });
 
-const games = new Map(); // channelId -> gameState
+const games = new Map();
 
 client.once("ready", () => {
     console.log(`✅ Bot đã đăng nhập với tên: ${client.user.tag}`);
@@ -39,19 +41,19 @@ client.on("messageCreate", async (message) => {
 
     const game = games.get(channelId);
 
-    if (content === "!join") {
+    if (content === "cj") {
         if (game.gameStarted) return message.reply("⛔ Trò chơi đã bắt đầu!");
         if (!game.players.find(p => p.id === message.author.id)) {
             game.players.push(message.author);
-            message.reply("✅ Bạn đã tham gia trò chơi.");
+            message.reply(`✅ Bạn đã tham gia trò chơi. Tổng số người chơi hiện tại là ${game.players.length} người.`);
         } else {
             message.reply("⚠️ Bạn đã tham gia rồi.");
         }
     }
 
-    if (content === "!start") {
+    if (content === "cstart") {
         if (game.gameStarted) return message.reply("⛔ Trò chơi đang chạy.");
-        if (game.players.length < 2) return message.reply("⚠️ Cần ít nhất 4 người để bắt đầu.");
+        // if (game.players.length < 4) return message.reply("⚠️ Cần ít nhất 4 người để bắt đầu.");
 
         game.gameStarted = true;
         game.phase = 'night';
@@ -59,6 +61,7 @@ client.on("messageCreate", async (message) => {
 
         const assigned = roles.assignRoles(game.players);
         for (const [player, role] of assigned.entries()) {
+            console.log(`Vai trò của ${player.username} là ${role.name}`)
             game.roleMap.set(player.id, role);
             try {
                 const user = await client.users.fetch(player.id);
@@ -73,57 +76,18 @@ client.on("messageCreate", async (message) => {
             }
         }
 
-        announcePlayers(message, game);
+        announcePlayers(channelId, message);
         startNightPhase(channelId, message);
     }
 
-    if (content.startsWith("!kill ")) {
-        if (game.phase !== 'night') return;
-        const killer = message.author;
-        const role = game.roleMap.get(killer.id);
-        if (role?.name !== "Sói") return;
-        const targetName = content.slice(6).trim().toLowerCase();
-        const target = game.players.find(p => p.username.toLowerCase() === targetName);
-        if (!target) return message.reply("❌ Không tìm thấy người chơi đó.");
-        game.killed = target;
-        message.reply(`🐺 Bạn đã chọn giết ${target.username}`);
-        game.actions.add(killer.id);
-        checkNightPhaseProgress(channelId, message);
-    }
-
-    if (content.startsWith("!see ")) {
-        if (game.phase !== 'night') return;
-        const seer = message.author;
-        const role = game.roleMap.get(seer.id);
-        if (role?.name !== "Tiên tri") return;
-        const targetName = content.slice(5).trim().toLowerCase();
-        const target = game.players.find(p => p.username.toLowerCase() === targetName);
-        if (!target) return message.reply("❌ Không tìm thấy người chơi đó.");
-        const targetRole = game.roleMap.get(target.id);
-        message.reply(`🔮 Vai trò của ${target.username} là **${targetRole.name}**`);
-        game.actions.add(seer.id);
-        checkNightPhaseProgress(channelId, message);
-    }
-
-    if (content === "!vote") {
-        if (game.phase !== 'day') return message.reply("🌙 Hiện tại đang là ban đêm.");
-        game.votes.set(message.author.id, true);
-        checkDayPhaseProgress(channelId, message);
-    }
-
-    if (content === "!done") {
-        if (game.phase !== 'night') return message.reply("☀️ Hiện tại đang là ban ngày.");
-        game.actions.add(message.author.id);
-        checkNightPhaseProgress(channelId, message);
-    }
-
-    if (content === "!reset") {
+    if (content === "creset") {
         games.delete(channelId);
         message.channel.send("🔁 Đã reset trò chơi trong phòng.");
     }
 });
 
-function announcePlayers(message, game) {
+function announcePlayers(channelId, message) {
+    const game = games.get(channelId);
     const mentions = game.players.map(p => `<@${p.id}>`).join(" ");
     message.channel.send({
         embeds: [
@@ -138,11 +102,12 @@ function announcePlayers(message, game) {
 
 function startNightPhase(channelId, message) {
     const game = games.get(channelId);
+
     game.phase = 'night';
     game.actions.clear();
     game.killed = null;
-    message.channel.send("🌙 Đêm đã đến. Sói hãy `!kill <username>`. Tiên tri hãy `!see <username>`.");
-    sendRoleActions(channelId);
+    message.channel.send("🌙 Đêm đã đến. Hành động sẽ được gửi qua tin nhắn riêng.");
+    sendRoleActions(channelId, game);
 
     if (game.timeout) clearTimeout(game.timeout);
     game.timeout = setTimeout(() => {
@@ -151,20 +116,24 @@ function startNightPhase(channelId, message) {
     }, 5 * 60 * 1000);
 }
 
-function checkNightPhaseProgress(channelId, message) {
+function checkNightPhaseProgress(channelId, messageOrNull) {
     const game = games.get(channelId);
+
     const required = game.players.filter(p => {
         const role = game.roleMap.get(p.id);
         return role.name === 'Sói' || role.name === 'Tiên tri';
     });
     if (game.actions.size >= required.length) {
         if (game.timeout) clearTimeout(game.timeout);
-        startDayPhase(channelId, message);
+        const fallbackMessage = messageOrNull?.channel?.send ? messageOrNull : { channel: { send: () => { } } };
+        startDayPhase(channelId, fallbackMessage);
     }
 }
 
 function startDayPhase(channelId, message) {
     const game = games.get(channelId);
+    checkWinCondition(channelId, message); // ✅ Sửa đúng thứ tự tham số
+    sendDayVoteDM(channelId);
     game.phase = 'day';
     game.votes.clear();
 
@@ -175,7 +144,7 @@ function startDayPhase(channelId, message) {
         message.channel.send("✅ Không ai bị giết đêm qua.");
     }
 
-    message.channel.send("☀️ Ban ngày bắt đầu! Hãy thảo luận và sử dụng `!vote` để bỏ phiếu.");
+    message.channel.send("☀️ Ban ngày bắt đầu! Hãy thảo luận và sử dụng `cvote` để bỏ phiếu.");
 
     if (game.timeout) clearTimeout(game.timeout);
     game.timeout = setTimeout(() => {
@@ -184,73 +153,191 @@ function startDayPhase(channelId, message) {
     }, 5 * 60 * 1000);
 }
 
+function checkWinCondition(channelId, message) {
+    const game = games.get(channelId);
+
+    if (!game || !game.players || !game.roleMap) return false;
+
+    const alive = game.players;
+    const wolves = alive.filter(p => game.roleMap.get(p.id)?.name === "Sói");
+    const villagers = alive.filter(p => game.roleMap.get(p.id)?.name !== "Sói");
+
+    if (wolves.length === 0) {
+        message.channel.send("🎉 **Dân làng đã chiến thắng! Sói đã bị tiêu diệt.**");
+        game.phase = 'ended';
+        return true;
+    }
+
+    if (wolves.length >= villagers.length) {
+        message.channel.send("🐺 **Sói đã chiến thắng! Chúng đã áp đảo dân làng.**");
+        game.phase = 'ended';
+        return true;
+    }
+
+    return false;
+}
+
 function checkDayPhaseProgress(channelId, message) {
     const game = games.get(channelId);
     const alive = game.players;
     if (game.votes.size >= alive.length) {
         if (game.timeout) clearTimeout(game.timeout);
-        message.channel.send("📊 Tất cả đã vote. Chuyển sang ban đêm!");
-        startNightPhase(channelId, message);
+
+        const voteCounts = game.voteCounts || new Map();
+        let maxVotes = 0;
+        let killedPlayer = null;
+
+        for (const [targetId, count] of voteCounts.entries()) {
+            if (count > maxVotes) {
+                maxVotes = count;
+                killedPlayer = game.players.find(p => p.id === targetId);
+            } else if (count === maxVotes) {
+                killedPlayer = null; // Hòa phiếu
+            }
+        }
+
+        if (killedPlayer) {
+            message.channel.send(`⚖️ ${killedPlayer.username} đã bị treo cổ!`);
+            game.players = game.players.filter(p => p.id !== killedPlayer.id);
+        } else {
+            message.channel.send("⚖️ Hòa phiếu! Không ai bị xử tử.");
+        }
+
+        game.votes.clear();
+        game.voteCounts = new Map();
+
+        checkWinCondition(channelId, message);
+        if (game.phase !== 'ended') startNightPhase(channelId, message);
     }
 }
+
+async function sendDayVoteDM(channelId) {
+    const game = games.get(channelId);
+
+    const emojis = [
+        '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '⚫', '⚪',
+        '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '🟫'
+    ];
+
+    for (const voter of game.players) {
+        const user = await client.users.fetch(voter.id);
+        const emojiMap = new Map();
+        const descLines = [];
+
+        game.players.filter(p => p.id !== voter.id).forEach((target, index) => {
+            const emoji = emojis[index];
+            emojiMap.set(emoji, target);
+            descLines.push(`${emoji} - ${target.username}`);
+        });
+        const skipEmoji = '❌';
+        descLines.push(`${skipEmoji} - Không thực hiện hành động`);
+        emojiMap.set(skipEmoji, null);
+
+        const embed = new EmbedBuilder()
+            .setTitle(`☀️ Bỏ phiếu xử tử`)
+            .setDescription(`Hãy chọn 1 người bạn nghi là Sói:\n\n${descLines.join("\n")}`)
+            .setColor(0xf1c40f);
+
+        const msg = await user.send({ embeds: [embed] });
+        for (const emoji of emojiMap.keys()) {
+            await msg.react(emoji);
+        }
+
+        const collector = msg.createReactionCollector({
+            filter: (reaction, usr) =>
+                usr.id === voter.id && emojiMap.has(reaction.emoji.name),
+            max: 1,
+            time: 2 * 60 * 1000
+        });
+
+        collector.on("collect", (reaction) => {
+            const target = emojiMap.get(reaction.emoji.name);
+            if (!game.voteCounts) game.voteCounts = new Map();
+            const count = game.voteCounts.get(target.id) || 0;
+            game.voteCounts.set(target.id, count + 1);
+            game.votes.set(voter.id, true);
+            checkDayPhaseProgress(channelId, { channel: { send: () => { } } });
+        });
+
+        collector.on("end", collected => {
+            if (collected.size === 0) {
+                user.send("⏰ Bạn đã bỏ lỡ vote ban ngày.");
+                game.votes.set(voter.id, true);
+                checkDayPhaseProgress(channelId, { channel: { send: () => { } } });
+            }
+        });
+    }
+}
+
 async function sendRoleActions(channelId) {
     const game = games.get(channelId);
-    const emojiNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
+    const emojis = [
+        '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '⚫', '⚪',
+        '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '🟫'
+    ];
 
     for (const player of game.players) {
         const role = game.roleMap.get(player.id);
-        if (!["Sói", "Tiên tri"].includes(role.name)) continue;
+        if (!["Sói", "Tiên tri", "Bảo vệ"].includes(role.name)) continue;
 
         try {
             const user = await client.users.fetch(player.id);
-            const others = game.players.filter(p => p.id !== player.id);
-            const desc = others.map((p, i) => `${emojiNumbers[i]} - ${p.username}`).join("\n");
+            const targets = game.players.filter(p => p.id !== player.id);
+            const emojiMap = new Map();
+
+            const descLines = targets.map((target, index) => {
+                const emoji = emojis[index];
+                emojiMap.set(emoji, target);
+                return `${emoji} - ${target.username}`;
+            });
+
+            const skipEmoji = '❌';
+            descLines.push(`${skipEmoji} - Không thực hiện hành động`);
+            emojiMap.set(skipEmoji, null);
 
             const embed = new EmbedBuilder()
                 .setTitle(`🌙 ${role.name} hành động`)
-                .setDescription(`Hãy chọn 1 người:\n\n${desc}`)
+                .setDescription(`Chọn 1 người bằng cách bấm emoji:\n\n${descLines.join("\n")}`)
                 .setColor(role.name === "Sói" ? 0x990000 : 0x0066cc);
 
             const msg = await user.send({ embeds: [embed] });
-
-            for (let i = 0; i < others.length; i++) {
-                await msg.react(emojiNumbers[i]);
+            for (const emoji of emojiMap.keys()) {
+                await msg.react(emoji);
             }
 
             const collector = msg.createReactionCollector({
-                filter: (reaction, usr) => emojiNumbers.includes(reaction.emoji.name) && usr.id === player.id,
+                filter: (reaction, usr) =>
+                    usr.id === player.id && emojiMap.has(reaction.emoji.name),
                 max: 1,
                 time: 2 * 60 * 1000
             });
 
-            collector.on('collect', (reaction) => {
-                const index = emojiNumbers.indexOf(reaction.emoji.name);
-                const target = others[index];
-                if (!target) return;
-
-                if (role.name === "Sói") {
-                    game.killed = target;
-                    user.send(`🐺 Bạn đã chọn giết ${target.username}`);
+            collector.on("collect", (reaction) => {
+                const selectedTarget = emojiMap.get(reaction.emoji.name);
+                if (selectedTarget === null) {
+                    user.send(`⏭️ Bạn đã chọn **bỏ qua** hành động đêm nay.`);
+                } else if (role.name === "Sói") {
+                    game.killed = selectedTarget;
+                    user.send(`🐺 Bạn đã chọn giết ${selectedTarget.username}`);
                 } else if (role.name === "Tiên tri") {
-                    const seenRole = game.roleMap.get(target.id);
-                    user.send(`🔮 Vai trò của ${target.username} là **${seenRole.name}**`);
+                    const seenRole = game.roleMap.get(selectedTarget.id);
+                    user.send(`🔮 ${selectedTarget.username} là ${seenRole.name === "Sói" ? "**Sói**" : "người tốt!"}`);
                 }
 
                 game.actions.add(player.id);
-                checkNightPhaseProgress(channelId, { channel: { send: () => { } } }); // dummy message
+                checkNightPhaseProgress(channelId, null);
             });
 
-            collector.on('end', collected => {
+            collector.on("end", collected => {
                 if (collected.size === 0) {
                     user.send("⏰ Hết thời gian, bạn đã bỏ lỡ lượt hành động đêm nay.");
                     game.actions.add(player.id);
-                    checkNightPhaseProgress(channelId, { channel: { send: () => { } } }); // dummy message
+                    checkNightPhaseProgress(channelId, null);
                 }
             });
         } catch (err) {
-            console.error(`❌ Lỗi gửi hành động ban đêm cho ${player.username}:`, err);
+            console.error(`❌ Không thể gửi hành động đến ${player.username}:`, err);
         }
     }
 }
-
 client.login(process.env.DISCORD_TOKEN);
