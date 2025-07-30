@@ -85,7 +85,7 @@ function assignRoles(players) {
 
     } else if (numPlayers > 6) {
         selectedRoles.push(roleList.find(r => r.name === "Già làng"));
-    } else {
+    } else if (numPlayers > 7) {
         selectedRoles.push(roleList.find(r => r.name === "Kẻ điên"));
     }
     // Còn lại là Dân làng
@@ -97,10 +97,14 @@ function assignRoles(players) {
     shuffle(selectedRoles);
 
     const roleMap = new Map();
+    // p;ay
     for (let i = 0; i < players.length; i++) {
         roleMap.set(players[i], selectedRoles[i]);
     }
-
+    // set roles kẻ điên cho player đầu tiên
+    // if (numPlayers > 6) {
+        roleMap.set(players[0], roleList.find(r => r.name === "Cupid"));
+    // }
     return roleMap;
 }
 
