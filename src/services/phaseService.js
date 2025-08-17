@@ -9,11 +9,19 @@ class PhaseService {
         return phase;
     };
     static async getNextDay(gameId) {
-        const lastPhase = await Phase.findOne({ gameId }).sort({ day: -1 }).exec();
+        const lastPhase = await Phase.findOne({ gameId, phase: PHASES.NIGHT }).sort({ day: -1 }).exec();
         return lastPhase ? lastPhase.day + 1 : 1;
     }
     static async getLastNightPhaseByGameId(gameId){
-        const allNightPhase = await Phase.findOne({gameId,Phase:phaseType.NIGHT,isEnd:true}).exec();
+        const allNightPhase = await Phase.find({gameId,phase:PHASES.NIGHT,isEnd:false}).exec();
+        return allNightPhase;
+    }
+    static async getLastestNightPhaseByGameId(gameId){
+        const phase = await Phase.findOne({gameId, phase: PHASES.NIGHT}).sort({day: -1}).exec();
+        return phase;
+    }
+    static async getAllLastNightPhaseByGameId(gameId){
+        const allNightPhase = await Phase.find({gameId,Phase:PHASES.NIGHT,isEnd:true}).exec();
         return allNightPhase;
     }
     static async getCurrentPhase(gameId) {
@@ -21,12 +29,14 @@ class PhaseService {
         return currentPhase;
     }
     static async createPhase(gameId, phaseType) {
+        // update all phases to end
         await Phase.updateMany(
             { gameId, isEnd: false },
             { $set: { isEnd: true } }
         );
-
         let day = await this.getNextDay(gameId);
+        // if(phaseType == PHASES.DAY)
+        //     day+=1;
         let newPhase = new Phase({
             gameId: gameId,
             phase: phaseType,

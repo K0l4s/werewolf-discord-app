@@ -30,9 +30,6 @@ const handleMessageCreate = async (client, message) => {
         case 'wallet':
             return UserController.handleBalance(message);
         case 'wgive':
-            // {
-            //     const targetUser = message.mentions.users.first();
-            // }
             {
                 const args = message.content.trim().split(/\s+/);
                 const balance = args[2];

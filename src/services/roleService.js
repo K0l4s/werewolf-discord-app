@@ -8,7 +8,9 @@ class RoleService {
         let roles = await Roles.find({ minPlayer: { $lte: size } });
         return roles;
     }
-
+    static async getRolesByIdsAndIsFuncTrue(roleIds) {
+        return Roles.find({ _id: { $in: roleIds }, isFunc: true });
+    }
     static async getRoleListByPlayerCount(playerCount) {
         const allRoles = await Roles.find({ minPlayer: { $lte: playerCount } });
 
@@ -56,7 +58,7 @@ class RoleService {
 
         return finalRoles;
     }
-    static async getRoleById(roleId){
+    static async getRoleById(roleId) {
         return Roles.findById(roleId);
     }
 }
