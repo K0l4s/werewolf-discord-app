@@ -28,7 +28,6 @@ client.on('messageCreate', async (message) => {
 });
 client.on('messageReactionAdd', async (reaction, user) => {
     if (user.bot) return;
-
     // Nếu message chưa cache thì fetch
     if (reaction.partial) {
         try {
@@ -39,11 +38,27 @@ client.on('messageReactionAdd', async (reaction, user) => {
         }
     }
 })
-client.on('interactionCreate', (interaction) => {
-    require('./events/handleInteractionCreate')(interaction);
-});
-client.on('interactionCreate', (interaction) => {
-    require('./events/handleInteractionSelectCreate')(interaction);
+client.on('interactionCreate', async (interaction) => {
+    try {
+        if (interaction.isCommand() || interaction.isChatInputCommand()) {
+            await require('./events/handleInteractionCreate')(interaction);
+        } else if (interaction.isStringSelectMenu() || interaction.isSelectMenu()) {
+            await require('./events/handleInteractionSelectCreate')(interaction);
+        }
+    } catch (error) {
+        console.error("⚠️ Lỗi interactionCreate:", error);
+
+        // Gửi báo cáo bug tới dev
+        const devUser = await client.users.fetch(DEVELOPER_ID);
+        if (devUser) {
+            await devUser.send({
+                content: `🐞 **Báo cáo lỗi interaction**\n` +
+                         `**User:** ${interaction.user.tag} (${interaction.user.id})\n` +
+                         `**Interaction Type:** ${interaction.type}\n` +
+                         `**Error:**\n\`\`\`${error.stack}\`\`\``
+            });
+        }
+    }
 });
 
 client.login(process.env.DISCORD_TOKEN);

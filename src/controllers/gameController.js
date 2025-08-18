@@ -102,6 +102,8 @@ class GameController {
         const game = await GameService.getGameByChannel(message.channel.id);
         if (!game)
             return message.reply("Please create/ join new game!")
+        if(game.isStart)
+            return message.reply("This game started. Please wait!")
         const roleList = await RoleService.getRoleListByPlayerCount(game.player.length);
         console.log(roleList)
         const players = shufflePlayer(game.player);
