@@ -1,4 +1,4 @@
-const { EmbedBuilder, AttachmentBuilder,ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const UserService = require("../services/userService");
 const { DEFAULT_EXP_LVL1, STEP_EXP } = require("../config/constants");
 
@@ -14,151 +14,163 @@ class UserController {
             .setColor('Yellow')
         return message.reply({ embeds: [embed] });
     }
-    static async addExperience(userId, exp, message) {
+    static async addExperience(userId, exp, interaction) {
         const user = await UserService.findUserById(userId);
         const maxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
         const newExp = Number(user.exp) + Number(exp)
         console.log(newExp, " ", maxExp);
         if (newExp >= maxExp) {
-            user.lvl = Number(user.lvl) + 1
-            user.exp = Number(newExp) - Number(newExp)
-            const member = await message.guild.members.fetch(userId).catch(() => null);
-            if (member) {
-                const dm = await member.createDM().catch(() => null);
-                if (dm) {
+            user.lvl = Number(user.lvl) + 1;
+            user.exp = Number(newExp) - Number(maxExp); // Correct residual exp
+            const nexMaxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
+            const nextLvl = Number(user.lvl) + 1;
+            const path = require('path');
+            const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
+            const imgPath = path.join(__dirname, '../../assets/image/star.gif');
+            const attachment = new AttachmentBuilder(imgPath);
+            const embed = new EmbedBuilder()
+                .setTitle(`${globalName} Level up!`)
+                .setDescription(`Congratulations, <@${userId}> reached **level ${user.lvl}** and you need **${nexMaxExp} exp** to reach **level ${nextLvl}**!`)
+                .setThumbnail('attachment://star.gif');
 
-                    // const embed = {
-                    //     title: `🎭 Vai trò của bạn: ${role.name}`,
-                    //     description: role.description,
-                    //     color: parseInt(role.color?.replace('#', '') || 'ffffff', 16),
-                    //     thumbnail: role.image ? { url: role.image } : undefined,
-                    // };
-                    const globalName = message.author.globalName || message.author.username;
-                    const nexMaxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
-                    const nextLvl = Number(user.lvl) + 1;
-                    // const embed = {
-                    //     title: `${globalName} Level up!`,
-                    //     description: 
-                    //     thumbnail: {src}
-                    // }
-                    const path = require('path');
-                    const imgPath = path.join(__dirname, '../../assets/image/star.gif');
-                    const attachment = new AttachmentBuilder(imgPath);
+            await interaction.channel.send({ embeds: [embed], files: [attachment] }).catch(console.error);
+        }
+        else {
+            user.exp = newExp;
+        }
+        await user.save();
 
-                    const embed = new EmbedBuilder();
-                    embed.setTitle(`${globalName} Level up!`)
-                        .setDescription(`Congratulations, **${globalName}** reach **level ${user.lvl}** and you need **${nexMaxExp} exp** to reach **level ${nextLvl}**!`)
-                        .setThumbnail('attachment://star.gif')
-                    await message.channel.send({ embeds: [embed], files: [attachment] }).catch(console.error);
-                }
-            }
+        user.save();
+    }
+    static async add(userId, exp, interaction) {
+        const user = await UserService.findUserById(userId);
+        const maxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
+        const newExp = Number(user.exp) + Number(exp)
+        console.log(newExp, " ", maxExp);
+        if (newExp >= maxExp) {
+            user.lvl = Number(user.lvl) + 1;
+            user.exp = Number(newExp) - Number(maxExp); // Correct residual exp
+            const nexMaxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
+            const nextLvl = Number(user.lvl) + 1;
+            const path = require('path');
+            const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
+            const imgPath = path.join(__dirname, '../../assets/image/star.gif');
+            const attachment = new AttachmentBuilder(imgPath);
+            const embed = new EmbedBuilder()
+                .setTitle(`${globalName} Level up!`)
+                .setDescription(`Congratulations, <@${userId}> reached **level ${user.lvl}** and you need **${nexMaxExp} exp** to reach **level ${nextLvl}**!`)
+                .setThumbnail('attachment://star.gif');
+
+            await interaction.channel.send({ embeds: [embed], files: [attachment] }).catch(console.error);
         }
-        else if (newExp < maxExp) {
-            user.exp = newExp
+        else {
+            user.exp = newExp;
         }
+        await user.save();
+
         user.save();
     }
 
 
-    
-static async giveMoneyTo(message, mentionUser, balance) {
-    const embed = new EmbedBuilder();
-    const userId = message.isInteraction ? message.user.id : message.author.id;
 
-    const amount = Number(balance);
-    console.log(amount)
-    if (isNaN(amount) || amount <= 0) {
-        embed.setTitle("❌ Transfer Error!")
-            .setDescription(`Invalid amount!`)
-            .setColor('Red');
-        return message.reply({ embeds: [embed], ephemeral: message.isInteraction });
-    }
-    console.log(mentionUser.id, " ", userId)
-    const userUser = await UserService.findUserById(userId);
-    let targetUser = await UserService.findUserById(mentionUser.id);
-    if (!targetUser || targetUser === undefined) {
-        targetUser = await UserService.createNewUser(mentionUser.id);
-    }
+    static async giveMoneyTo(message, mentionUser, balance) {
+        const embed = new EmbedBuilder();
+        const userId = message.isInteraction ? message.user.id : message.author.id;
 
-    if (userUser.coin < amount) {
-        embed.setTitle("❌ Transfer Error!")
-            .setDescription(`<@${userId}>, you don't have enough wolf coin. \nYour coin is ${userUser.coin.toLocaleString("en-US")} <:wolf_coin:1400508720160702617>`)
-            .setColor('Red');
-        return message.reply({ embeds: [embed], ephemeral: message.isInteraction });
-    }
-
-    // Embed xác nhận
-    const confirmEmbed = new EmbedBuilder()
-        .setTitle("🔄 Confirm Transfer")
-        .setDescription(`<@${userId}>, do you want to send ${amount.toLocaleString("en-US")} <:wolf_coin:1400508720160702617> to <@${mentionUser.id}>?`)
-        .setColor("Yellow");
-
-    // Nút bấm
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId('confirm_transfer')
-            .setLabel('✅ Confirm')
-            .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-            .setCustomId('cancel_transfer')
-            .setLabel('❌ Cancel')
-            .setStyle(ButtonStyle.Danger)
-    );
-
-    const confirmMessage = await message.reply({
-        embeds: [confirmEmbed],
-        components: [row],
-        fetchReply: true // luôn fetch để collector hoạt động
-    });
-
-    // Collector cho nút
-    const collector = confirmMessage.createMessageComponentCollector({
-        filter: i => i.user.id === userId,
-        time: 15000,
-        max: 1
-    });
-
-    collector.on("collect", async (btnInteraction) => {
-        if (btnInteraction.customId === "confirm_transfer") {
-            userUser.coin -= amount;
-            console.log(targetUser)
-            // if(!targetUser) {
-            //     targetUser = await UserService.createNewUser(mentionUser.id);
-            // }
-            // console.log(targetUser)
-            // if(!targetUser.coin) {
-            //     targetUser.coin = 0;
-            // }
-            targetUser.coin = Number(targetUser.coin) + Number(amount);
-            await userUser.save();
-            // await targetUser.save();
-
-            const successEmbed = new EmbedBuilder()
-                .setTitle("✅ Transfer Success!")
-                .setDescription(`<@${userId}> transferred ${amount.toLocaleString("en-US")} <:wolf_coin:1400508720160702617> to <@${mentionUser.id}>`)
-                .setColor("Green");
-
-            await btnInteraction.update({ embeds: [successEmbed], components: [] });
-        } else {
-            const cancelEmbed = new EmbedBuilder()
-                .setTitle("❌ Transfer Cancelled")
-                .setDescription(`Transfer has been cancelled by <@${userId}>.`)
-                .setColor("Red");
-
-            await btnInteraction.update({ embeds: [cancelEmbed], components: [] });
+        const amount = Number(balance);
+        console.log(amount)
+        if (isNaN(amount) || amount <= 0) {
+            embed.setTitle("❌ Transfer Error!")
+                .setDescription(`Invalid amount!`)
+                .setColor('Red');
+            return message.reply({ embeds: [embed], ephemeral: message.isInteraction });
         }
-    });
-
-    collector.on("end", async (collected) => {
-        if (collected.size === 0) {
-            const timeoutEmbed = new EmbedBuilder()
-                .setTitle("⌛ Transfer Timed Out")
-                .setDescription(`<@${userId}>, you didn't confirm in time.`)
-                .setColor("Red");
-            await confirmMessage.edit({ embeds: [timeoutEmbed], components: [] });
+        console.log(mentionUser.id, " ", userId)
+        const userUser = await UserService.findUserById(userId);
+        let targetUser = await UserService.findUserById(mentionUser.id);
+        if (!targetUser || targetUser === undefined) {
+            targetUser = await UserService.createNewUser(mentionUser.id);
         }
-    });
-}
+
+        if (userUser.coin < amount) {
+            embed.setTitle("❌ Transfer Error!")
+                .setDescription(`<@${userId}>, you don't have enough wolf coin. \nYour coin is ${userUser.coin.toLocaleString("en-US")} <:wolf_coin:1400508720160702617>`)
+                .setColor('Red');
+            return message.reply({ embeds: [embed], ephemeral: message.isInteraction });
+        }
+
+        // Embed xác nhận
+        const confirmEmbed = new EmbedBuilder()
+            .setTitle("🔄 Confirm Transfer")
+            .setDescription(`<@${userId}>, do you want to send ${amount.toLocaleString("en-US")} <:wolf_coin:1400508720160702617> to <@${mentionUser.id}>?`)
+            .setColor("Yellow");
+
+        // Nút bấm
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('confirm_transfer')
+                .setLabel('✅ Confirm')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId('cancel_transfer')
+                .setLabel('❌ Cancel')
+                .setStyle(ButtonStyle.Danger)
+        );
+
+        const confirmMessage = await message.reply({
+            embeds: [confirmEmbed],
+            components: [row],
+            fetchReply: true // luôn fetch để collector hoạt động
+        });
+
+        // Collector cho nút
+        const collector = confirmMessage.createMessageComponentCollector({
+            filter: i => i.user.id === userId,
+            time: 15000,
+            max: 1
+        });
+
+        collector.on("collect", async (btnInteraction) => {
+            if (btnInteraction.customId === "confirm_transfer") {
+                userUser.coin -= amount;
+                console.log(targetUser)
+                // if(!targetUser) {
+                //     targetUser = await UserService.createNewUser(mentionUser.id);
+                // }
+                // console.log(targetUser)
+                // if(!targetUser.coin) {
+                //     targetUser.coin = 0;
+                // }
+                targetUser.coin = Number(targetUser.coin) + Number(amount);
+                await userUser.save();
+                // await targetUser.save();
+
+                const successEmbed = new EmbedBuilder()
+                    .setTitle("✅ Transfer Success!")
+                    .setDescription(`<@${userId}> transferred ${amount.toLocaleString("en-US")} <:wolf_coin:1400508720160702617> to <@${mentionUser.id}>`)
+                    .setColor("Green");
+
+                await btnInteraction.update({ embeds: [successEmbed], components: [] });
+            } else {
+                const cancelEmbed = new EmbedBuilder()
+                    .setTitle("❌ Transfer Cancelled")
+                    .setDescription(`Transfer has been cancelled by <@${userId}>.`)
+                    .setColor("Red");
+
+                await btnInteraction.update({ embeds: [cancelEmbed], components: [] });
+            }
+        });
+
+        collector.on("end", async (collected) => {
+            if (collected.size === 0) {
+                const timeoutEmbed = new EmbedBuilder()
+                    .setTitle("⌛ Transfer Timed Out")
+                    .setDescription(`<@${userId}>, you didn't confirm in time.`)
+                    .setColor("Red");
+                await confirmMessage.edit({ embeds: [timeoutEmbed], components: [] });
+            }
+        });
+    }
 
 }
 

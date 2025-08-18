@@ -61,6 +61,9 @@ class RoleService {
     static async getRoleById(roleId) {
         return Roles.findById(roleId);
     }
+    static async getTeamRoleList(team) {
+        return Roles.find({ team: team })
+    }
 }
 
 module.exports = RoleService;

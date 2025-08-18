@@ -4,91 +4,72 @@ const RoleService = require("../services/roleService");
 
 module.exports = async (interaction) => {
     if (!interaction.isStringSelectMenu() && !interaction.isButton()) return;
-
-    const [actionType, refId] = interaction.customId.split('|');
-    if (actionType === 'night_action') {
-        const currentGame = await GameService.getGameByChannel(refId);
-        const player = currentGame.player.find(p => p.userId === interaction.user.id);
-        const role = await RoleService.getRoleById(player.roleId);
-        const selectedValue = interaction.values[0];
-        switch (role.enName) {
-            case 'Wolf':
-                await GameController.wolfVote(currentGame._id, interaction.user.id, selectedValue, interaction);
-                break;
-            case 'Seer':
-                await GameController.seerAction(currentGame._id, interaction.user.id, selectedValue, interaction);
-                break;
-            // Thêm các trường hợp khác cho các vai trò khác
-            case 'Cover':
-                await GameController.coverUser(currentGame._id, interaction.user.id, selectedValue, interaction);
-                break;
-            default:
-                await interaction.reply({ content: "Vai trò không hợp lệ.", ephemeral: true });
+    try {
+        const [actionType, refId] = interaction.customId.split('|');
+        if (actionType === 'night_action_skip') {
+            const currentGame = await GameService.getGameByChannel(refId);
+            await GameController.skip_Night_Action(currentGame, interaction.user.id, interaction);
         }
-    }
-    if (actionType === 'night_action_wolf') {
-        // refId lúc này là channelId của game trong guild
-        const currentGame = await GameService.getGameByChannel(refId);
-        const selectedValue = interaction.values[0];
-        await GameController.wolfVote(currentGame._id, interaction.user.id, selectedValue, interaction);
+        if (actionType === 'night_action') {
+            let currentGame = await GameService.getGameByChannel(refId);
+            const player = currentGame.player.find(p => p.userId === interaction.user.id);
+            const role = await RoleService.getRoleById(player.roleId);
+            const selectedValue = interaction.values[0];
+            switch (role.enName) {
+                case 'Wolf':
+                    await GameController.wolfVote(currentGame._id, interaction.user.id, selectedValue, interaction);
+                    break;
+                case 'Seer':
+                    await GameController.seerAction(currentGame._id, interaction.user.id, selectedValue, interaction);
+                    break;
+                // Thêm các trường hợp khác cho các vai trò khác
+                case 'Cover':
+                    await GameController.coverUser(currentGame._id, interaction.user.id, selectedValue, interaction);
+                    break;
+                default:
+                    await interaction.reply({ content: "Vai trò không hợp lệ.", ephemeral: true });
+            }
+            currentGame = await GameService.getGameByChannel(refId);
+            const isEndNight = await GameController.checkNightPhaseEnd(currentGame);
+            if (isEndNight) {
+                currentGame = await GameService.getGameByChannel(refId);
+                await GameController.identifyTheDeath(currentGame, interaction);
+                currentGame = await GameService.getGameByChannel(refId);
+                const team = await GameController.checkWinCondition(currentGame, interaction);
+                if (!team) {
+                    currentGame = await GameService.getGameByChannel(refId);
+                    return GameController.handleStartDayPhase(currentGame, interaction);
+                }
+                return null
+                // await interaction.reply({ content: "Đêm đã kết thúc.", ephemeral: true });
+            }
+        }
 
-        // return interaction.reply({ content: "Đã gửi lựa chọn của bạn.", ephemeral: true });
-    }
-    if (actionType === 'night_action_seer') {
 
-        const currentGame = await GameService.getGameByChannel(refId);
-        const selectedValue = interaction.values[0];
-        await GameController.seerAction(currentGame._id, interaction.user.id, selectedValue, interaction);
 
-        // return interaction.reply({ content: "Đã gửi lựa chọn của bạn.", ephemeral: true });
-
-    }
-    if (actionType === 'night_action_cupid') {
-        const currentGame = await GameService.getGameByChannel(refId);
-        const selectedValues = interaction.values; // loverIds
-        await GameController.cupidAction(currentGame._id, interaction.user.id, selectedValues, interaction);
-
-        // return interaction.reply({ content: "Đã gửi lựa chọn của bạn.", ephemeral: true });
-    }
-    if (actionType === 'night_action_hunter') {
-        const currentGame = await GameService.getGameByChannel(refId);
-        const selectedValues = interaction.values; // loverIds
-        await GameController.hunterAction(currentGame._id, interaction.user.id, selectedValues, interaction);
-
-        // return interaction.reply({ content: "Đã gửi lựa chọn của bạn.", ephemeral: true });
-    }
-    if (actionType === 'night_action_cover') {
-        const currentGame = await GameService.getGameByChannel(refId);
-        const selectedValue = interaction.values[0]; // userId
-        await GameController.coverUser(currentGame._id, interaction.user.id, selectedValue, interaction);
-
-        // return interaction.reply({ content: "Đã gửi lựa chọn của bạn.", ephemeral: true });
-    }
-    if (actionType === 'night_action_skip') {
-        const currentGame = await GameService.getGameByChannel(refId);
-        await GameController.skip_Night_Action(currentGame._id, interaction.user.id, interaction);
-    }
-    // Nếu actionType bắt đầu bằng night_action thì
-    if (actionType.startsWith('night_action')) {
-        const currentGame = await GameService.getGameByChannel(refId);
-        const isEndNight = await GameController.checkNightPhaseEnd(currentGame);
-        if (isEndNight) {
-            // const selectedValue = interaction.values[0]; // userId hoặc 'skip'
+        if (actionType === 'day_vote') {
             // const currentGame = await GameService.getGameByChannel(refId);
 
-            GameController.identifyTheDeath(currentGame, interaction)
-            return GameController.handleStartDayPhase(currentGame, interaction);
-            // await interaction.reply({ content: "Đêm đã kết thúc.", ephemeral: true });
+            await GameController.handleVoting(interaction);
         }
-    }
-    if (actionType === 'day_vote') {
 
-        return await GameController.handleVoting(interaction);
-    }
-    if(actionType === 'day_action_skip')
-        return await GameController.daySkipAction(interaction)
-    if (actionType === 'view_role') {
-        return await GameController.handleGetRole(interaction);
+        if (actionType === 'day_action_skip') {
+            const currentGame = await GameService.getGameByChannel(interaction.channel.id);
+            await GameController.daySkipAction(currentGame, interaction)
+        }
+        if (actionType.startsWith('day_')) {
+            const currentGame = await GameService.getGameByChannel(interaction.channel.id);
+            const isEndDay = await GameController.checkDayPhaseEnd(currentGame, interaction);
+            if (isEndDay) {
+                await GameController.endDayPhase(currentGame, interaction)
+            }
+        }
+        if (actionType === 'view_role') {
+            return await GameController.handleGetRole(interaction);
+        }
+        return null;
+    } catch (e) {
+        return interaction.reply("Bug detected on developer’s PC. Try again or contact them.")
     }
 };
 

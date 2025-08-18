@@ -16,6 +16,10 @@ const commands = [
         .setDescription('Tạo phòng mới')
         .toJSON(),
     new SlashCommandBuilder()
+        .setName('start')
+        .setDescription('Bắt đầu trò chơi')
+        .toJSON(),
+    new SlashCommandBuilder()
         .setName('give')
         .setDescription('Chuyển tiền cho người khác')
         .addUserOption(option =>
@@ -31,6 +35,18 @@ const commands = [
     new SlashCommandBuilder()
         .setName('donate')
         .setDescription('Buy me a coffee!')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('wallet')
+        .setDescription('Show your wallet!')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('help')
+        .setDescription('Show help command!')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('about')
+        .setDescription('Show help command!')
         .toJSON(),
 ];
 

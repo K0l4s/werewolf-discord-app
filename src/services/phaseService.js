@@ -12,11 +12,15 @@ class PhaseService {
         const lastPhase = await Phase.findOne({ gameId, phase: PHASES.NIGHT }).sort({ day: -1 }).exec();
         return lastPhase ? lastPhase.day + 1 : 1;
     }
-    static async getLastNightPhaseByGameId(gameId){
-        const allNightPhase = await Phase.find({gameId,phase:PHASES.NIGHT,isEnd:false}).exec();
+    static async getLastPhaseByGameId(gameId){
+        const allNightPhase = await Phase.find({gameId,isEnd:false}).exec();
         return allNightPhase;
     }
     static async getLastestNightPhaseByGameId(gameId){
+        const phase = await Phase.findOne({gameId, phase: PHASES.NIGHT}).sort({day: -1}).exec();
+        return phase;
+    }
+    static async getLastestDayPhaseByGameId(gameId){
         const phase = await Phase.findOne({gameId, phase: PHASES.NIGHT}).sort({day: -1}).exec();
         return phase;
     }

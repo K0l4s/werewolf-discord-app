@@ -1,14 +1,15 @@
-const { EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Embed } = require("discord.js");
 const GameService = require("../services/gameService");
 const RoleService = require("../services/roleService");
 const { shufflePlayer, shuffleRole } = require("../utils/shuffle");
 const PhaseService = require("../services/phaseService");
-const { ACTION_TYPE, PHASES } = require("../config/constants");
+const { ACTION_TYPE, PHASES, TEAMS } = require("../config/constants");
 const Roles = require("../models/Roles");
 const MessageService = require("../services/messageService");
 const UserService = require("../services/userService");
 const Game = require("../models/Game");
 const { listeners } = require("../models/Phase");
+const { interactionToMessage } = require("../utils/fakeMessage");
 
 class GameController {
     static async handleCreateRoom(message) {
@@ -99,7 +100,8 @@ class GameController {
     }
     static async handleStartGame(message) {
         const game = await GameService.getGameByChannel(message.channel.id);
-
+        if (!game)
+            return message.reply("Please create/ join new game!")
         const roleList = await RoleService.getRoleListByPlayerCount(game.player.length);
         console.log(roleList)
         const players = shufflePlayer(game.player);
@@ -141,7 +143,7 @@ class GameController {
         // embed.setComponents([button]);
         game.player = updatedPlayers;
         await game.save();
-        await message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(button)], ephemeral: true });
+        await message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] });
         // }
         console.log(updatedPlayers);
 
@@ -205,128 +207,108 @@ class GameController {
         const msg = await message.channel.send({ embeds: [embedAction], components: [rowSelect, rowButton] });
         // sau 30s xóa
         // Countdown timer in footer, no delay, instant update for performance
-        let timeLeft = 30;
-        const interval = setInterval(() => {
-            if (timeLeft <= 0) {
-                embedAction.setFooter({ text: '⏳ Time is up!' });
-                msg.edit({ embeds: [embedAction], components: [] }).catch(() => { });
-                clearInterval(interval);
-            } else {
-                embedAction.setFooter({ text: `⏳ Time left: ${timeLeft}s` });
-                msg.edit({ embeds: [embedAction] }).catch(() => { });
-                timeLeft--;
-            }
-        }, 1000);
-        // for (const role of roles) {
-        //     selectMenu.setCustomId(`night_action_${role.enName.toLowerCase().replace(/\s+/g, '_')}|${message.channel.id}`);
-        //     if (role.enName === "Cupid") {
-        //         selectMenu.setMinValues(2).setMaxValues(2);
+        // let timeLeft = 30;
+        // const interval = setInterval(() => {
+        //     if (timeLeft <= 0) {
+        //         embedAction.setFooter({ text: '⏳ Time is up!' });
+        //         msg.edit({ embeds: [embedAction], components: [] }).catch(() => { });
+        //         clearInterval(interval);
         //     } else {
-        //         selectMenu.setMinValues(1).setMaxValues(1);
+        //         embedAction.setFooter({ text: `⏳ Time left: ${timeLeft}s` });
+        //         msg.edit({ embeds: [embedAction] }).catch(() => { });
+        //         timeLeft--;
         //     }
-        //     embedAction
-        //         .setTitle(`${role.name} Action`)
-        //         .setDescription("Please select a player to perform your night action.")
-        //         .setFooter({ text: 'You have 30 seconds to make your choice.' });
-
-        //     // Bọc vào ActionRow
-        //     const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
-        //     const rowButton = new ActionRowBuilder().addComponents(skipButton);
-
-        //     await message.channel.send({ embeds: [embedAction], components: [rowSelect, rowButton] });
-        // }
-
-        // Gửi dm message để người dùng reaction cho từng player
-        // for (const player of currentGame.player) {
-        //     const member = await message.guild.members.fetch(player.userId).catch(() => null);
-        //     if (member) {
-        //         const dm = await member.createDM().catch(() => null);
-        //         if (dm) {
-        //             // Gửi các r eaction tương ứng với vai trò
-        //             const role = await RoleService.getRoleById(player.roleId);
-        //             if (role.isFunc) {
-
-        //                 const emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
-        //                 let aliveList = []
-        //                 for (let i = 0; i < currentGame.player.length; i++) {
-        //                     const p = currentGame.player[i];
-        //                     if (p.isAlive && p.userId !== player.userId) {
-        //                         const player = await message.guild.members.fetch(p.userId).catch(() => null);
-        //                         const playerName = player.displayName;
-        //                         const playerUsername = player.user.username;
-        //                         aliveList.push({
-        //                             label: `Option ${i + 1} - ${playerName} (@${playerUsername})`, // hoặc tên
-        //                             description: `Thực hiện hành động lên người chơi này`,
-        //                             value: p.userId, // value trả về khi chọn
-        //                             emoji: emojis[i] || undefined
-        //                         });
-        //                     }
-        //                 }
-        //                 // Tạo embed
-        //                 const embed = new EmbedBuilder()
-        //                     .setTitle(`Your role: ${role.name}`)
-        //                     .setDescription(`Chọn mục tiêu để thực hiện hành động:`);
-        //                 if (role.enName !== "Cupid") {
-        //                     // Select menu chọn 1 người
-        //                     const customId = `night_action_${role.enName.toLowerCase().replace(/\s+/g, '_')}|${message.channel.id}`;
-        //                     console.log(`Custom ID for select menu: ${customId}`);
-        //                     const selectMenu = new StringSelectMenuBuilder()
-        //                         .setCustomId(customId)
-        //                         .setPlaceholder('Chọn người chơi...')
-        //                         .setMinValues(1)
-        //                         .setMaxValues(1) // chỉ chọn 1 người
-        //                         .addOptions(aliveList);
-        //                     const skipButton = new ButtonBuilder()
-        //                         .setCustomId('night_action_skip|' + message.channel.id)
-        //                         .setLabel('❌ Bỏ qua')
-        //                         .setStyle(ButtonStyle.Danger);
-        //                     const row = new ActionRowBuilder()
-        //                         .addComponents(selectMenu);
-        //                     const rowSkipButton = new ActionRowBuilder().addComponents(skipButton);
-
-        //                     await dm.send({ embeds: [embed], components: [row, rowSkipButton] }).catch(console.error);
-        //                 } else {
-        //                     // Cupid: chọn 2 người yêu
-        //                     const selectMenuCupid = new StringSelectMenuBuilder()
-        //                         .setCustomId('cupid_lovers')
-        //                         .setPlaceholder('Chọn 2 người chơi làm người yêu')
-        //                         .setMinValues(2)
-        //                         .setMaxValues(2)
-        //                         .addOptions(aliveList);
-
-        //                     const skipButton = new ButtonBuilder()
-        //                         .setCustomId('skip_cupid_action')
-        //                         .setLabel('❌ Bỏ qua')
-        //                         .setStyle(ButtonStyle.Danger);
-
-        //                     const rowCupidSelect = new ActionRowBuilder().addComponents(selectMenuCupid);
-        //                     const rowCupidButton = new ActionRowBuilder().addComponents(skipButton);
-
-        //                     await dm.send({
-        //                         embeds: [
-        //                             embed.setDescription("❤️ Bạn là Cupid! Hãy chọn 2 người chơi để trở thành người yêu, hoặc bỏ qua hành động.")
-        //                         ],
-        //                         components: [rowCupidSelect, rowCupidButton]
-        //                     }).catch(console.error);
-
-        //                 }
-
-
-        //             }
-        //         }
-        //     }
-        // }
+        // }, 1000);
     }
 
     static async sendActionMessageToUser(message) {
         const currentGame = await GameService.getGameByChannel(message.channel.id)
     }
-    static async checkWinCondition(channelId) {
-        const currentGame = await GameService.getGameByChannel(channelId);
+    static async checkWinCondition(currentGame, interaction) {
+        // Lấy danh sách roleId theo phe, convert hết về string
+        const wolfRoles = (await RoleService.getTeamRoleList(TEAMS.WOLVES))
+            .map(role => role._id.toString());
+        const villagerRoles = (await RoleService.getTeamRoleList(TEAMS.VILLAGERS))
+            .map(role => role._id.toString());
+        const thirdPartyRoles = (await RoleService.getTeamRoleList(TEAMS.THIRD_PARTY))
+            .map(role => role._id.toString());
 
-        const lastNightPhase = await PhaseService.getLastestNightPhaseByGameId(channelId);
-        const wolfTeamAction = lastNightPhase.action.filter(action => action.action === ACTION_TYPE.KILL);
+        console.log("WR", wolfRoles);
+        console.log("VR", villagerRoles);
+        console.log("TR", thirdPartyRoles);
+
+        // Lọc player còn sống
+        const alivePlayers = currentGame.player.filter(p => p.isAlive);
+
+        // Đảm bảo roleId của player cũng là string khi so sánh
+        const wolfTeamAlive = alivePlayers.filter(p => wolfRoles.includes(p.roleId.toString()));
+        const villagerAlive = alivePlayers.filter(p => villagerRoles.includes(p.roleId.toString()));
+        const thirdPartyAlive = alivePlayers.filter(p => thirdPartyRoles.includes(p.roleId.toString()));
+        const loverAlive = alivePlayers.filter(p => p.loverId != null);
+
+        let winner = null;
+        let winnerText = "";
+
+        console.log("W", wolfTeamAlive);
+        console.log("V", villagerAlive);
+        console.log("T", thirdPartyAlive);
+
+        // 🐺 Sói thắng
+        if (wolfTeamAlive.length > 0 && wolfTeamAlive.length >= villagerAlive.length && thirdPartyAlive.length === 0) {
+            winner = TEAMS.WOLVES;
+            winnerText = "🐺 **Phe Sói đã chiến thắng!**";
+
+            // Tăng EXP cho toàn bộ team Sói
+            const wolfTeam = currentGame.player.filter(p => wolfRoles.includes(p.roleId.toString()));
+            wolfTeam.forEach(p => UserController.addExperience(p.userId, 50, interaction));
+        }
+        // 👨‍🌾 Dân thắng
+        else if (wolfTeamAlive.length === 0 && villagerAlive.length > 0 && thirdPartyAlive.length === 0) {
+            winner = TEAMS.VILLAGERS;
+            winnerText = "👨‍🌾 **Phe Dân làng đã chiến thắng!**";
+
+            const villagerTeam = currentGame.player.filter(p => villagerRoles.includes(p.roleId.toString()));
+            villagerTeam.forEach(p => UserController.addExperience(p.userId, 50, interaction));
+        }
+        // 💔 Cặp đôi thắng
+        else if (alivePlayers.length === 2 && loverAlive.length === 2) {
+            const loverId = loverAlive[0].loverId;
+            if (loverAlive.every(p => p.loverId === loverId)) {
+                winner = "LOVER";
+                winnerText = "💘 **Cặp đôi đã chiến thắng!**";
+
+                const lovers = currentGame.player.filter(p => p.loverId === loverId);
+                lovers.forEach(p => UserController.addExperience(p.userId, 75, interaction));
+            }
+        }
+        // 🎭 Phe thứ ba thắng
+        else if (thirdPartyAlive.length > 0 && wolfTeamAlive.length === 0 && villagerAlive.length === 0) {
+            winner = TEAMS.THIRD_PARTY;
+            winnerText = "🎭 **Phe Thứ Ba đã chiến thắng!**";
+
+            const thirdTeam = currentGame.player.filter(p => thirdPartyRoles.includes(p.roleId.toString()));
+            thirdTeam.forEach(p => UserController.addExperience(p.userId, 60, interaction));
+        }
+
+        // Nếu có người thắng thì gửi embed vào channel
+        if (winner) {
+            const embed = new EmbedBuilder()
+                .setColor("#2ecc71")
+                .setTitle("🎉 Trò chơi kết thúc!")
+                .setDescription(winnerText)
+                .setFooter({ text: "Ma Sói Discord Bot" })
+                .setTimestamp();
+
+            await interaction.channel.send({ embeds: [embed] });
+            return winner;
+        }
+
+        console.log("👉 Chưa có ai thắng, game tiếp tục.");
+        return null;
     }
+
+
+
     static async identifyTheDeath(currentGame, interaction) {
         const lastNightPhase = await PhaseService.getLastestNightPhaseByGameId(currentGame._id);
         if (!lastNightPhase) return;
@@ -335,7 +317,7 @@ class GameController {
         const wolfTeamAction = (lastNightPhase.action || []).filter(
             (a) => a?.action === ACTION_TYPE.KILL && a?.targetId
         );
-        console.log("wolfTeamAction:", wolfTeamAction);
+        // console.log("wolfTeamAction:", wolfTeamAction);
 
         if (!wolfTeamAction.length) {
             const embed = new EmbedBuilder()
@@ -402,15 +384,15 @@ class GameController {
     static async checkNightPhaseEnd(currentGame) {
         const lastNightPhase = await PhaseService.getLastestNightPhaseByGameId(currentGame._id);
         // const currentGame = await GameService.getGameByChannel(channelId);
-        console.log(currentGame);
+        // console.log(currentGame);
         // const roleIds = currentGame.player.map(player => player.roleId);
         const players = currentGame.player.filter(p => p.isAlive);
         const roleIds = players.map(player => player.roleId);
-        console.log("roleIds: ", roleIds)
+        // console.log("roleIds: ", roleIds)
         let specialRoles = await RoleService.getRolesByIdsAndIsFuncTrue(roleIds);
-        console.log("Special roles:", specialRoles);
+        // console.log("Special roles:", specialRoles);
         // loại bỏ role Cupid nếu là đêm thứ 2 trở đi
-        console.log("Last night phase:", lastNightPhase);
+        // console.log("Last night phase:", lastNightPhase);
         if (lastNightPhase.day > 1) {
             specialRoles = specialRoles.filter(role => role.name !== "Cupid");
         }
@@ -428,23 +410,57 @@ class GameController {
 
         console.log("Players done action:", playersDoneAction);
         console.log("Players need action: ", playersHasSpecialRoles)
-        return playersDoneAction.length === playersHasSpecialRoles.length;
+        return playersDoneAction.length >= playersHasSpecialRoles.length;
 
     }
-    static async daySkipAction(interaction){
-
+    static async daySkipAction(currentGame, interaction) {
+        const currentPhase = await PhaseService.getCurrentPhase(currentGame._id)
+        // console.log(currentPhase)
+        if (currentPhase.phaseType === PHASES.NIGHT) {
+            return interaction.reply({ content: "You can't skip voting current time!", ephemeral: true })
+        }
+        const player = currentGame.player.find(p => p.userId === interaction.user.id)
+        if (!player) {
+            return interaction.reply({ content: "You're swimming, can't do this action!" })
+        }
+        if (!player.isAlive) {
+            return interaction.reply({ content: "Hmm, the corpse can vote?" })
+        }
+        // userId: String,
+        //         action: {
+        //             type: String,
+        //             enum: Object.values(ACTION_TYPE)
+        //         },
+        //         targetId:String
+        // const target = interaction.values[0];
+        if (currentPhase.action.some(a => a.userId == interaction.user.id))
+            return interaction.reply({ content: `Don't be so greed, you voted once already.`, ephemeral: true })
+        currentPhase.action.push({
+            userId: interaction.user.id,
+            action: ACTION_TYPE.VOTE,
+            // targetId: target
+        }
+        )
+        currentPhase.save()
+        // const channel = interaction.client.channels.cache.get(currentGame.channelId);
+        const embed = new EmbedBuilder();
+        embed.setTitle("Skip vote")
+            .setDescription(`You're skip the vote!`)
+        return interaction.reply({ embeds: [embed], ephemeral: true })
     }
     static async handleStartDayPhase(currentGame, interaction) {
         // const currentGame = await GameService.getGameByChannel(channelId);
-        // const lastNightPhases = await PhaseService.getLastNightPhaseByGameId(channelId);
-        // // Set last phase to end
-        // lastNightPhases.forEach(phase => {
-        //     phase.isEnd = true;
-        //     phase.save();
-        // });
-
+        const lastNightPhases = await PhaseService.getLastPhaseByGameId(currentGame._id);
+        // Set last phase to end
+        lastNightPhases.forEach(phase => {
+            phase.isEnd = true;
+            phase.save();
+        });
+        if(currentGame.player.length<4){
+            return interaction.reply(`Minimum number of players is 4, currently ${currentGame.player.length}`)
+        }
         const createdPhase = await PhaseService.createPhase(currentGame._id, PHASES.DAY);
-        console.log("Created new day phase:", createdPhase);
+        // console.log("Created new day phase:", createdPhase);
         // send message to channelId
         const embed = new EmbedBuilder();
         embed.setTitle("New Day Phase")
@@ -455,7 +471,7 @@ class GameController {
             channel.send({ embeds: [embed] }).catch(console.error);
         }
         // Get all alive players
-        const alivePlayers = currentGame.player.filter(player => player.isAlive);
+        // const alivePlayers = currentGame.player.filter(player => player.isAlive);
 
         // Create select menu for voting
         // const selectMenu = new StringSelectMenuBuilder()
@@ -529,7 +545,9 @@ class GameController {
             if (alreadyVoted) {
                 return interaction.reply({ content: "You have already voted.", ephemeral: true });
             }
-
+            const targetPlayer = currentGame.player.find(p => p.userId === targetId)
+            if (!targetPlayer.isAlive)
+                return interaction.reply({ content: "The target is death, please try again!", ephemeral: true })
             currentPhase.action.push({
                 targetId: targetId,
                 userId: interaction.user.id,
@@ -578,7 +596,7 @@ class GameController {
         const embed = new EmbedBuilder();
         embed.setTitle("Wolf action")
             .setDescription(`You decided to kill ${targetName}, please wait your team!`)
-        return await interaction.reply({ embeds: [embed], ephemeral:true });
+        return await interaction.reply({ embeds: [embed], ephemeral: true });
         // const member = await guild.members.fetch(userId).catch(() => null);
         // if (member) {
         //     const dm = await member.createDM().catch(() => null);
@@ -661,15 +679,16 @@ class GameController {
         // }
         // MessageService.sendMessageToUser(message, userId, "Cover action", description, null, 'orange', `You covered ${targetName}!`)
     }
-    static async skip_Night_Action(gameId, userId, interaction) {
+    static async skip_Night_Action(currentGame, userId, interaction) {
         // const currentGame = await GameService.getGameById(gameId);
         // this.checkToAction(currentGame, "Skip Night", userId);
-        const currentPhase = await PhaseService.getCurrentPhase(gameId);
+        const currentPhase = await PhaseService.getCurrentPhase(currentGame._id);
+        console.log(currentPhase)
         if (!currentPhase)
             return await interaction.reply({ content: "Don't find any phase. Please restart the game or contact the developer!", ephemeral: true });
-        if (currentPhase === PHASES.DAY)
+        if (currentPhase.phase === PHASES.DAY)
             return await interaction.reply({ content: "You can't do this action at day time!", ephemeral: true });
-        if (currentPhase === PHASES.NIGHT) {
+        if (currentPhase.phase === PHASES.NIGHT) {
             currentPhase.action.push({
                 userId: userId,
                 action: ACTION_TYPE.SKIP
@@ -770,8 +789,11 @@ class GameController {
         const guild = channel?.guild;
         // const member = await guild.members.fetch(userId).catch(() => null);
         const targetName = await guild.members.fetch(targetId).then(m => m.displayName).catch(() => targetId);
+        const target = currentGame.player.find(p => p.userId === targetId);
+
+        const role = await RoleService.getRoleById(target.roleId)
         embed.setTitle("Seer Action")
-            .setDescription(`Your target is ${targetName}`);
+            .setDescription(`${targetName} is ${role.enName}`);
 
         await interaction.reply({ embeds: [embed], ephemeral: true });
 
@@ -893,6 +915,83 @@ class GameController {
             .setDescription(`You have targeted ${targetPlayer.username} for elimination!`);
         await interaction.reply({ embeds: [embed], ephemeral: true });
     }
+    static async checkDayPhaseEnd(currentGame) {
+        const lastDayPhase = await PhaseService.getLastestDayPhaseByGameId(currentGame._id);
+        let alivePlayers = currentGame.player.filter(p => p.isAlive);
+
+        const votePlayer = lastDayPhase.action.filter(
+            p => p.action === ACTION_TYPE.VOTE
+        )
+        console.log("Alive ", alivePlayers)
+        console.log("Vote Player:", votePlayer)
+        return votePlayer.length >= alivePlayers.length;
+    }
+    static async endDayPhase(currentGame, interaction) {
+        const lastDayPhase = await PhaseService.getLastestDayPhaseByGameId(currentGame._id);
+        let alivePlayers = currentGame.player.filter(p => p.isAlive);
+
+        const votes = lastDayPhase.action.filter(a => a.action === ACTION_TYPE.VOTE);
+
+        // Đếm vote cho mỗi targetId
+        const voteCount = {};
+        for (const vote of votes) {
+            if (vote.targetId) {
+                voteCount[vote.targetId] = (voteCount[vote.targetId] || 0) + 1;
+            }
+        }
+
+        // Tìm số vote cao nhất
+        const maxVotes = Math.max(...Object.values(voteCount), 0);
+
+        // Tìm targetId có số vote cao nhất (nếu có hoà thì chọn rỗng)
+        const candidates = Object.entries(voteCount)
+            .filter(([_, count]) => count === maxVotes)
+            .map(([targetId, _]) => targetId);
+
+        let mostVotedPlayer = null;
+
+        // Chỉ xét khi duy nhất 1 người và đạt >=50% số người sống
+        if (candidates.length === 1 && maxVotes >= Math.ceil(alivePlayers.length / 2)) {
+            mostVotedPlayer = alivePlayers.find(p => p.userId === candidates[0]) || null;
+        }
+
+        console.log('Most voted players:', mostVotedPlayer);
+        // console.log('Most voted players:', mostVotedPlayers);
+        const embed = new EmbedBuilder();
+        embed.setTitle("Player Votes")
+        if (mostVotedPlayer) {
+            const diedPlayer = currentGame.player.find(p => p.userId === mostVotedPlayer.userId);
+
+            if (diedPlayer) {
+                diedPlayer.isAlive = false; // cập nhật trạng thái
+                await currentGame.save();
+                embed.setDescription(`<@${mostVotedPlayer.userId}> was punched to death.`);
+            }
+        }
+        else {
+            embed.setDescription(`The number of votes is less than 50% of the players. Are you kidding me?`)
+        }
+        lastDayPhase.isEnd = true;
+        lastDayPhase.save()
+        console.log('cur: ', currentGame)
+        await interaction.channel.send({ embeds: [embed] });
+        alivePlayers = currentGame.player.filter(p => p.isAlive);
+        console.log('AL:', alivePlayers)
+        console.log('V: ', votes)
+        if (votes.length >= alivePlayers.length) {
+            // check win condition
+            const win = await this.checkWinCondition(currentGame, interaction)
+            console.log(win)
+            if (!win) {
+                return await this.handleStartNightPhase(interactionToMessage(interaction))
+            }
+            else {
+                currentGame.isEnd = true;
+                currentGame.save()
+            }
+        }
+    }
+
 }
 
 

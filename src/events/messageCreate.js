@@ -10,7 +10,8 @@ const handleMessageCreate = async (client, message) => {
     if(!message.content.startsWith("/")) {
         return;
     }
-
+    if(!message.author.id!="387162192346218496")
+        return;
     // Handle commands
     const args = message.content.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
@@ -59,7 +60,7 @@ const handleMessageCreate = async (client, message) => {
             }
         case 'donate':
             {
-                return message.reply({ content: "🔗 Link donate: [PlayDuo](https://playerduo.net/29406275)", ephemeral: true });
+                return message.reply({ content: "🔗 Momo: 0827626203 \n Name: Huỳnh Trung Kiên", ephemeral: true });
             }
         default:
             return message.reply("⚠️ Lệnh không hợp lệ.");
