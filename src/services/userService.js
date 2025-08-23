@@ -9,8 +9,10 @@ class UserService {
         const savedUser = await newUser.save();
         return savedUser
     }
-    static async findUserById(userId){
-        const user = await User.findOne({userId:userId})
+    static async findUserById(userId) {
+        let user = await User.findOne({ userId: userId })
+        if (!user)
+            user = await this.createNewUser(userId)
         return user;
     }
 

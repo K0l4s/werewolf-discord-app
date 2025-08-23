@@ -50,19 +50,50 @@ module.exports = async (interaction) => {
                 .setDescription("Here are the available commands you can use:")
                 .setColor("Blue")
                 .addFields(
-                    { name: "/create", value: "Create a new game room." },
-                    { name: "/join", value: "Join an existing game room." },
-                    { name: "/start", value: "Start existing game room." },
-                    { name: "/new", value: "Start a completely new game room." },
-                    { name: "/give <user> <amount>", value: "Send money to another user." },
-                    { name: "/wallet", value: "Check your current balance." },
-                    { name: "/donate", value: "Support the developer via Momo." },
-                    { name: "/help", value: "Show this help message." }
+                    // Werewolf group
+                    {
+                        name: "🧟‍♂️ Werewolf Commands",
+                        value:
+                            "`/create` – Create a new game room.\n" +
+                            "`/join` – Join an existing game room.\n" +
+                            "`/new` – Start a completely new game room.\n" +
+                            "`/start` – Start the current game room."
+                    },
+
+                    // User group
+                    {
+                        name: "👤 User Commands",
+                        value:
+                            "`/give <user> <amount>` – Send coins to another user.\n" +
+                            "`/wallet` – Check your current coin balance."
+                    },
+
+                    // Minigames group
+                    {
+                        name: "🎮 Minigames",
+                        value:
+                            "🎲 `/baucua [amount]` – Play Bau Cua, bet freely or use default amount.\n" +
+                            "🎰 `/jackpot [amount]` – Play Jackpot, draw 3 times to determine win/loss.\n" +
+                            "💪 `/keoco [amount]` – Play Tug of War, win or lose based on pulling power.\n" +
+                            "✊✋✌️ `/keobuabao [amount]` – Play Rock-Paper-Scissors against the bot.\n" +
+                            "🃏 `/baicao [amount]` – Play 3-card game, draw 3 cards each to calculate points."
+                    },
+
+                    // Information group
+                    {
+                        name: "ℹ️ Information",
+                        value:
+                            "`/help` – Display this help message.\n" +
+                            "`/donate` – Support the developer via Momo.\n" +
+                            "`/about` – Information about the bot."
+                    }
                 )
                 .setFooter({ text: "Use commands wisely! 😎" });
 
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
+
+
         case 'about': {
             const embed = new EmbedBuilder()
                 .setTitle("🤖 About This Bot")

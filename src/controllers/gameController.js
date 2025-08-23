@@ -119,21 +119,6 @@ class GameController {
                 roleId: roleList[i]._id.toString(),
             });
         }
-        // Gửi tin nhắn riêng
-        // const member = await message.guild.members.fetch(player.userId).catch(() => null);
-        // if (member) {
-        //     const dm = await member.createDM().catch(() => null);
-        //     if (dm) {
-        //         const embed = {
-        //             title: `🎭 Vai trò của bạn: ${role.name}`,
-        //             description: role.description,
-        //             color: parseInt(role.color?.replace('#', '') || 'ffffff', 16),
-        //             thumbnail: role.image ? { url: role.image } : undefined,
-        //         };
-        //         await dm.send({ embeds: [embed] }).catch(console.error);
-        //     }
-        // }
-        //  Send message and button to show role
         const embed = new EmbedBuilder();
         embed.setTitle("Your role is available")
             .setDescription("Please click **<button>** to view your role.")
@@ -207,20 +192,6 @@ class GameController {
         const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
         const rowButton = new ActionRowBuilder().addComponents(skipButton);
         const msg = await message.channel.send({ embeds: [embedAction], components: [rowSelect, rowButton] });
-        // sau 30s xóa
-        // Countdown timer in footer, no delay, instant update for performance
-        // let timeLeft = 30;
-        // const interval = setInterval(() => {
-        //     if (timeLeft <= 0) {
-        //         embedAction.setFooter({ text: '⏳ Time is up!' });
-        //         msg.edit({ embeds: [embedAction], components: [] }).catch(() => { });
-        //         clearInterval(interval);
-        //     } else {
-        //         embedAction.setFooter({ text: `⏳ Time left: ${timeLeft}s` });
-        //         msg.edit({ embeds: [embedAction] }).catch(() => { });
-        //         timeLeft--;
-        //     }
-        // }, 1000);
     }
 
     static async sendActionMessageToUser(message) {

@@ -21,6 +21,22 @@ module.exports = {
         VILLAGERS: 2,
         THIRD_PARTY: 3
     },
+    ITEM_TYPE:{
+        PRESENT_BOX: 'present',
+        NORMAL: 'normal'
+    },
+    ITEM_RARITY:{
+        C:'Common',
+        SM: 'Super Common',
+        R: 'Rare',
+        SR: 'Super Rare',
+        E: 'Epic',
+        SE: 'Super Epic',
+        L: 'Legendary',
+        SL: 'Super Legendary',
+        MY: 'Mythic',
+        SMY: 'Super Mythic'
+    },
     DEFAULT_NIGHT_DURATION: 5 * 60 * 1000, // 5 phút
     DEFAULT_DAY_DURATION: 5 * 60 * 1000,    // 5 phút
     DEFAULT_EXP_LVL1: 500,

@@ -70,35 +70,3 @@ module.exports = async (interaction) => {
     return null;
 
 };
-
-// client.on('interactionCreate', async (interaction) => {
-//     try {
-//         // Chỉ xử lý select menu
-//         if (!interaction.isStringSelectMenu()) return;
-
-//         // Check customId
-//         if (interaction.customId === 'night_action') {
-//             const selectedValue = interaction.values[0]; // userId hoặc 'skip'
-
-//             // Nếu bỏ qua hành động
-//             if (selectedValue === 'skip') {
-//                 await interaction.reply({ content: 'Bạn đã bỏ qua hành động đêm nay ✅', ephemeral: true });
-//                 console.log(`${interaction.user.id} skipped their action`);
-//                 return;
-//             }
-
-//             // Nếu chọn target
-//             await interaction.reply({ content: `Bạn đã chọn mục tiêu: <@${selectedValue}> 🎯`, ephemeral: true });
-//             console.log(`${interaction.user.id} selected ${selectedValue}`);
-
-//             // TODO: Lưu vào database hành động đêm
-//             await NightActionService.saveAction({
-//                 gameId: currentGame._id,
-//                 playerId: interaction.user.id,
-//                 targetId: selectedValue
-//             });
-//         }
-//     } catch (err) {
-//         console.error('Error handling night_action:', err);
-//     }
-// });

@@ -24,7 +24,22 @@ client.once('ready', () => {
 });
 
 client.on('messageCreate', async (message) => {
-    await handleMessageCreate(client, message);
+    try {
+        await handleMessageCreate(client, message);
+    } catch (error) {
+        console.error("⚠️ Lỗi interactionCreate:", error);
+
+        // Gửi báo cáo bug tới dev
+        const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
+        if (devUser) {
+            await devUser.send({
+                content: `🐞 **Báo cáo lỗi interaction**\n` +
+                    `**User:** ${interaction.user.tag} (${interaction.user.id})\n` +
+                    `**Interaction Type:** ${interaction.type}\n` +
+                    `**Error:**\n\`\`\`${error.stack}\`\`\``
+            });
+        }
+    }
 });
 client.on('messageReactionAdd', async (reaction, user) => {
     if (user.bot) return;
@@ -49,13 +64,13 @@ client.on('interactionCreate', async (interaction) => {
         console.error("⚠️ Lỗi interactionCreate:", error);
 
         // Gửi báo cáo bug tới dev
-        const devUser = await client.users.fetch(DEVELOPER_ID);
+        const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
         if (devUser) {
             await devUser.send({
                 content: `🐞 **Báo cáo lỗi interaction**\n` +
-                         `**User:** ${interaction.user.tag} (${interaction.user.id})\n` +
-                         `**Interaction Type:** ${interaction.type}\n` +
-                         `**Error:**\n\`\`\`${error.stack}\`\`\``
+                    `**User:** ${interaction.user.tag} (${interaction.user.id})\n` +
+                    `**Interaction Type:** ${interaction.type}\n` +
+                    `**Error:**\n\`\`\`${error.stack}\`\`\``
             });
         }
     }

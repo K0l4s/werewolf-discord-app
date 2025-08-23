@@ -143,7 +143,7 @@ class UserController {
                 // }
                 targetUser.coin = Number(targetUser.coin) + Number(amount);
                 await userUser.save();
-                // await targetUser.save();
+                await targetUser.save();
 
                 const successEmbed = new EmbedBuilder()
                     .setTitle("✅ Transfer Success!")
