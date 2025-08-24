@@ -8,6 +8,8 @@ const spiritSchema = new mongoose.Schema(
         ref: {type:String,require:true,unique:true},
         description: { type: String, require: true },
         imgUrl: { type: String, require: true },
+        icon: { type: String, require: true },
+        hp: { type: Number, require: true, default: 0 },
         atk: { type: Number, require: true, default: 0 },
         def: { type: Number, require: true, default: 0 },
         sp: { type: Number, require: true, default: 0 },
@@ -20,6 +22,7 @@ const spiritSchema = new mongoose.Schema(
             required: true,
             default: ITEM_RARITY.C
         },
+        isFirstAwake:{type:Boolean,require:false,default:true},
         nextId: { type: String, require: false } //Có thể tiến hóa được vũ hồn
     }
 )

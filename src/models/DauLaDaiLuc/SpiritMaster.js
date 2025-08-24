@@ -5,7 +5,7 @@ const spiritMasterSchema = new mongoose.Schema(
     {
         userId: { type: String, require: true},
         spirit: { type: mongoose.Schema.Types.ObjectId, ref: "Spirit", required: true },
-        equipRing: [{type:mongoose.Schema.Types.ObjectId,ref:"SpiritRing",required:false}]       
+        equipRing: [{type:mongoose.Schema.Types.ObjectId,ref:"SpiritRing",required:false}]
     }
 )
 

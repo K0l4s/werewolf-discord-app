@@ -1,4 +1,5 @@
 const Spirit = require('../../models/DauLaDaiLuc/Spirit');
+const SpiritMaster = require('../../models/DauLaDaiLuc/SpiritMaster');
 
 
 class SpiritService {
@@ -19,9 +20,23 @@ class SpiritService {
             throw error;
         }
     }
+    static async getSpiritsByUserId(userId) {
+        const spirits = await SpiritMaster.find({
+            userId: userId
+        })
+        return spirits;
+    }
     static async getSpiritByRef(ref) {
         try {
             return await Spirit.findOne({ ref });
+        } catch (error) {
+            console.error('❌ Lỗi khi tìm Vũ Hồn theo ref:', error);
+            throw error;
+        }
+    }
+    static async getSpiritById(id) {
+        try {
+            return await Spirit.findById(id);
         } catch (error) {
             console.error('❌ Lỗi khi tìm Vũ Hồn theo ref:', error);
             throw error;

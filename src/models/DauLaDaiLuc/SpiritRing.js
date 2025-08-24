@@ -5,7 +5,8 @@ const { ITEM_RARITY } = require("../../config/constants");
 const spiritRingSchema = new mongoose.Schema(
     {
         years: { type: Number, require: true, default: 1 },
-        color: { type: String, require: true, default: "white" },
+        hp: { type: Number, require: true, default: 0 }, 
+        icon: {type:String,require:true},
         atk: { type: Number, require: true, default: 1 },
         def: { type: Number, require: true, default: 1 },
         sp: { type: Number, require: true, default: 1 }

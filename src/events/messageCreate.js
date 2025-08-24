@@ -9,6 +9,7 @@ const Item = require('../models/Item');
 const ShopController = require('../controllers/shopController');
 const SpiritController = require('../controllers/DauLaDaiLuc/spiritController');
 const SpiritMaster = require('../models/DauLaDaiLuc/SpiritMaster');
+const BattleController = require('../controllers/DauLaDaiLuc/battleController');
 const handleMessageCreate = async (client, msg) => {
     // try {
     if (msg.author.bot || !msg.guild) return;
@@ -51,7 +52,22 @@ const handleMessageCreate = async (client, msg) => {
             msg.reply("❌ Đã xảy ra lỗi khi thức tỉnh vũ hồn!");
         }
     }
-    if (cmd === "spirit") {
+
+    // Lấy thông tin chi tiết (thử, nếu lỗi sẽ fallback)
+    if (cmd === "spirits") {
+        try {
+            const result = await SpiritController.getSpiritInfo(msg.author.id);
+            msg.reply(result);
+        } catch (error) {
+            // Fallback về simple info nếu bị lỗi
+            const result = "Lỗi lấy dữ liệu"
+            msg.reply(result);
+        }
+    }
+    if (cmd === 'battles') {
+        await BattleController.handleBattleCommand(msg, args);
+    }
+    if (cmd === "spirit?") {
         try {
             // Lấy số trang từ message (ví dụ: "spirit 2")
             const args = msg.content.split(' ');
