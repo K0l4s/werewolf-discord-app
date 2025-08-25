@@ -10,23 +10,61 @@ const ShopController = require('../controllers/shopController');
 const SpiritController = require('../controllers/DauLaDaiLuc/spiritController');
 const SpiritMaster = require('../models/DauLaDaiLuc/SpiritMaster');
 const BattleController = require('../controllers/DauLaDaiLuc/battleController');
+const HuntSpiritController = require('../controllers/DauLaDaiLuc/huntSpiritController');
+const User = require('../models/User');
+const Prefix = require('../models/Prefix');
 const handleMessageCreate = async (client, msg) => {
     // try {
     if (msg.author.bot || !msg.guild) return;
-    if (!msg.content.startsWith("/")) {
-        return;
-    }
-    if (msg.content.toLowerCase().includes("cam ơi")) {
-        msg.reply("Kêu con phế vật đó làm gì? Đây là bản **nâng cấp bờ ri mi um** rồi, hiểu chưa? 😏🍊");
+    // if (!msg.content.startsWith("/")) {
+    //     return;
+    // } 
+    console.log(msg.content)
+    // Lấy prefix server từ DB
+    let serverPrefixData = await Prefix.findOne({ guildId: msg.guild.id });
+    let serverPrefix = serverPrefixData ? serverPrefixData.prefix : 'w';
+    let prefixes = [];
+
+    if (serverPrefix) {
+        // Nếu có local prefix → chỉ dùng local thôi
+        prefixes.push(serverPrefix.toLowerCase(), serverPrefix.toUpperCase());
+    } else {
+        // Nếu không có local prefix → dùng global
+        prefixes.push("w", "W");
     }
 
-    const args = msg.content.slice(1).trim().split(/ +/);
+    // Check message có bắt đầu bằng prefix nào không
+    let usedPrefix = prefixes.find(p => msg.content.startsWith(p));
+    if (!usedPrefix) return;
+
+    // Cắt prefix ra khỏi message
+    const args = msg.content.slice(usedPrefix.length).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
+    // const args = msg.content.slice(1).trim().split(/ +/);
+    // const cmd = args.shift().toLowerCase();
     const user = await UserService.findUserById(msg.author.id)
     // if (cmd === "cspirit") {
     //     await SpiritController.addSpirit()
     //     // msg.reply(embed)
     // }
+    console.log(cmd)
+    if (cmd === "set") {
+        if (!args[0])
+            return msg.reply("Missing command")
+        if (args[0] === "prefix") {
+            if (!args[1]) return msg.reply("⚠️ Bạn cần nhập prefix mới!");
+            if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
+                return msg.reply("❌ Bạn không có quyền đổi prefix server!");
+            }
+            const newPrefix = args[1];
+            await Prefix.findOneAndUpdate(
+                { guildId: msg.guild.id },
+                { prefix: newPrefix },
+                { upsert: true }
+            );
+            msg.reply(`✅ Prefix server đã đổi thành: \`${newPrefix}\``);
+        }
+    }
     if (cmd === "awake") {
         const userId = msg.author.id;
         console.log("Đang tiến hành thức tỉnh võ hồn cho user:", userId);
@@ -64,8 +102,8 @@ const handleMessageCreate = async (client, msg) => {
             msg.reply(result);
         }
     }
-    if (cmd === 'battles') {
-        await BattleController.handleBattleCommand(msg, args);
+    if (cmd === 'battle') {
+        return await BattleController.handleBattleCommand(msg, args);
     }
     if (cmd === "spirit?") {
         try {
@@ -84,6 +122,38 @@ const handleMessageCreate = async (client, msg) => {
                 .setColor(0xFF0000);
 
             return msg.reply({ embeds: [errorEmbed] });
+        }
+    }
+    if (cmd === "table") {
+        try {
+            // Lấy số trang từ message (ví dụ: "spirit 2")
+            const args = msg.content.split(' ');
+            const page = args.length > 1 ? parseInt(args[1]) || 1 : 1;
+
+            const embed = await SpiritController.showAllSpiritsTable(page);
+            return msg.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error('Lỗi khi hiển thị Vũ Hồn:', error);
+
+            const errorEmbed = new EmbedBuilder()
+                .setTitle('❌ Lỗi')
+                .setDescription('Đã xảy ra lỗi khi tải danh sách Vũ Hồn!')
+                .setColor(0xFF0000);
+
+            return msg.reply({ embeds: [errorEmbed] });
+        }
+    }
+    if (cmd === "hunt") {
+        // const lastUser = await UserService.findUserById(msg.author.id);
+        const embed = await HuntSpiritController.huntSpirits(msg.author.id);
+        msg.reply(embed);
+        const currentUser = await UserService.findUserById(msg.author.id);
+        if (currentUser.spiritLvl > user.spiritLvl) {
+            const lvlUpEmbed = new EmbedBuilder();
+            lvlUpEmbed.setTitle("Spirit Level Up!")
+                .setDescription(`Congratulations, <@${msg.author.id}> reached **level ${currentUser.spiritLvl}**!`)
+                .setThumbnail("https://i.ibb.co/YBQPxrNy/Lam-Ngan-Thao.png")
+            msg.reply({ embeds: [lvlUpEmbed] })
         }
     }
     if (cmd === "shop") {
@@ -147,11 +217,11 @@ const handleMessageCreate = async (client, msg) => {
         let userData = user;
 
         // Nếu chưa có user trong DB thì tạo mới
-        if (!userData) {
-            userData = await UserService.createUser({
-                userId: msg.author.id,
-            });
-        }
+        // if (!userData) {
+        //     userData = await UserService.createUser({
+        //         userId: msg.author.id,
+        //     });
+        // }
 
         // Check cooldown
         if (userData.lastDaily && Date.now() - userData.lastDaily.getTime() < cooldown) {

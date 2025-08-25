@@ -1,11 +1,20 @@
+const BattleController = require("../controllers/DauLaDaiLuc/battleController");
 const GameController = require("../controllers/gameController");
 const GameService = require("../services/gameService");
 const RoleService = require("../services/roleService");
 
 module.exports = async (interaction) => {
     if (!interaction.isStringSelectMenu() && !interaction.isButton()) return;
-
+    if (interaction.customId.startsWith('accept_battle_')) {
+        const battleId = interaction.customId.replace('accept_battle_', '');
+        return await BattleController.acceptBattle(battleId, interaction);
+    } else if (interaction.customId.startsWith('reject_battle_')) {
+        const battleId = interaction.customId.replace('reject_battle_', '');
+        return await BattleController.rejectBattle(battleId, interaction);
+    }
+    //Xử lý cho ma sói
     const [actionType, refId] = interaction.customId.split('|');
+
     if (actionType === 'night_action_skip') {
         const currentGame = await GameService.getGameByChannel(refId);
         await GameController.skip_Night_Action(currentGame, interaction.user.id, interaction);

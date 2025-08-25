@@ -1,6 +1,6 @@
 require('dotenv').config(); // Load biến môi trường
 
-const { REST, Routes, SlashCommandBuilder } = require('discord.js');
+const { REST, Routes, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 
 const commands = [
     new SlashCommandBuilder()
@@ -48,6 +48,34 @@ const commands = [
         .setName('about')
         .setDescription('Show help command!')
         .toJSON(),
+    new SlashCommandBuilder()
+        .setName('awake')
+        .setDescription('Awake your spirit!')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('battle')
+        .setDescription('Awake your spirit!')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('Người bị khiêu chiến')
+                .setRequired(true)
+        )
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName("set")
+        .setDescription("Cấu hình server")
+        .addSubcommand(sub =>
+            sub
+                .setName("prefix")
+                .setDescription("Đặt prefix cho server")
+                .addStringOption(opt =>
+                    opt.setName("value")
+                        .setDescription("Prefix mới")
+                        .setRequired(true)
+                )
+        )
+        // chỉ admin hoặc manage guild mới dùng được
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageGuild),
 ];
 
 const token = process.env.DISCORD_TOKEN;

@@ -42,33 +42,29 @@ class UserController {
 
         user.save();
     }
-    static async add(userId, exp, interaction) {
+    static async addExperienceSpirit(userId, exp) {
         const user = await UserService.findUserById(userId);
-        const maxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
-        const newExp = Number(user.exp) + Number(exp)
-        console.log(newExp, " ", maxExp);
+
+        const maxExp = Number(user.spiritLvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
+        const newExp = Number(user.spiritExp) + Number(exp);
+
         if (newExp >= maxExp) {
-            user.lvl = Number(user.lvl) + 1;
-            user.exp = Number(newExp) - Number(maxExp); // Correct residual exp
-            const nexMaxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
-            const nextLvl = Number(user.lvl) + 1;
-            const path = require('path');
-            const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
-            const imgPath = path.join(__dirname, '../../assets/image/star.gif');
-            const attachment = new AttachmentBuilder(imgPath);
-            const embed = new EmbedBuilder()
-                .setTitle(`${globalName} Level up!`)
-                .setDescription(`Congratulations, <@${userId}> reached **level ${user.lvl}** and you need **${nexMaxExp} exp** to reach **level ${nextLvl}**!`)
-                .setThumbnail('attachment://star.gif');
+            user.spiritLvl = parseInt(user.spiritLvl) + 1;
+            user.spiritExp = newExp - maxExp; // giữ lại exp dư
+        } else {
+            user.spiritExp = newExp; // ✅ sửa từ user.exp thành user.spiritExp
+        }
 
-            await interaction.channel.send({ embeds: [embed], files: [attachment] }).catch(console.error);
-        }
-        else {
-            user.exp = newExp;
-        }
         await user.save();
+    }
 
-        user.save();
+    static async addCoin(userId, coin) {
+        const user = await UserService.findUserById(userId);
+
+        const newCoin = parseInt(coin);
+        user.coin += newCoin; // ép chắc về số
+
+        await user.save();
     }
 
 

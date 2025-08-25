@@ -379,6 +379,62 @@ class SpiritController {
                 .setColor(0xFF0000);
         }
     }
+    static async showAllSpiritsTable(page = 1) {
+        try {
+            const limit = 5;
+            const { spirits, page: currentPage, totalPages, total } = await SpiritService.getAllSpirits(page, limit);
+
+            if (spirits.length === 0) {
+                return new EmbedBuilder()
+                    .setTitle('📚 Danh Sách Vũ Hồn')
+                    .setDescription('❌ Hiện không có Vũ Hồn nào trong database!')
+                    .setColor(0xFF0000);
+            }
+
+            // Header bảng
+            let table ;
+            table += `#  Icon   Tên                  ATK  DEF  SP   Rarity         Evo\n`;
+            table += `---------------------------------------------------------------\n`;
+
+            spirits.forEach((spirit, index) => {
+                const position = (page - 1) * limit + index + 1;
+                const evolutionInfo = spirit.nextId ? '🔄' : '⏹️';
+
+                // Cột icon giữ cố định 5 ký tự, tên căn 20
+                table += `${position.toString().padEnd(2)} `;
+                table += `${spirit.icon.padEnd(6)} `;
+                table += `${spirit.name.padEnd(20)} `;
+                table += `${spirit.atk.toString().padEnd(4)}`;
+                table += `${spirit.def.toString().padEnd(4)}`;
+                table += `${spirit.sp.toString().padEnd(4)}`;
+                table += `${spirit.rarity.padEnd(13)}`;
+                table += `${evolutionInfo}\n`;
+            });
+
+            // table += "```";
+
+            const embed = new EmbedBuilder()
+                .setTitle('📚 Danh Sách Tất Cả Vũ Hồn (Bảng)')
+                .setDescription(`**Tổng số:** ${total} Vũ Hồn • **Trang:** ${currentPage}/${totalPages}\n${table}`)
+                .setColor(this.getRarityColor(spirits[0].rarity))
+                .setFooter({
+                    text: totalPages > 1 ?
+                        `Sử dụng /spirit <trang> để xem trang khác • Trang ${currentPage}/${totalPages}` :
+                        `Sử dụng /spirit <tên> để xem chi tiết`
+                })
+                .setTimestamp();
+
+            return embed;
+
+        } catch (error) {
+            console.error('❌ Lỗi khi hiển thị bảng Vũ Hồn:', error);
+            return new EmbedBuilder()
+                .setTitle('❌ Lỗi')
+                .setDescription('Đã xảy ra lỗi khi tải danh sách Vũ Hồn (bảng)!')
+                .setColor(0xFF0000);
+        }
+    }
+
 
     // Hàm lấy emoji theo độ hiếm
     static getRarityEmoji(rarity) {

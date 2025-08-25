@@ -1,20 +1,23 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
 const SpiritService = require('../../services/DauLaDaiLuc/spiritService');
 const Battle = require('../../models/DauLaDaiLuc/Battle');
+const UserService = require('../../services/userService');
+const UserController = require('../userController');
+const { wolfCoin } = require('../../utils/wolfCoin');
 
 class BattleController {
-    // Khởi tạo trận đấu
-    static async initiateBattle(initiatorId, targetId, msg) {
+    // Khởi tạo trận đấu (hỗ trợ cả message và interaction)
+    static async initiateBattle(initiatorId, targetId, context) {
         try {
             // Kiểm tra cả 2 người chơi đều có vũ hồn
             const initiatorSpirits = await SpiritService.getSpiritsByUserId(initiatorId);
             const targetSpirits = await SpiritService.getSpiritsByUserId(targetId);
 
             if (initiatorSpirits.length === 0) {
-                return { content: '❌ Bạn chưa có vũ hồn để chiến đấu!' };
+                return { content: '❌ Bạn chưa có vũ hồn để chiến đấu!', ephemeral: true };
             }
             if (targetSpirits.length === 0) {
-                return { content: '❌ Đối thủ chưa có vũ hồn để chiến đấu!' };
+                return { content: '❌ Đối thủ chưa có vũ hồn để chiến đấu!', ephemeral: true };
             }
 
             // Kiểm tra nếu người chơi đã có trận đấu đang chờ
@@ -26,7 +29,7 @@ class BattleController {
             });
 
             if (existingBattle) {
-                return { content: '❌ Bạn hoặc đối thủ đã có một trận đấu đang chờ!' };
+                return { content: '❌ Bạn hoặc đối thủ đã có một trận đấu đang chờ!', ephemeral: true };
             }
 
             const battleId = `${initiatorId}-${targetId}-${Date.now()}`;
@@ -46,19 +49,36 @@ class BattleController {
             const row = new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
-                        .setCustomId('accept_battle')
+                        .setCustomId(`accept_battle_${battleId}`)
                         .setLabel('✅ Chấp nhận')
                         .setStyle(ButtonStyle.Success),
                     new ButtonBuilder()
-                        .setCustomId('reject_battle')
+                        .setCustomId(`reject_battle_${battleId}`)
                         .setLabel('❌ Từ chối')
                         .setStyle(ButtonStyle.Danger)
                 );
 
-            const challengeMsg = await msg.reply({
-                embeds: [challengeEmbed],
-                components: [row]
-            });
+            let challengeMsg;
+            if (context.replied || context.deferred) {
+                challengeMsg = await context.followUp({
+                    embeds: [challengeEmbed],
+                    components: [row],
+                    fetchReply: true
+                });
+            } else if (context.isButton?.()) {  // chỉ gọi nếu tồn tại
+                challengeMsg = await context.reply({
+                    embeds: [challengeEmbed],
+                    components: [row],
+                    fetchReply: true
+                });
+            } else {
+                challengeMsg = await context.reply({
+                    embeds: [challengeEmbed],
+                    components: [row],
+                    fetchReply: true
+                });
+            }
+
 
             // Lưu thông tin trận đấu vào database
             const battleData = {
@@ -66,7 +86,7 @@ class BattleController {
                 initiatorId,
                 targetId,
                 messageId: challengeMsg.id,
-                channelId: msg.channel.id,
+                channelId: challengeMsg.channel.id,
                 status: 'pending',
                 initiatorSpirit: initiatorSpirits[0],
                 initiatorSpirit2: initiatorSpirits[1] || null,
@@ -90,9 +110,9 @@ class BattleController {
                     return;
                 }
 
-                if (interaction.customId === 'accept_battle') {
+                if (interaction.customId === `accept_battle_${battleId}`) {
                     await this.acceptBattle(battleId, interaction);
-                } else if (interaction.customId === 'reject_battle') {
+                } else if (interaction.customId === `reject_battle_${battleId}`) {
                     await this.rejectBattle(battleId, interaction);
                 }
             });
@@ -110,7 +130,7 @@ class BattleController {
 
         } catch (error) {
             console.error('Lỗi khi khởi tạo battle:', error);
-            return { content: '❌ Đã xảy ra lỗi khi khởi tạo trận đấu!' };
+            return { content: '❌ Đã xảy ra lỗi khi khởi tạo trận đấu!', ephemeral: true };
         }
     }
 
@@ -237,7 +257,7 @@ class BattleController {
             while (battle.initiatorHP > 0 && battle.targetHP > 0) {
                 // Luôn reload battle từ database để có data mới nhất
                 battle = await Battle.findOne({ battleId });
-                
+
                 // Kiểm tra nếu trận đấu bị kẹt
                 if (this.isBattleStuck(battle)) {
                     console.warn(`Trận đấu ${battleId} bị kẹt, buộc kết thúc`);
@@ -254,7 +274,7 @@ class BattleController {
 
                 // Xử lý một round chiến đấu
                 const roundResult = await this.executeBattleRound(battleId, round);
-                
+
                 // Reload battle sau khi xử lý round
                 battle = await Battle.findOne({ battleId });
 
@@ -292,7 +312,7 @@ class BattleController {
 
         } catch (error) {
             console.error('Lỗi trong battle animation:', error);
-            
+
             // Đảm bảo trận đấu luôn được kết thúc
             try {
                 const battle = await Battle.findOne({ battleId });
@@ -325,9 +345,9 @@ class BattleController {
         let totalDamage = 0;
 
         // Hiển thị thanh máu trước khi round bắt đầu
-        const initiatorMaxHP = battle.initiatorCurrentSpirit === 0 ? 
+        const initiatorMaxHP = battle.initiatorCurrentSpirit === 0 ?
             battle.initiatorSpiritDetail.hp : battle.initiatorSpiritDetail2.hp;
-        const targetMaxHP = battle.targetCurrentSpirit === 0 ? 
+        const targetMaxHP = battle.targetCurrentSpirit === 0 ?
             battle.targetSpiritDetail.hp : battle.targetSpiritDetail2.hp;
 
         const initiatorHealthBar = this.generateHealthBar(battle.initiatorHP, initiatorMaxHP);
@@ -366,7 +386,7 @@ class BattleController {
         // Tấn công của spirit thứ nhất
         const firstAttackResult = this.executeSingleAttack(battle, firstAttacker, firstDefender, firstIsInitiator);
         await battle.save();
-        
+
         roundDescription += `• ${firstAttackResult.description}\n`;
         roundDetails += `• ${firstAttackResult.details}\n`;
         totalDamage += firstAttackResult.damage;
@@ -394,7 +414,7 @@ class BattleController {
         // Tấn công của spirit thứ hai
         const secondAttackResult = this.executeSingleAttack(battle, secondAttacker, secondDefender, secondIsInitiator);
         await battle.save();
-        
+
         roundDescription += `• ${secondAttackResult.description}\n`;
         roundDetails += `• ${secondAttackResult.details}\n`;
         totalDamage += secondAttackResult.damage;
@@ -456,7 +476,7 @@ class BattleController {
         // Áp dụng damage
         if (isInitiatorAttacking) {
             battle.targetHP = Math.max(0, battle.targetHP - actualDamage);
-            
+
             // Kiểm tra chuyển đổi vũ hồn nếu cần
             if (battle.targetHP <= 0 && battle.targetSpiritDetail2 && battle.targetCurrentSpirit === 0) {
                 battle.targetCurrentSpirit = 1;
@@ -464,7 +484,7 @@ class BattleController {
             }
         } else {
             battle.initiatorHP = Math.max(0, battle.initiatorHP - actualDamage);
-            
+
             // Kiểm tra chuyển đổi vũ hồn nếu cần
             if (battle.initiatorHP <= 0 && battle.initiatorSpiritDetail2 && battle.initiatorCurrentSpirit === 0) {
                 battle.initiatorCurrentSpirit = 1;
@@ -518,15 +538,29 @@ class BattleController {
             );
 
         if (winnerId) {
+            // const winnerUser = await UserService.findUserById(winnerId);
+            // await UserController.addExperience(50);
+            await UserController.addExperienceSpirit(winnerId,100)
+            await UserController.addCoin(winnerId,120)
+            
+            await UserController.addExperienceSpirit(loserId,10)
+            await UserController.addCoin(loserId,12)
             resultEmbed.addFields(
                 { name: '🏆 Người chiến thắng', value: `<@${winnerId}>`, inline: false },
                 { name: '⭐ Vũ hồn chiến thắng', value: `${winnerSpirit.icon}  ${winnerSpirit2 ? "và " + winnerSpirit2.icon : ""}`, inline: false },
-                { name: '🎯 Phần thưởng', value: '+100 điểm danh vọng', inline: false }
+                { name: '🎯 Phần thưởng', 
+                    value: `**<@${winnerId}> nhận được**\n **+100** Spirit Exp \n +**${wolfCoin(120)}**
+                    **<@${loserId}> nhận được** \n **+10** Spirit Exp \n +**${wolfCoin(12)}**`, inline: false }
             );
         } else {
+            await UserController.addExperienceSpirit(initiatorId,50)
+            await UserController.addCoin(initiatorId,60)
+            
+            await UserController.addExperienceSpirit(targetId,60)
+            await UserController.addCoin(targetId,60)
             resultEmbed.addFields(
                 { name: '🎯 Kết quả', value: 'Trận đấu hòa!', inline: false },
-                { name: '🏆 Phần thưởng', value: 'Mỗi người nhận +50 điểm danh vọng', inline: false }
+                { name: '🏆 Phần thưởng', value: `Mỗi người nhận +**50** Spirit Exp và +**${wolfCoin(60)}**`, inline: false }
             );
         }
 
@@ -598,19 +632,34 @@ class BattleController {
         }
     }
 
-    // Hàm xử lý command battle
-    static async handleBattleCommand(msg, args) {
-        const userId = msg.author.id;
+    // Hàm xử lý command battle (hỗ trợ cả prefix và slash command)
+    static async handleBattleCommand(context, args = []) {
+        let userId, targetId, targetMention;
 
-        if (args.length < 1) {
-            return msg.reply('❌ Sai cú pháp! Sử dụng: `/battle @người_chơi`');
+        // Xác định loại command
+        if (context instanceof Object && context.author) {
+            // Prefix command
+            userId = context.author.id;
+
+            if (args.length < 1) {
+                return context.reply('❌ Sai cú pháp! Sử dụng: `!battle @người_chơi`');
+            }
+
+            targetMention = args[0];
+            targetId = targetMention.replace(/[<@!>]/g, '');
+        } else if (context.isChatInputCommand) {
+            // Slash command
+            userId = context.user.id;
+            targetId = context.options.getUser('user').id;
+        } else if (context.isButton()) {
+            // Button interaction
+            userId = context.user.id;
+            // Xử lý logic riêng cho button nếu cần
+            return;
         }
 
-        const targetMention = args[0];
-        const targetId = targetMention.replace(/[<@!>]/g, '');
-
         if (targetId === userId) {
-            return msg.reply('❌ Bạn không thể tự đấu với chính mình!');
+            return this.replyToContext(context, '❌ Bạn không thể tự đấu với chính mình!');
         }
 
         const activeBattle = await Battle.findOne({
@@ -621,7 +670,7 @@ class BattleController {
         });
 
         if (activeBattle) {
-            return msg.reply('❌ Bạn đang trong một trận đấu khác!');
+            return this.replyToContext(context, '❌ Bạn đang trong một trận đấu khác!');
         }
 
         const targetActiveBattle = await Battle.findOne({
@@ -632,14 +681,28 @@ class BattleController {
         });
 
         if (targetActiveBattle) {
-            return msg.reply('❌ Đối thủ đang trong một trận đấu khác!');
+            return this.replyToContext(context, '❌ Đối thủ đang trong một trận đấu khác!');
         }
 
-        const result = await this.initiateBattle(userId, targetId, msg);
+        const result = await this.initiateBattle(userId, targetId, context);
         if (result) {
-            msg.reply(result);
+            this.replyToContext(context, result);
         }
     }
+
+    // Hàm trả lời phù hợp với loại context
+    static async replyToContext(context, response) {
+        if (context.replied || context.deferred) {
+            return context.followUp(response);
+        } else if (context.isButton?.() || context.isChatInputCommand?.()) {
+            // interaction (slash command hoặc button)
+            return context.reply(response);
+        } else {
+            // message command
+            return context.reply(response);
+        }
+    }
+
 
     // Kiểm tra trận đấu có bị kẹt không
     static isBattleStuck(battle) {

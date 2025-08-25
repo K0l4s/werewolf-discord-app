@@ -1,6 +1,10 @@
 // handleInteractionCreate.js
+const BattleController = require('../controllers/DauLaDaiLuc/battleController');
+const SpiritController = require('../controllers/DauLaDaiLuc/spiritController');
 const GameController = require('../controllers/gameController');
 const UserController = require('../controllers/userController');
+const SpiritMaster = require('../models/DauLaDaiLuc/SpiritMaster');
+const Prefix = require('../models/Prefix');
 const GameService = require('../services/gameService');
 const { interactionToMessage } = require('../utils/fakeMessage');
 const { EmbedBuilder } = require('discord.js');
@@ -11,6 +15,61 @@ module.exports = async (interaction) => {
     const { commandName } = interaction;
 
     switch (commandName) {
+        case 'set':
+            {
+                if (interaction.options.getSubcommand() === "prefix") {
+                    const newPrefix = interaction.options.getString("value");
+
+                    await Prefix.findOneAndUpdate(
+                        { guildId: interaction.guild.id },
+                        { prefix: newPrefix },
+                        { upsert: true }
+                    );
+
+                    await interaction.reply(`✅ Prefix server đã đổi thành: \`${newPrefix}\``);
+                }
+            }
+        case 'awake':
+            {
+                const userId = interaction.user.id;
+                console.log("Đang tiến hành thức tỉnh võ hồn cho user:", userId);
+
+                try {
+                    // Debug: kiểm tra số spirit hiện có
+                    const currentCount = await SpiritMaster.countDocuments({ userId });
+                    console.log("Số spirit hiện tại:", currentCount);
+
+                    const embed = await SpiritController.awakenRandomSpirit(userId);
+                    console.log("Kết quả trả về:", typeof embed, embed);
+
+                    if (typeof embed === 'string') {
+                        interaction.reply(embed);
+                    } else if (embed && embed.data) {
+                        interaction.reply({ embeds: [embed] });
+                    } else {
+                        console.error("Embed không hợp lệ:", embed);
+                        interaction.reply("❌ Đã xảy ra lỗi khi tạo embed!");
+                    }
+                } catch (error) {
+                    console.error("Lỗi khi thức tỉnh:", error);
+                    interaction.reply("❌ Đã xảy ra lỗi khi thức tỉnh vũ hồn!");
+                }
+            }
+        case 'spirit':
+            {
+                try {
+                    const result = await SpiritController.getSpiritInfo(interaction.user.id);
+                    interaction.reply(result);
+                } catch (error) {
+                    // Fallback về simple info nếu bị lỗi
+                    const result = "Lỗi lấy dữ liệu"
+                    interaction.reply(result);
+                }
+            }
+        case 'battle':
+            {
+                await BattleController.handleBattleCommand(interaction);
+            }
         case 'create':
             return GameController.handleCreateRoom(interactionToMessage(interaction));
         case 'join':
