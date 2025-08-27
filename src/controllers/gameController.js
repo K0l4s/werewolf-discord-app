@@ -1,4 +1,4 @@
-const { EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Embed } = require("discord.js");
+const { EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Embed, NewsChannel } = require("discord.js");
 const GameService = require("../services/gameService");
 const RoleService = require("../services/roleService");
 const { shufflePlayer, shuffleRole } = require("../utils/shuffle");
@@ -10,6 +10,7 @@ const UserService = require("../services/userService");
 const Game = require("../models/Game");
 const { listeners } = require("../models/Phase");
 const { interactionToMessage } = require("../utils/fakeMessage");
+const UserController = require("./userController");
 
 class GameController {
     static async handleCreateRoom(message) {
@@ -32,7 +33,7 @@ class GameController {
         const player = game.player.find(p => p.userId === message.author.id);
         if (player) {
             let playerList = game.player
-                .map((p, index) => `${index + 1}. <@${p.userId}> ${p.isAlive ? "🟢" : "🔴"}`)
+                .map((p, index) => `${index + 1}. <@${p.userId}> ${p.isAlive ? "🧑🏻" : "🧟"}`)
                 .join("\n");
 
             embed
@@ -53,7 +54,7 @@ class GameController {
         // game.add
         game.save();
         let playerList = game.player
-            .map((p, index) => `${index + 1}. <@${p.userId}> ${p.isAlive ? "🟢" : "🔴"}`)
+            .map((p, index) => `${index + 1}. <@${p.userId}> ${p.isAlive ? "🧑🏻" : "🧟"}`)
             .join("\n");
 
         embed
@@ -64,46 +65,66 @@ class GameController {
             );
         return message.reply({ embeds: [embed] })
     }
-    static async handleCreateNewRoom(message) {
-        let game = await GameService.getGameByChannel(message.channel.id);
+    static async handleCreateNewRoom(channelId) {
+        let game = await GameService.getGameByChannel(channelId);
 
         if (game) {
             game.isEnd = true;
             game.isStart = true;
             game.save()
         }
-        const newGame = await GameService.initNewGame(message.channel.id);
+        const newGame = await GameService.initNewGame(channelId);
         // return newGame;
         const embed = new EmbedBuilder();
         embed.setTitle("Refresh new game successfuly!")
             .setDescription("We're stopped the last game and create new game. Please enjoy it!")
         // message.reply(embed)s
-        await message.reply({ embeds: [embed] })
-        return newGame;
+        // await message.reply({ embeds: [embed] })
+        return embed;
     }
-    static async handleGetRole(interaction) {
-        const currentGame = await GameService.getGameByChannel(interaction.channel.id)
-        const player = currentGame.player.find(p => p.userId === interaction.user.id);
+    static async handleGetRole(channelId, userId) {
+        const currentGame = await GameService.getGameByChannel(channelId)
+        const player = currentGame.player.find(p => p.userId === userId);
         if (!player) {
-            return interaction.reply("You're not in the game!");
+            const error = new EmbedBuilder()
+                .setTitle(`Error`)
+                .setDescription(`You're not in game`)
+                .setColor('Red');
+            return { embeds: [error] };
         }
 
         const role = await RoleService.getRoleById(player.roleId);
         if (!role) {
-            return interaction.reply("Role not found!");
+            const error = new EmbedBuilder()
+                .setTitle(`Error`)
+                .setDescription(`Role not found`)
+                .setColor('Red');
+            return { embeds: [error] };
         }
         const embed = new EmbedBuilder()
             .setTitle(`Your role is: ${role.name}`)
             .setDescription(role.description)
             .setColor('Blue');
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        return { embeds: [embed], ephemeral: true };
     }
     static async handleStartGame(message) {
         const game = await GameService.getGameByChannel(message.channel.id);
         if (!game)
             return message.reply("Please create/ join new game!")
-        if(game.isStart)
+        if (game.isStart)
             return message.reply("This game started. Please wait!")
+        if (game.player.length < 4) {
+            const embed = new EmbedBuilder();
+            let playerList = game.player
+                .map((p, index) => `${index + 1}. <@${p.userId}> ${p.isAlive ? "🧑🏻" : "🧟"}`)
+                .join("\n");
+            embed.setTitle(`This game require min 4 players! Currently ${game.player.length}, need more ${Number(4) - Number(game.player.length)} player(s)`)
+                .setDescription(`**Total players joined**: ${game.player.length}\n\n` +
+                    `${playerList}`)
+                .setFooter({ text: "/join or wjoin or wj to join!" })
+                .setTimestamp()
+            return message.reply({ embeds: [embed] })
+        }
         const roleList = await RoleService.getRoleListByPlayerCount(game.player.length);
         console.log(roleList)
         const players = shufflePlayer(game.player);
@@ -124,7 +145,7 @@ class GameController {
             .setDescription("Please click **<button>** to view your role.")
         // .setFooter("This message will expire in 30 seconds.");
         const button = new ButtonBuilder()
-            .setCustomId(`view_role|${message.channel.id}`)
+            .setCustomId(`view_role|`)
             .setLabel("View Role")
             .setStyle("Primary");
         // embed.setComponents([button]);
@@ -166,33 +187,57 @@ class GameController {
         for (let i = 0; i < players.length; i++) {
             const player = players[i];
             const playerInfo = await message.guild.members.fetch(player.userId).catch(() => null);
-            const playerName = playerInfo.displayName;
-            const playerUsername = playerInfo.user.username;
+            const playerName = playerInfo.displayName.length > 20 ? playerInfo.displayName.slice(0, 17) + "..." : playerInfo.displayName;
+            // const playerUsername = playerInfo.user.username;
+
             aliveList.push({
-                label: `Option ${i + 1} - ${playerName} (@${playerUsername})`, // hoặc tên
+                label: `${playerName}`, // hoặc tên
                 description: `Thực hiện hành động lên người chơi này`,
                 value: player.userId, // value trả về khi chọn
                 emoji: emojis[i] || undefined
             });
         }
         console.log(aliveList)
-        const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId(`night_action|${message.channel.id}`)
-            .setPlaceholder('Chọn người chơi...')
-            .addOptions(aliveList);
+        // Nếu không có player nào
+        if (aliveList.length === 0) {
+            return message.channel.send("❌ Không có người chơi nào để chọn.");
+        }
+
+        // Chia aliveList thành các nhóm nhỏ (mỗi nhóm ≤ 25 option)
+        const chunkedOptions = [];
+        for (let i = 0; i < aliveList.length; i += 25) {
+            chunkedOptions.push(aliveList.slice(i, i + 25));
+        }
+
+        const rows = chunkedOptions.map((options, index) => {
+            return new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId(`night_action_${index}|${message.channel.id}`)
+                    .setPlaceholder(`Chọn người chơi (${index + 1})`)
+                    .addOptions(options)
+            );
+        });
+
+        // Button bỏ qua
         const skipButton = new ButtonBuilder()
             .setCustomId(`night_action_skip|${message.channel.id}`)
-            .setLabel('Bỏ qua')
+            .setLabel("Bỏ qua")
             .setStyle(4); // Danger
-        const embedAction = new EmbedBuilder()
-        embedAction
-            .setTitle(`Night Action`)
-            .setDescription("Please select a player to perform your night action.")
-            .setFooter({ text: 'You have 30 seconds to make your choice.' });
-        const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
         const rowButton = new ActionRowBuilder().addComponents(skipButton);
-        const msg = await message.channel.send({ embeds: [embedAction], components: [rowSelect, rowButton] });
+
+        // Embed hành động
+        const embedAction = new EmbedBuilder()
+            .setTitle("Night Action")
+            .setDescription("Please select a player to perform your night action.")
+            .setFooter({ text: "You have 30 seconds to make your choice." });
+
+        // Gửi message với nhiều select menu + button
+        const msg = await message.channel.send({
+            embeds: [embedAction],
+            components: [...rows, rowButton],
+        });
     }
+
 
     static async sendActionMessageToUser(message) {
         const currentGame = await GameService.getGameByChannel(message.channel.id)
@@ -263,7 +308,8 @@ class GameController {
             thirdTeam.forEach(p => UserController.addExperience(p.userId, 60, interaction));
         }
 
-        // Nếu có người thắng thì gửi embed vào channel
+        // remove hết components
+        // await interaction.message.edit({ components: [] });
         if (winner) {
             const embed = new EmbedBuilder()
                 .setColor("#2ecc71")
@@ -429,9 +475,9 @@ class GameController {
             phase.isEnd = true;
             phase.save();
         });
-        if(currentGame.player.length<4){
-            return interaction.reply(`Minimum number of players is 4, currently ${currentGame.player.length}`)
-        }
+        // if (currentGame.player.length < 4) {
+        // return interaction.reply(`Minimum number of players is 4, currently ${currentGame.player.length}`)
+        // }
         const createdPhase = await PhaseService.createPhase(currentGame._id, PHASES.DAY);
         // console.log("Created new day phase:", createdPhase);
         // send message to channelId
@@ -461,10 +507,12 @@ class GameController {
             // if (p.isAlive && p.userId !== interaction.user.id) {
             // const player = await message.guild.members.fetch(p.userId).catch(() => null);
             const player = await channel.guild.members.fetch(p.userId).catch(() => null);
-            const playerName = player.displayName;
-            const playerUsername = player.user.username;
+            // const playerName = player.displayName;
+            // const playerUsername = player.user.username.length > 20 ?  player.user.username.slice(0, 22) + "..." :  player.user.username,
+            const playerName = player.displayName.length > 25 ? player.displayName.slice(0, 22) + "..." : player.displayName;
+
             aliveList.push({
-                label: `Option ${i + 1} - ${playerName} (@${playerUsername})`, // hoặc tên
+                label: `${playerName}`, // hoặc tên
                 description: `Thực hiện hành động lên người chơi này`,
                 value: p.userId, // value trả về khi chọn
                 emoji: emojis[i] || undefined
@@ -499,10 +547,6 @@ class GameController {
 
         if (customId === 'day_vote') {
             const targetId = values[0];
-            // if (targetId === 'skip') {
-            //     // Handle skip action
-            //     return interaction.reply({ content: "You have skipped the voting action.", ephemeral: true });
-            // }
 
             const player = currentGame.player.find(p => p.userId === interaction.user.id);
             if (!player) {
@@ -890,15 +934,30 @@ class GameController {
     }
     static async checkDayPhaseEnd(currentGame) {
         const lastDayPhase = await PhaseService.getLastestDayPhaseByGameId(currentGame._id);
-        let alivePlayers = currentGame.player.filter(p => p.isAlive);
 
-        const votePlayer = lastDayPhase.action.filter(
-            p => p.action === ACTION_TYPE.VOTE
-        )
-        console.log("Alive ", alivePlayers)
-        console.log("Vote Player:", votePlayer)
-        return votePlayer.length >= alivePlayers.length;
+        if (!lastDayPhase || !lastDayPhase.action) return false;
+
+        // Người còn sống
+        const alivePlayers = currentGame.player.filter(p => p.isAlive);
+
+        // Debug xem DB lưu thế nào
+        console.log("Raw actions:", lastDayPhase.action);
+
+        // Lấy userId đã vote
+        const votePlayerIds = [
+            ...new Set(
+                lastDayPhase.action
+                    .filter(p => p.action?.toLowerCase() === ACTION_TYPE.VOTE.toLowerCase())
+                    .map(p => p.userId)
+            )
+        ];
+
+        console.log("Alive:", alivePlayers.map(p => p.userId));
+        console.log("Vote Player IDs:", votePlayerIds);
+
+        return votePlayerIds.length >= alivePlayers.length;
     }
+
     static async endDayPhase(currentGame, interaction) {
         const lastDayPhase = await PhaseService.getLastestDayPhaseByGameId(currentGame._id);
         let alivePlayers = currentGame.player.filter(p => p.isAlive);

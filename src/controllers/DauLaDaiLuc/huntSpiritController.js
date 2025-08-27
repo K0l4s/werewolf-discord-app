@@ -59,13 +59,24 @@ class HuntSpiritController {
 
         // chọn thumbnail theo years
         let thumbnailUrl = "";
-        if (years <= 9) thumbnailUrl = "https://i.ibb.co/rqL5yyp/10nam.png";
-        else if (years <= 999) thumbnailUrl = "https://i.ibb.co/ks3FpBxh/100nam.png";
-        else if (years <= 9999) thumbnailUrl = "https://i.ibb.co/HT3qsjSk/1000nam.png";
-        else thumbnailUrl = "https://i.ibb.co/gZGZk3NS/10000nam.png";
+        let icon = "<a:10nam:1410144565209333850>"
+        if (years <= 99) {
+            thumbnailUrl = "https://i.ibb.co/rqL5yyp/10nam.png";
+            icon = "<a:10nam:1410144565209333850>"
+        }
+        else if (years <= 999) {
+            thumbnailUrl = "https://i.ibb.co/ks3FpBxh/100nam.png";
+            icon = "<a:100nam:1410144620893175925>"
+        }
+        else if (years <= 9999) {
+            thumbnailUrl =
+                "https://i.ibb.co/HT3qsjSk/1000nam.png";
+            icon = "<a:1000nam:1408868369951752233>"
+        }
+        else { thumbnailUrl = "https://i.ibb.co/gZGZk3NS/10000nam.png"; icon = "<a:10000nam:1410144669811081226>" }
 
         // lưu DB
-        const icon = "<a:1000nam:1408868369951752233>";
+        // const icon = "<a:1000nam:1408868369951752233>";
         const newSpiritRing = new SpiritRing({
             userId,
             years,
@@ -75,17 +86,17 @@ class HuntSpiritController {
             sp,
             icon
         });
-        await newSpiritRing.save();
+        const savedRing = await newSpiritRing.save();
         await UserController.addExperienceSpirit(userId, 10);
-        await UserController.addCoin(userId,50);
+        await UserController.addCoin(userId, 50);
         // Tạo Embed trả về
         const embed = new EmbedBuilder()
-            .setTitle(`${icon} You have hunted a new Spirit Ring!`)
-            .setDescription(`**Years:** ${years}\n**HP:** ${hp}\n**ATK:** ${atk}\n**DEF:** ${def}\n**SP:** ${sp}\n
+            .setTitle(`${icon} You have hunted a new Spirit Ring! [Ref: ${savedRing.ringRef}]`)
+            .setDescription(`**Years:** ${years.toLocaleString("en-US")}\n**HP:** ${hp}\n**ATK:** ${atk}\n**DEF:** ${def}\n**SP:** ${sp}\n
                 +10 Spirit Exp\n+${wolfCoin(10)}`)
             .setThumbnail(thumbnailUrl)
             .setColor("#8B5CF6")
-            .setFooter({ text: `Hunter: ${userId}` });
+            .setFooter({ text: `Werewolf Bot` });
         return { embeds: [embed] };
     }
 }

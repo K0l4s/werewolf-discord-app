@@ -117,14 +117,14 @@ class BattleController {
                 }
             });
 
-            collector.on('end', async (collected, reason) => {
-                if (reason === 'time') {
-                    const battle = await Battle.findOne({ battleId, status: 'pending' });
-                    if (battle) {
-                        await this.timeoutBattle(battleId);
-                    }
-                }
-            });
+            // collector.on('end', async (collected, reason) => {
+            //     if (reason === 'time') {
+            //         const battle = await Battle.findOne({ battleId, status: 'pending' });
+            //         if (battle) {
+            //             await this.timeoutBattle(battleId);
+            //         }
+            //     }
+            // });
 
             return null;
 
@@ -184,7 +184,6 @@ class BattleController {
                 battle.targetHP2 = null;
                 battle.targetCurrentSpirit = 0;
             }
-
             // Lưu thông tin chi tiết vào battle
             battle.initiatorSpiritDetail = initiatorSpiritDetail;
             battle.targetSpiritDetail = targetSpiritDetail;
@@ -204,7 +203,7 @@ class BattleController {
                 )
                 .setTimestamp();
 
-            await interaction.update({
+            await interaction.message.edit({
                 embeds: [updatedEmbed],
                 components: []
             });
@@ -601,36 +600,36 @@ class BattleController {
     }
 
     // Timeout trận đấu
-    static async timeoutBattle(battleId) {
-        try {
-            const battle = await Battle.findOne({ battleId });
-            if (!battle) return;
+    // static async timeoutBattle(battleId) {
+    //     try {
+    //         const battle = await Battle.findOne({ battleId });
+    //         if (!battle) return;
 
-            battle.status = 'timeout';
-            await battle.save();
+    //         battle.status = 'timeout';
+    //         await battle.save();
 
-            const timeoutEmbed = new EmbedBuilder()
-                .setColor(0x808080)
-                .setTitle('⏰ Trận Đấu Đã Hết Hạn')
-                .setDescription('Đối thủ không phản hồi kịp thời!')
-                .setTimestamp();
+    //         const timeoutEmbed = new EmbedBuilder()
+    //             .setColor(0x808080)
+    //             .setTitle('⏰ Trận Đấu Đã Hết Hạn')
+    //             .setDescription('Đối thủ không phản hồi kịp thời!')
+    //             .setTimestamp();
 
-            const channel = global.client.channels.cache.get(battle.channelId);
-            if (channel) {
-                try {
-                    const message = await channel.messages.fetch(battle.messageId);
-                    await message.edit({
-                        embeds: [timeoutEmbed],
-                        components: []
-                    });
-                } catch (error) {
-                    console.error('Không thể lấy message:', error);
-                }
-            }
-        } catch (error) {
-            console.error('Lỗi khi timeout battle:', error);
-        }
-    }
+    //         const channel = global.client.channels.cache.get(battle.channelId);
+    //         if (channel) {
+    //             try {
+    //                 const message = await channel.messages.fetch(battle.messageId);
+    //                 await message.edit({
+    //                     embeds: [timeoutEmbed],
+    //                     components: []
+    //                 });
+    //             } catch (error) {
+    //                 console.error('Không thể lấy message:', error);
+    //             }
+    //         }
+    //     } catch (error) {
+    //         console.error('Lỗi khi timeout battle:', error);
+    //     }
+    // }
 
     // Hàm xử lý command battle (hỗ trợ cả prefix và slash command)
     static async handleBattleCommand(context, args = []) {

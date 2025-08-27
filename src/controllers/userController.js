@@ -1,6 +1,8 @@
 const { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const UserService = require("../services/userService");
 const { DEFAULT_EXP_LVL1, STEP_EXP } = require("../config/constants");
+const { wolfCoin } = require("../utils/wolfCoin");
+const SpiritController = require("./DauLaDaiLuc/spiritController");
 
 class UserController {
     static async handleBalance(message) {
@@ -14,6 +16,99 @@ class UserController {
             .setColor('Yellow')
         return message.reply({ embeds: [embed] });
     }
+    static async createProfileEmbed(userId, avatarURL, username) {
+        const user = await UserService.findUserById(userId);
+        // Tính toán exp cần thiết
+        const maxExp = Math.floor(user.lvl * DEFAULT_EXP_LVL1 * STEP_EXP);
+        const spiritMaxExp = Math.floor(user.spiritLvl * DEFAULT_EXP_LVL1 * STEP_EXP);
+
+        // Tính phần trăm exp hiện tại
+        const expPercentage = (user.exp / maxExp) * 100;
+        const spiritExpPercentage = (user.spiritExp / spiritMaxExp) * 100;
+
+        // Tạo thanh exp progress bar
+        const expBar = this.createProgressBar(expPercentage, 15);
+        const spiritExpBar = this.createProgressBar(spiritExpPercentage, 15);
+
+        // Xác định thông tin user từ cả message và interaction
+        // let userObject, username, avatarURL;
+
+
+
+        // Tạo embed
+        const embed = new EmbedBuilder()
+            .setColor('#0099ff')
+            .setTitle(`📊 Hồ Sơ Của ${username}`)
+            .setThumbnail(avatarURL)
+            .addFields(
+                {
+                    name: '💰 Tiền',
+                    value: `**${wolfCoin(user.coin)}**`,
+                    inline: true
+                },
+                {
+                    name: '🎯 Level',
+                    value: `\`Level ${user.lvl.toLocaleString("en-US")}\``,
+                    inline: true
+                },
+                {
+                    name: '📈 EXP Thường',
+                    value: `${expBar}\n\`${user.exp.toLocaleString("en-US")}/${maxExp.toLocaleString("en-US")} EXP (${Math.floor(expPercentage)}%)\``,
+                    inline: false
+                },
+                {
+                    name: '✨ Spirit Level',
+                    value: `\`Level ${user.spiritLvl.toLocaleString("en-US")}\``,
+                    inline: true
+                },
+                {
+                    name: '✨ Spirit Title',
+                    value: `\`${SpiritController.getLvlTitle(user.spiritLvl.toLocaleString("en-US"))}\``,
+                    inline: true
+                },
+                {
+                    name: '🌟 EXP Spirit',
+                    value: `${spiritExpBar}\n\`${user.spiritExp.toLocaleString("en-US")}/${spiritMaxExp.toLocaleString("en-US")} EXP (${Math.floor(spiritExpPercentage)}%)\``,
+                    inline: false
+                },
+                {
+                    name: '⏰ Daily Cuối',
+                    value: user.lastDaily ?
+                        `Đã nhận daily\nCòn **${this.getTimeUntilNextDaily(user.lastDaily)}** để tiếp tục.` :
+                        'Chưa nhận daily',
+                }
+            )
+            .setTimestamp()
+            .setFooter({
+                text: `User ID: ${user.userId}`,
+                iconURL: avatarURL
+            });
+
+        return embed;
+    }
+    static getTimeUntilNextDaily(lastDaily) {
+        const now = new Date();
+        const nextDaily = new Date(lastDaily);
+        nextDaily.setHours(nextDaily.getHours() + 24);
+
+        const diff = nextDaily - now;
+        if (diff <= 0) return '0h 0m 0s (Sẵn sàng)';
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        return `${hours}h ${minutes}m ${seconds}s`;
+    }
+    // Hàm tạo progress bar
+    static createProgressBar(percentage, length) {
+        const filledSquares = Math.floor((percentage / 100) * length);
+        const emptySquares = length - filledSquares;
+
+        const bar = '█'.repeat(filledSquares) + '░'.repeat(emptySquares);
+        return `[${bar}]`;
+    }
+
     static async addExperience(userId, exp, interaction) {
         const user = await UserService.findUserById(userId);
         const maxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);

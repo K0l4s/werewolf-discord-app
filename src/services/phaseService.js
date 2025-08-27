@@ -21,7 +21,7 @@ class PhaseService {
         return phase;
     }
     static async getLastestDayPhaseByGameId(gameId){
-        const phase = await Phase.findOne({gameId, phase: PHASES.NIGHT}).sort({day: -1}).exec();
+        const phase = await Phase.findOne({gameId, phase: PHASES.DAY}).sort({day: -1}).exec();
         return phase;
     }
     static async getAllLastNightPhaseByGameId(gameId){

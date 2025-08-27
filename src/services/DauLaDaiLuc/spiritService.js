@@ -42,6 +42,28 @@ class SpiritService {
             throw error;
         }
     }
+    static async getSpiritMasters(userId) {
+        const masters = await SpiritMaster.aggregate([
+            { $match: { userId } },
+            {
+                $lookup: {
+                    from: "spirits", // tên collection thật (plural, lowercase)
+                    localField: "spirit",
+                    foreignField: "_id",
+                    as: "spirit"
+                }
+            },
+            { $unwind: "$spirit" },
+            {
+                $lookup: {
+                    from: "spiritrings", // tên collection thật của SpiritRing
+                    localField: "equipRing",
+                    foreignField: "_id",
+                    as: "equipRing"
+                }
+            }
+        ]);
+        return masters
+    }
 }
-
 module.exports = SpiritService;

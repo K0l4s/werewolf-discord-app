@@ -3,10 +3,10 @@ require('dotenv').config(); // Load biến môi trường
 const { REST, Routes, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 
 const commands = [
-    new SlashCommandBuilder()
-        .setName('create')
-        .setDescription('Tạo phòng mới!')
-        .toJSON(),
+    // new SlashCommandBuilder()
+    //     .setName('create')
+    //     .setDescription('Tạo phòng mới!')
+    //     .toJSON(),
     new SlashCommandBuilder()
         .setName('join')
         .setDescription('Tham gia phòng mới!')
@@ -43,6 +43,11 @@ const commands = [
     new SlashCommandBuilder()
         .setName('help')
         .setDescription('Show help command!')
+         .addStringOption(option =>
+            option.setName("group")
+                .setDescription("Tên nhóm lệnh (vd: ww, sl, mini, system)")
+                .setRequired(false)
+        )
         .toJSON(),
     new SlashCommandBuilder()
         .setName('about')
@@ -76,6 +81,23 @@ const commands = [
         )
         // chỉ admin hoặc manage guild mới dùng được
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageGuild),
+    new SlashCommandBuilder()
+        .setName("spirit")
+        .setDescription("Spirit interation")
+        .addSubcommand(sub =>
+            sub
+                .setName("list")
+                .setDescription("Show all spirit list")
+                .addStringOption(opt =>
+                    opt.setName("pagenumber")
+                        .setDescription("Page Number")
+                        .setRequired(true)
+                )
+        ).addSubcommand(sub =>
+            sub
+                .setName("information")
+                .setDescription("Show your spirit informations")
+        )
 ];
 
 const token = process.env.DISCORD_TOKEN;

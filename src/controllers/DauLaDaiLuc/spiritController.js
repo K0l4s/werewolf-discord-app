@@ -5,6 +5,9 @@ const SpiritMaster = require("../../models/DauLaDaiLuc/SpiritMaster");
 const Item = require("../../models/Item");
 const Inventory = require("../../models/Inventory");
 const Spirit = require("../../models/DauLaDaiLuc/Spirit");
+const SpiritRing = require("../../models/DauLaDaiLuc/SpiritRing");
+const { default: mongoose } = require("mongoose");
+const UserService = require("../../services/userService");
 
 class SpiritController {
     static async awakenRandomSpirit(userId) {
@@ -73,11 +76,88 @@ class SpiritController {
             return SpiritController.createErrorEmbed('❌ Lỗi hệ thống!', 'Đã xảy ra lỗi khi thức tỉnh vũ hồn.');
         }
     }
+    static getLvlTitle(masterLvl) {
+        if (masterLvl >= 1 && masterLvl <= 9) return "Hồn Sĩ";
+        if (masterLvl >= 10 && masterLvl <= 19) return "Hồn Sư";
+        if (masterLvl >= 20 && masterLvl <= 29) return "Đại Hồn Sư";
+        if (masterLvl >= 30 && masterLvl <= 39) return "Hồn Tôn";
+        if (masterLvl >= 40 && masterLvl <= 49) return "Hồn Tông";
+        if (masterLvl >= 50 && masterLvl <= 59) return "Hồn Vương";
+        if (masterLvl >= 60 && masterLvl <= 69) return "Hồn Đế";
+        if (masterLvl >= 70 && masterLvl <= 79) return "Hồn Thánh";
+        if (masterLvl >= 80 && masterLvl <= 89) return "Hồn Đấu La";
+        if (masterLvl >= 90 && masterLvl <= 94) return "Phong Hào Đấu La";
+        if (masterLvl >= 95 && masterLvl <= 99) return "Siêu Cấp Đấu La";
+        if (masterLvl >= 100) return "Cực Hạn Đấu La";
+        return "Phàm Nhân"; // fallback nếu < 1
+    }
+
+    static async attachRing(userId, spiritRef, ringRef) {
+        const embed = new EmbedBuilder();
+        embed.setTitle("Không có gì để hiển thị")
+            .setDescription("Không có gì để hiển thị")
+        console.log("Ring")
+        const spirit = await SpiritService.getSpiritByRef(spiritRef);
+        const user = await UserService.findUserById(userId);
+
+        const master = await SpiritMaster.findOne({ userId, spirit: spirit._id });
+        if (!master) {
+            embed.setTitle("Error")
+                .setDescription("❌Bạn chưa có võ hồn, hãy thức tỉnh bằng `/awake` và `/hunt` để cày cấp trước!")
+            return { embeds: [embed] };
+        };
+        // throw new Error(" Người này chưa có SpiritMaster cho võ hồn này")
+        if (master.equipRing.length >= 9) {
+            embed.setTitle("Error")
+                .setDescription("❌Đã đủ 9 hồn hoàn, hãy tháo hồn hoàn trước `/remove [spirit Ref] [ring Ref]`")
+            return { embeds: [embed] };
+        };
+        if (user.spiritLvl <= 9) {
+            embed.setTitle("Error")
+                .setDescription("❌ Cấp độ của bạn không đủ để gắn hồn hoàn đầu tiên! Hãy cày cấp bằng `/hunt` trước!")
+            return { embeds: [embed] };
+        };
+        const userConditionLvl = Math.floor(user.spiritLvl / 10)
+        // throw new Error()
+
+        if (master.equipRing.length >= userConditionLvl) {
+            embed.setTitle("Error")
+                .setDescription(`❌ Bạn đang ở cấp độ ${user.spiritLvl} ${this.getLvlTitle(user.spiritLvl)} và đã trang bị đủ ${master.equipRing.length}/${userConditionLvl} hồn hoàn cho võ hồn này! Hãy mau chóng tấn cấp!`)
+            return { embeds: [embed] };
+        };
+        const ring = await SpiritRing.findOne({ ringRef: ringRef });
+        if (!ring) {
+            embed.setTitle("Error")
+                .setDescription("❌ Không tìm thấy hồn hoàn này!")
+            return { embeds: [embed] };
+        };
+        if (ring.userId != userId) {
+            embed.setTitle("Error")
+                .setDescription("❌ Hồn hoàn này không thuộc về bạn!")
+            return { embeds: [embed] };
+        };
+        if (ring.isAttach) {
+            embed.setTitle("Error")
+                .setDescription("❌ Bạn đã trang bị hồn hoàn này hãy gỡ bỏ nó trước bằng `/remove [spirit Ref] [ring Ref]`")
+            return { embeds: [embed] };
+        };
+        master.equipRing.push(ring._id);
+        await master.save();
+        ring.isAttach = true;
+        await ring.save();
+        embed.setTitle("Trang bị hồn hoàn thành công!")
+            .setDescription(`Bạn đã trang bị hồn hoàn **${ring.years.toLocaleString("en-US")} năm** cho võ hồn ${spirit.icon} **${spirit.name}**`)
+            .setThumbnail(spirit.imgUrl || "https://cdn-icons-png.flaticon.com/512/7486/7486754.png")
+        return { embeds: [embed] }
+        // return master;
+    }
+
     static async getSpiritInfo(userId) {
         try {
             // Lấy tất cả spirit master của user - CHỈ POPULATE SPIRIT
             const spiritMasters = await SpiritMaster.find({ userId })
-                .populate('spirit'); // BỎ populate('equipRing')
+                .populate('spirit')
+                .populate('equipRing'); // POPULATE equipRing để lấy chi tiết hồn hoàn
 
             if (spiritMasters.length === 0) {
                 return { content: '❌ Bạn chưa thức tỉnh vũ hồn nào. Hãy sử dụng `/awake` để thức tỉnh.' };
@@ -89,35 +169,31 @@ class SpiritController {
             for (const spiritMaster of spiritMasters) {
                 const spirit = spiritMaster.spirit;
 
-                // Lấy thông tin spirit rings nếu có (không populate)
+                // Lấy thông tin spirit rings
                 let spiritRings = [];
+                let ringsStats = { hp: 0, atk: 0, def: 0, sp: 0 };
+
                 if (spiritMaster.equipRing && spiritMaster.equipRing.length > 0) {
-                    // Nếu equipRing là ObjectId, không populate được thì bỏ qua
-                    if (typeof spiritMaster.equipRing[0] === 'string' ||
-                        spiritMaster.equipRing[0] instanceof mongoose.Types.ObjectId) {
-                        // Chỉ hiển thị số lượng hồn hoàn, không hiển thị chi tiết
-                        spiritRings = [{ info: `${spiritMaster.equipRing.length} hồn hoàn` }];
-                    } else {
-                        spiritRings = spiritMaster.equipRing;
-                    }
+                    spiritRings = spiritMaster.equipRing;
+
+                    // Tính tổng bonus từ các hồn hoàn
+                    spiritRings.forEach(ring => {
+                        if (ring) { // Kiểm tra ring không null
+                            ringsStats.hp += ring.hp || 0;
+                            ringsStats.atk += ring.atk || 0;
+                            ringsStats.def += ring.def || 0;
+                            ringsStats.sp += ring.sp || 0;
+                        }
+                    });
                 }
 
                 const totalStats = this.calculateTotalStats(spirit, spiritRings);
 
                 const embed = new EmbedBuilder()
                     .setColor(this.getRarityColor(spirit.rarity))
-                    .setTitle(`${spirit.icon ? spirit.icon : "<:LamNganThao:1409172636910751805>"} ${spirit.name} - ${spirit.rarity}`)
+                    .setTitle(`${spirit.icon ? spirit.icon : "<:LamNganThao:1409172636910751805>"} [Ref:${spirit.ref}] ${spirit.name} - ${spirit.rarity}`)
                     .setThumbnail(spirit.imgUrl)
-                    .setDescription(spirit.description || 'Không có mô tả');
-
-                // Thêm field icon (nếu có)
-                // if (spirit.icon) {
-                //     embed.addFields({
-                //         name: '🖼️ Icon',
-                //         value: spirit.icon,
-                //         inline: true
-                //     });
-                // }
+                // .setDescription(spirit.description || 'Không có mô tả');
 
                 // Thêm chỉ số cơ bản của spirit
                 const fields = [
@@ -127,45 +203,51 @@ class SpiritController {
                     { name: '🌀 SP', value: spirit.sp.toString(), inline: true }
                 ];
 
-                // Thêm thông tin hồn hoàn nếu có
-                if (spiritRings.length > 0) {
-                    if (spiritRings[0].info) {
-                        // Chỉ hiển thị số lượng
-                        fields.push({
-                            name: '<a:1000nam:1408868369951752233> Hồn Hoàn',
-                            value: spiritRings[0].info,
-                            inline: false
-                        });
+                // Hiển thị hồn hoàn theo chiều ngang (3 hàng x 3 cột)
+                let ringsDisplay = '';
+                let ringCount = 0;
+
+                // let ringsDisplay = "";
+                for (let i = 0; i < 9; i++) {
+                    if (i < spiritRings.length && spiritRings[i]) {
+                        ringsDisplay += `${spiritRings[i].icon || '❓'}`;
+                        ringCount++;
                     } else {
-                        // Hiển thị chi tiết hồn hoàn (nếu có dữ liệu)
-                        let ringsInfo = '';
-                        let ringsStats = { hp: 0, atk: 0, def: 0, sp: 0 };
-
-                        spiritRings.forEach(ring => {
-                            ringsInfo += `${ring.icon || '<a:1000nam:1408868369951752233>'} **${ring.years || '?'} năm**\n`;
-                            ringsStats.hp += ring.hp || 0;
-                            ringsStats.atk += ring.atk || 0;
-                            ringsStats.def += ring.def || 0;
-                            ringsStats.sp += ring.sp || 0;
-                        });
-
-                        fields.push(
-                            {
-                                name: `<a:1000nam:1408868369951752233> Hồn Hoàn (${spiritRings.length})`,
-                                value: ringsInfo,
-                                inline: false
-                            },
-                            {
-                                name: '📊 Bonus từ Hồn Hoàn',
-                                value: `❤️ +${ringsStats.hp} | ⚔️ +${ringsStats.atk} | 🛡️ +${ringsStats.def} | 🌀 +${ringsStats.sp}`,
-                                inline: false
-                            }
-                        );
+                        ringsDisplay += '❏ ';
                     }
+                }
+                console.log(ringsDisplay)
+
+                // Hiển thị thông tin years của các hồn hoàn
+                let ringsInfo = '';
+                spiritRings.forEach((ring, index) => {
+                    if (ring) {
+                        ringsInfo += `${ring.icon || '❓'} **${ring.years || '?'} năm [Ref: ${ring.ringRef}]**${index < spiritRings.length - 1 ? ' • ' : ''}`;
+                    }
+                });
+
+                if (ringCount > 0) {
+                    fields.push(
+                        {
+                            name: `<a:1000nam:1408868369951752233> Hồn Hoàn (${ringCount}/9)`,
+                            value: ringsDisplay,
+                            inline: false
+                        },
+                        {
+                            name: '📋 Chi Tiết Hồn Hoàn',
+                            value: ringsInfo || 'Không có thông tin',
+                            inline: false
+                        },
+                        {
+                            name: '📊 Bonus từ Hồn Hoàn',
+                            value: `❤️ +${ringsStats.hp} | ⚔️ +${ringsStats.atk} | 🛡️ +${ringsStats.def} | 🌀 +${ringsStats.sp}`,
+                            inline: false
+                        }
+                    );
                 } else {
                     fields.push({
-                        name: '<a:1000nam:1408868369951752233> Hồn Hoàn',
-                        value: 'Chưa trang bị hồn hoàn',
+                        name: '<a:1000nam:1408868369951752233> Hồn Hoàn (0/9)',
+                        value: '❏ ❏ ❏ ❏ ❏ ❏ ❏ ❏ ❏',
                         inline: false
                     });
                 }
@@ -197,7 +279,7 @@ class SpiritController {
 
         } catch (error) {
             console.error('Lỗi khi lấy thông tin vũ hồn:', error);
-            return { content: '❌ Đã xảy ra lỗi khi lấy thông tin vũ hồn.' };
+            return { content: '❌ Đã xảy ra lỡi khi lấy thông tin vũ hồn.' };
         }
     }
 
@@ -239,14 +321,12 @@ class SpiritController {
     // Hàm lấy ngẫu nhiên một vũ hồn từ database
     static async getRandomSpirit() {
         try {
-            // Đếm số spirit có isFirstAwake = false
-            const totalSpirits = await Spirit.countDocuments({ isFirstAwake: false });
-            if (totalSpirits === 0) return null;
+            const [spirit] = await Spirit.aggregate([
+                { $match: { isFirstAwake: true } }, // lọc trước
+                { $sample: { size: 1 } }             // random 1 document
+            ]);
 
-            const randomIndex = Math.floor(Math.random() * totalSpirits);
-
-            // Tìm spirit ngẫu nhiên trong nhóm isFirstAwake = false
-            return await Spirit.findOne({ isFirstAwake: true }).skip(randomIndex);
+            return spirit || null;
         } catch (error) {
             console.error('Lỗi khi lấy vũ hồn ngẫu nhiên:', error);
             return null;
@@ -392,7 +472,7 @@ class SpiritController {
             }
 
             // Header bảng
-            let table ;
+            let table;
             table += `#  Icon   Tên                  ATK  DEF  SP   Rarity         Evo\n`;
             table += `---------------------------------------------------------------\n`;
 

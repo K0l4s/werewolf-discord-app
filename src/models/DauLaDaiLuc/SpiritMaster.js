@@ -3,9 +3,13 @@ const { default: mongoose, Schema } = require("mongoose");
 
 const spiritMasterSchema = new mongoose.Schema(
     {
-        userId: { type: String, require: true},
+        userId: { type: String, require: true },
         spirit: { type: mongoose.Schema.Types.ObjectId, ref: "Spirit", required: true },
-        equipRing: [{type:mongoose.Schema.Types.ObjectId,ref:"SpiritRing",required:false}]
+        equipRing: {
+            type: [{ type: mongoose.Schema.Types.ObjectId, ref: "SpiritRing" }],
+            default: []
+        }
+
     }
 )
 

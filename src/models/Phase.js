@@ -20,7 +20,11 @@ const phaseSchema = new mongoose.Schema({
         },
         targetId:String
     }],
-    isEnd: { type: Boolean, required: true, default: false }
-});
+    isEnd: { type: Boolean, required: true, default: false },
 
+    // Timestamps
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+});
+phaseSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
 module.exports = mongoose.model('Phase', phaseSchema);
