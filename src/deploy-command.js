@@ -1,6 +1,6 @@
 require('dotenv').config(); // Load biến môi trường
 
-const { REST, Routes, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { REST, Routes, SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 
 const commands = [
     // new SlashCommandBuilder()
@@ -77,6 +77,30 @@ const commands = [
                     opt.setName("value")
                         .setDescription("Prefix mới")
                         .setRequired(true)
+                )
+        ).addSubcommand(sub =>
+            sub
+                .setName("lang")
+                .setDescription("Đặt language cho server")
+                .addStringOption(opt =>
+                    opt.setName("value")
+                        .setDescription("Language mới")
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand(sub =>
+            sub
+                .setName("notification")
+                .setDescription("Đặt lời thông báo cho server")
+                .addChannelOption(option =>
+                    option
+                        .setName("channel")
+                        .setDescription("Chọn kênh thông báo")
+                        .setRequired(true)
+                        .addChannelTypes(
+                            ChannelType.GuildText,   // chỉ cho chọn kênh text
+                            ChannelType.GuildAnnouncement // hoặc kênh announcement
+                        )
                 )
         )
         // chỉ admin hoặc manage guild mới dùng được

@@ -5,6 +5,7 @@ const SpiritController = require('../controllers/DauLaDaiLuc/spiritController');
 const SpiritRingController = require('../controllers/DauLaDaiLuc/spiritRingController');
 const GameController = require('../controllers/gameController');
 const MiniGameController = require('../controllers/miniGameController');
+const SettingController = require('../controllers/settingController');
 const UserController = require('../controllers/userController');
 const SpiritMaster = require('../models/DauLaDaiLuc/SpiritMaster');
 const Prefix = require('../models/Prefix');
@@ -19,6 +20,7 @@ module.exports = async (interaction, client) => {
 
     try {
         switch (commandName) {
+            // case ''
             case 'spirit': {
                 if (interaction.options.getSubcommand() === "list") {
                     try {
@@ -65,6 +67,14 @@ module.exports = async (interaction, client) => {
 
                     await interaction.reply(`✅ Prefix server đã đổi thành: \`${newPrefix}\``);
                     return;
+                }
+                else if (interaction.options.getSubcommand() === "notification") {
+                    const channel = interaction.options.getChannel("channel");
+
+                    // Lấy ID kênh
+                    const channelId = channel.id;
+                    await SettingController.setNoti(interaction,channelId)
+                    return
                 }
                 break;
             }
@@ -153,9 +163,9 @@ module.exports = async (interaction, client) => {
                 );
                 return;
             }
-            case 'baucua':{
+            case 'baucua': {
                 const balance = interaction.options.getNumber('amount');
-                return await MiniGameController.bauCua(interaction.user.id,interactionToMessage(interaction),balance)
+                return await MiniGameController.bauCua(interaction.user.id, interactionToMessage(interaction), balance)
             }
             case 'help': {
                 // const embed = new EmbedBuilder()

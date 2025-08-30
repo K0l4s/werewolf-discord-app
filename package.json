@@ -8,9 +8,13 @@
     },
     "dependencies": {
         "@discordjs/rest": "^2.5.1",
+        "axios": "^1.11.0",
+        "canvas": "^3.2.0",
         "discord-api-types": "^0.38.18",
         "discord.js": "^14.21.0",
         "dotenv": "^16.3.1",
-        "mongoose": "^8.17.0"
+        "fs": "^0.0.1-security",
+        "mongoose": "^8.17.0",
+        "path": "^0.12.7"
     }
 }

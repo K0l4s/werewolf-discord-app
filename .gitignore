@@ -12,3 +12,5 @@ yarn-error.log*
 # editor configs
 .DS_Store
 .vscode/
+
+src/temp
