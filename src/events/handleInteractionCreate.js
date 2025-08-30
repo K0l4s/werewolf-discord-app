@@ -4,6 +4,7 @@ const BattleController = require('../controllers/DauLaDaiLuc/battleController');
 const SpiritController = require('../controllers/DauLaDaiLuc/spiritController');
 const SpiritRingController = require('../controllers/DauLaDaiLuc/spiritRingController');
 const GameController = require('../controllers/gameController');
+const MiniGameController = require('../controllers/miniGameController');
 const UserController = require('../controllers/userController');
 const SpiritMaster = require('../models/DauLaDaiLuc/SpiritMaster');
 const Prefix = require('../models/Prefix');
@@ -152,7 +153,10 @@ module.exports = async (interaction, client) => {
                 );
                 return;
             }
-
+            case 'baucua':{
+                const balance = interaction.options.getNumber('amount');
+                return await MiniGameController.bauCua(interaction.user.id,interactionToMessage(interaction),balance)
+            }
             case 'help': {
                 // const embed = new EmbedBuilder()
                 //     .setTitle("📜 List of Commands")

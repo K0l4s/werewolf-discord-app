@@ -21,7 +21,6 @@ class HuntSpiritController {
         if (user.spiritLvl >= 50) possibleRanges.push({ min: 1000, max: 2500, weight: 2 });
         if (user.spiritLvl >= 60) possibleRanges.push({ min: 2500, max: 5000, weight: 1 });
         if (user.spiritLvl >= 70) possibleRanges.push({ min: 10000, max: 70000, weight: 0.5 });
-
         // --- chọn range theo tỷ lệ weight ---
         const totalWeight = possibleRanges.reduce((a, b) => a + b.weight, 0);
         let rnd = Math.random() * totalWeight;

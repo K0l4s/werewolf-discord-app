@@ -104,7 +104,9 @@ class GameController {
         const embed = new EmbedBuilder()
             .setTitle(`Your role is: ${role.name}`)
             .setDescription(role.description)
-            .setColor('Blue');
+            .setColor('Blue')
+            .setImage(role.image ? role.image : "https://i.ibb.co/fdrvpKB0/VLG.png")
+            ;
         return { embeds: [embed], ephemeral: true };
     }
     static async handleStartGame(message) {
@@ -113,12 +115,12 @@ class GameController {
             return message.reply("Please create/ join new game!")
         if (game.isStart)
             return message.reply("This game started. Please wait!")
-        if (game.player.length < 4) {
+        if (game.player.length < 4 && game.player.length>10) {
             const embed = new EmbedBuilder();
             let playerList = game.player
                 .map((p, index) => `${index + 1}. <@${p.userId}> ${p.isAlive ? "🧑🏻" : "🧟"}`)
                 .join("\n");
-            embed.setTitle(`This game require min 4 players! Currently ${game.player.length}, need more ${Number(4) - Number(game.player.length)} player(s)`)
+            embed.setTitle(`This game require min 4 players and max 10 players! Currently ${game.player.length}, need more ${Number(4) - Number(game.player.length)} player(s)`)
                 .setDescription(`**Total players joined**: ${game.player.length}\n\n` +
                     `${playerList}`)
                 .setFooter({ text: "/join or wjoin or wj to join!" })

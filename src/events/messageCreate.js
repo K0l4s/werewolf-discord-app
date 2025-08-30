@@ -16,6 +16,9 @@ const Prefix = require('../models/Prefix');
 const SpiritRingController = require('../controllers/DauLaDaiLuc/spiritRingController');
 const { wolfCoin } = require('../utils/wolfCoin');
 const MiniGameController = require('../controllers/miniGameController');
+const LanguageController = require("../controllers/languageController")
+const { t } = require('../i18n');
+
 const handleMessageCreate = async (client, msg) => {
     // try {
     if (msg.author.bot || !msg.guild) return;
@@ -51,14 +54,31 @@ const handleMessageCreate = async (client, msg) => {
     //     await SpiritController.addSpirit()
     //     // msg.reply(embed)
     // }
+    let lang = await LanguageController.getLang(msg.guild.id)
+    console.log(lang)
     console.log(cmd)
+    if (cmd === "invite") {
+        if (!args[0]) {
+            const inv = await UserController.createInviteCode(msg.author.id)
+            return msg.reply(`${wolfCoin(10000)}${t('inv.ad_succ', lang)} ${inv.code} ${t('inv.ad_succ2', lang)} ${inv.code}**`)
+        }
+        const code = args[0]
+        const embed = await UserController.fillInviteCode(msg.author.id, code)
+        return msg.reply(embed)
+    }
+    if (cmd === "check") {
+        if (!args[0])
+            return msg.reply(t('e.miss_cmd', lang))
+        if (args[0] === "lang")
+            return msg.reply(`✅ ${t('s.cur_la', lang)}`);
+    }
     if (cmd === "set") {
         if (!args[0])
             return msg.reply("Missing command")
         if (args[0] === "prefix") {
-            if (!args[1]) return msg.reply("⚠️ Bạn cần nhập prefix mới!");
+            if (!args[1]) return msg.reply(`⚠️ ${t('w.newPrefix', lang)}`);
             if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
-                return msg.reply("❌ Bạn không có quyền đổi prefix server!");
+                return msg.reply(`❌ ${t('e.permission', lang)}`);
             }
             const newPrefix = args[1];
             await Prefix.findOneAndUpdate(
@@ -66,7 +86,22 @@ const handleMessageCreate = async (client, msg) => {
                 { prefix: newPrefix },
                 { upsert: true }
             );
-            msg.reply(`✅ Prefix server đã đổi thành: \`${newPrefix}\``);
+            msg.reply(`✅ ${t('s.prefix_succ', lang)} \`${newPrefix}\``);
+        }
+        if (args[0] === "lang" || args[0] == "l") {
+
+            if (!args[1]) return msg.reply(`⚠️ ${t('s.miss_cmd', lang)}`);
+            if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
+                return msg.reply(`❌ ${t('e.permission', lang)}`);
+            }
+            const newLang = args[1];
+            await LanguageController.setLanguage(newLang, msg.guild.id);
+            const embed = new EmbedBuilder()
+            let lang = "Ngôn ngữ đã được đổi sang :flag_vn: **Tiếng Việt**";
+            if (newLang == "en")
+                lang = "The language change to **:england: English**"
+            msg.reply(`✅ ${lang}`);
+
         }
     }
     else if (cmd === "awake") {
@@ -87,25 +122,13 @@ const handleMessageCreate = async (client, msg) => {
                 msg.reply({ embeds: [embed] });
             } else {
                 console.error("Embed không hợp lệ:", embed);
-                msg.reply("❌ Đã xảy ra lỗi khi tạo embed!");
+                msg.reply(`❌ ${t('e.embed', lang)}`);
             }
         } catch (error) {
             console.error("Lỗi khi thức tỉnh:", error);
-            msg.reply("❌ Đã xảy ra lỗi khi thức tỉnh vũ hồn!");
+            msg.reply(`❌ ${t('e.d', lang)}`);
         }
     }
-
-    // Lấy thông tin chi tiết (thử, nếu lỗi sẽ fallback)
-    // else if (cmd === "spirits") {
-    //     try {
-    //         const result = await SpiritController.getSpiritInfo(msg.author.id);
-    //         msg.reply(result);
-    //     } catch (error) {
-    //         // Fallback về simple info nếu bị lỗi
-    //         const result = "Lỗi lấy dữ liệu"
-    //         msg.reply(result);
-    //     }
-    // }
     else if (cmd === 'battle') {
         return await BattleController.handleBattleCommand(msg, args);
     }
@@ -113,7 +136,16 @@ const handleMessageCreate = async (client, msg) => {
         const args = msg.content.split(' ');
         console.log(args)
         if (args.length <= 0)
-            return msg.reply({ content: "Bạn cần ít nhất 1 tham số" })
+            return await msg.reply({ content: t('s.miss_cmd', lang) })
+        if (args[1] === "sell") {
+            if (!args[2] && !args[3])
+                return await msg.reply({ content: t('s.miss_cmd', lang) })
+
+            const amout = parseInt(args[2])
+            const yearsLimit = parseInt(args[3])
+            const result = await SpiritRingController.sellRings(msg.author.id, amout, yearsLimit)
+            return msg.reply(result);
+        }
         if (args[1] === "list" || args[1] === "l") {
             try {
                 // Lấy số trang từ message (ví dụ: "spirit 2")
@@ -126,8 +158,8 @@ const handleMessageCreate = async (client, msg) => {
                 console.error('Lỗi khi hiển thị Vũ Hồn:', error);
 
                 const errorEmbed = new EmbedBuilder()
-                    .setTitle('❌ Lỗi')
-                    .setDescription('Đã xảy ra lỗi khi tải danh sách Vũ Hồn!')
+                    .setTitle('❌ Error')
+                    .setDescription(t('e.d', lang))
                     .setColor(0xFF0000);
 
                 return await msg.reply({ embeds: [errorEmbed] });
@@ -138,7 +170,7 @@ const handleMessageCreate = async (client, msg) => {
                 msg.reply(result);
             } catch (error) {
                 // Fallback về simple info nếu bị lỗi
-                const result = "Lỗi lấy dữ liệu"
+                const result = t('e.d', lang)
                 msg.reply(result);
             }
         else if (args[1] === "attach" || args[1] === "a") {
@@ -146,10 +178,21 @@ const handleMessageCreate = async (client, msg) => {
             const spiritRef = args[2];
             const ringRef = args[3]
             if (!spiritRef)
-                return await msg.reply({ content: "Thiếu spiritRef" })
+                return await msg.reply({ content: `${t('s.miss_cmd', lang)}: spiritRef` })
             if (!ringRef)
-                return await msg.reply({ content: "Thiếu ringId" })
+                return await msg.reply({ content: `${t('s.miss_cmd', lang)}: ringId` })
             const embed = await SpiritController.attachRing(msg.author.id, spiritRef, ringRef)
+            return await msg.reply(embed)
+        }
+        else if (args[1] === "retirer" || args[1] === "re") {
+            console.log(args)
+            const spiritRef = args[2];
+            const ringRef = args[3]
+            if (!spiritRef)
+                return await msg.reply({ content: `${t('s.miss_cmd', lang)}: spiritRef` })
+            if (!ringRef)
+                return await msg.reply({ content: `${t('s.miss_cmd', lang)}: ringId` })
+            const embed = await SpiritController.removeRing(msg.author.id, spiritRef, ringRef)
             return await msg.reply(embed)
         }
         else if (args[1] === "ring" || args[1] == "r") {
@@ -179,8 +222,8 @@ const handleMessageCreate = async (client, msg) => {
             console.error('Lỗi khi hiển thị Vũ Hồn:', error);
 
             const errorEmbed = new EmbedBuilder()
-                .setTitle('❌ Lỗi')
-                .setDescription('Đã xảy ra lỗi khi tải danh sách Vũ Hồn!')
+                .setTitle('❌ Error')
+                .setDescription(t('e.d', lang))
                 .setColor(0xFF0000);
 
             return msg.reply({ embeds: [errorEmbed] });
@@ -194,7 +237,7 @@ const handleMessageCreate = async (client, msg) => {
         if (currentUser.spiritLvl > user.spiritLvl) {
             const lvlUpEmbed = new EmbedBuilder();
             lvlUpEmbed.setTitle("Spirit Level Up!")
-                .setDescription(`Congratulations, <@${msg.author.id}> reached **level ${currentUser.spiritLvl}**!`)
+                .setDescription(`Congratulations, < @${msg.author.id} > reached ** level ${currentUser.spiritLvl} ** !`)
                 .setThumbnail("https://i.ibb.co/YBQPxrNy/Lam-Ngan-Thao.png")
             msg.reply({ embeds: [lvlUpEmbed] })
         }

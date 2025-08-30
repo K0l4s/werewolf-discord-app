@@ -43,7 +43,7 @@ const commands = [
     new SlashCommandBuilder()
         .setName('help')
         .setDescription('Show help command!')
-         .addStringOption(option =>
+        .addStringOption(option =>
             option.setName("group")
                 .setDescription("Tên nhóm lệnh (vd: ww, sl, mini, system)")
                 .setRequired(false)
@@ -97,7 +97,15 @@ const commands = [
             sub
                 .setName("information")
                 .setDescription("Show your spirit informations")
-        )
+        ),
+    new SlashCommandBuilder()
+        .setName("baucua")
+        .setDescription("Vietnamese's Tranditional Games")
+        .addNumberOption(option =>
+            option.setName('amount')
+                .setDescription('Bet amout')
+                .setRequired(false)
+        ),
 ];
 
 const token = process.env.DISCORD_TOKEN;

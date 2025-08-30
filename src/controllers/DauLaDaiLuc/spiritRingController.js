@@ -1,7 +1,77 @@
 const { EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const SpiritRing = require("../../models/DauLaDaiLuc/SpiritRing");
+const UserService = require("../../services/userService");
 
 class SpiritRingController {
+    static async sellRings(userId, quan, yearsLimit) {
+        const embed = new EmbedBuilder();
+        let amount = parseInt(quan);
+
+        // Giới hạn số lượng bán tối đa 30
+        if (amount > 30) amount = 30;
+
+        // Lấy user
+        const user = await UserService.findUserById(userId);
+        if (!user) {
+            embed.setTitle("Error")
+                .setDescription("❌ Không tìm thấy user!");
+            return { embeds: [embed] };
+        }
+
+        // Tìm hồn hoàn hợp lệ
+        const rings = await SpiritRing.find({
+            userId,
+            isAttach: false,
+            years: { $lte: yearsLimit }
+        }).sort({ years: 1 }); // sắp xếp từ thấp -> cao
+
+        if (rings.length === 0) {
+            embed.setTitle("Error")
+                .setDescription(`❌ Không có hồn hoàn nào có niên đại ≤ **${yearsLimit.toLocaleString("en-US")} năm** để bán!`);
+            return { embeds: [embed] };
+        }
+
+        // Chỉ bán được tối đa bằng số thực có
+        const sellCount = Math.min(amount, rings.length);
+
+        // Chọn số lượng thực tế để bán
+        const selected = rings.slice(0, sellCount);
+
+        // Tính tổng coin
+        let totalCoin = 0;
+        for (let ring of selected) {
+            const value = ring.years * (5 + (user.spiritLvl * 2));
+            totalCoin += value;
+        }
+
+        // Xóa hồn hoàn đã bán
+        const ids = selected.map(r => r._id);
+        await SpiritRing.deleteMany({ _id: { $in: ids } });
+
+        // Cộng coin cho user
+        user.coin = (user.coin || 0) + totalCoin;
+        await user.save();
+
+        // Preview top 5 niên đại hồn hoàn đã bán
+        const preview = selected
+            .slice(0, 5)
+            .map(r => `${r.years.toLocaleString("en-US")} năm`)
+            .join(", ");
+
+        embed.setTitle("💰 Bán hồn hoàn thành công!")
+            .setDescription(
+                `Bạn đã bán **${selected.length} hồn hoàn** (giới hạn ${amount}/lần, tối đa 30)\n` +
+                `👉 Nhận được **${totalCoin.toLocaleString("en-US")} coin**`
+            )
+            .addFields({
+                name: "🧾 Niên đại hồn hoàn đã bán",
+                value: preview + (selected.length > 5 ? ", ..." : "")
+            })
+            .setFooter({ text: `Số dư hiện tại: ${user.coin.toLocaleString("en-US")} coin` });
+
+        return { embeds: [embed] };
+    }
+
     static async getSpiritRingsEmbed(userId, page = 1, sortBy = 'years', rangeFilter = 'all') {
         try {
             // Xây dựng query và sort options

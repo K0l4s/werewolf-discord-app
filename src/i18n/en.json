@@ -1,0 +1,17 @@
+{
+    "w":{
+        "new_prefix":"You need input new prefix!"
+    },
+    "e":{
+        "embed":"",
+        "permission":"You don't have permission to do this action in this server!"
+    },
+    "s":{
+        "prefix_succ":"Prefix server change to: ",
+        "cur_la":"Current language of this server is **:england: English**!"
+    },
+    "inv":{
+        "ad_succ":"/Invited. Your invite code is: ",
+        "ad_succ2":" .Give it to your friends and use **/invite"
+    }
+}

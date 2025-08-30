@@ -8,9 +8,9 @@ module.exports = async (interaction) => {
 
     // try {
         // 🚫 Disable toàn bộ
-        await message.edit({
-            components: toggleComponents(message.components, true)
-        });
+        // await message.edit({
+        //     components: toggleComponents(message.components, true)
+        // });
 
         if (actionType === 'view_role') {
             console.log("view role");

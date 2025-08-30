@@ -22,23 +22,23 @@ try {
     // Sự kiện
     client.once('ready', () => {
         console.log(`✅ Bot đã đăng nhập với tên: ${client.user.tag}`);
-        // const developerUser = client.users.cache.get(process.env.DEVELOPER_ID);
+        const developerUser = client.users.cache.get(process.env.DEVELOPER_ID);
 
-        // if (developerUser) {
-        //     let guildList = "";
-        //     client.guilds.cache.forEach(guild => {
-        //         guildList += `📌 ${guild.name} (ID: ${guild.id}) | 👥 ${guild.memberCount} thành viên\n`;
-        //     });
+        if (developerUser) {
+            let guildList = "";
+            client.guilds.cache.forEach(guild => {
+                guildList += `📌 ${guild.name} (ID: ${guild.id}) | 👥 ${guild.memberCount} thành viên\n`;
+            });
 
-        //     const embed = new EmbedBuilder()
-        //         .setTitle("📊 Danh sách server bot đã join")
-        //         .setDescription(guildList || "Bot chưa tham gia server nào.")
-        //         .setColor("Blue");
+            const embed = new EmbedBuilder()
+                .setTitle("📊 Danh sách server bot đã join")
+                .setDescription(guildList || "Bot chưa tham gia server nào.")
+                .setColor("Blue");
 
-        //     developerUser.send({ embeds: [embed] }).catch(err => {
-        //         console.error("Không thể gửi DM tới developer:", err);
-        //     });
-        // }
+            developerUser.send({ embeds: [embed] }).catch(err => {
+                console.error("Không thể gửi DM tới developer:", err);
+            });
+        }
     });
     client.on('messageCreate', async (message) => {
         try {

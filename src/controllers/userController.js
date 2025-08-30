@@ -3,6 +3,8 @@ const UserService = require("../services/userService");
 const { DEFAULT_EXP_LVL1, STEP_EXP } = require("../config/constants");
 const { wolfCoin } = require("../utils/wolfCoin");
 const SpiritController = require("./DauLaDaiLuc/spiritController");
+const InviteCode = require("../models/InviteCode");
+const User = require("../models/User");
 
 class UserController {
     static async handleBalance(message) {
@@ -15,6 +17,44 @@ class UserController {
             .setDescription(`<@${message.author.id}> have ${coin} ${"<:wolf_coin:1400508720160702617>"}`)
             .setColor('Yellow')
         return message.reply({ embeds: [embed] });
+    }
+    static async fillInviteCode(userId, code) {
+        const inputUser = await UserService.findUserById(userId)
+        if (inputUser.inviteCode)
+            return "You was invited!"
+        const codeInf = await InviteCode.findOne({
+            code
+        })
+        if (!code)
+            return "Don't found this code!"
+        // console.log(userId,codeInf.userId)
+        // const codeUser = await UserService.findUserById(code.userId)
+        if (userId == codeInf.userId)
+            return "You can't invite your!"
+        // if()
+        await this.addCoin(codeInf.userId, 10000)
+        await this.addCoin(userId, 5000)
+        const embed = new EmbedBuilder();
+        embed.setTitle("Invite Success!")
+            .setDescription(`<@${userId}> + **${wolfCoin(10000)}**.\n
+        <@${codeInf.userId}> + **${wolfCoin(5000)}**.`)
+        await User.updateOne(
+            { userId: userId },
+            { $set: { inviteCode: code } }
+        );
+        return { embeds: [embed] }
+    }
+    static async createInviteCode(userId) {
+        let result = await InviteCode.findOne({
+            userId
+        })
+        if (!result) {
+            const newInv = new InviteCode({
+                userId
+            })
+            result = await newInv.save()
+        }
+        return result;
     }
     static async createProfileEmbed(userId, avatarURL, username) {
         const user = await UserService.findUserById(userId);

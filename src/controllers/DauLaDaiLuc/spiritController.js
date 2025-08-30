@@ -99,7 +99,11 @@ class SpiritController {
         console.log("Ring")
         const spirit = await SpiritService.getSpiritByRef(spiritRef);
         const user = await UserService.findUserById(userId);
-
+        if (!spirit) {
+            embed.setTitle("Error")
+                .setDescription("❌Không tìm thấy Võ Hồn này!")
+            return { embeds: [embed] };
+        };
         const master = await SpiritMaster.findOne({ userId, spirit: spirit._id });
         if (!master) {
             embed.setTitle("Error")
@@ -150,6 +154,67 @@ class SpiritController {
             .setThumbnail(spirit.imgUrl || "https://cdn-icons-png.flaticon.com/512/7486/7486754.png")
         return { embeds: [embed] }
         // return master;
+    }
+    static async removeRing(userId, spiritRef, ringRef) {
+        const embed = new EmbedBuilder();
+        embed.setTitle("Không có gì để hiển thị")
+            .setDescription("Không có gì để hiển thị")
+
+        const spirit = await SpiritService.getSpiritByRef(spiritRef);
+        const user = await UserService.findUserById(userId);
+
+        const master = await SpiritMaster.findOne({ userId, spirit: spirit._id });
+        if (!master) {
+            embed.setTitle("Error")
+                .setDescription("❌ Bạn chưa có võ hồn này!")
+            return { embeds: [embed] };
+        }
+
+        if (master.equipRing.length === 0) {
+            embed.setTitle("Error")
+                .setDescription("❌ Võ hồn này chưa có hồn hoàn nào để tháo!")
+            return { embeds: [embed] };
+        }
+
+        const ring = await SpiritRing.findOne({ ringRef: ringRef });
+        if (!ring) {
+            embed.setTitle("Error")
+                .setDescription("❌ Không tìm thấy hồn hoàn này!")
+            return { embeds: [embed] };
+        }
+
+        if (ring.userId != userId) {
+            embed.setTitle("Error")
+                .setDescription("❌ Hồn hoàn này không thuộc về bạn!")
+            return { embeds: [embed] };
+        }
+
+        if (!ring.isAttach) {
+            embed.setTitle("Error")
+                .setDescription("❌ Hồn hoàn này chưa được trang bị, không thể tháo!")
+            return { embeds: [embed] };
+        }
+
+        // Kiểm tra ring có thực sự nằm trong equipRing không
+        const index = master.equipRing.indexOf(ring._id);
+        if (index === -1) {
+            embed.setTitle("Error")
+                .setDescription("❌ Hồn hoàn này không được gắn vào võ hồn này!")
+            return { embeds: [embed] };
+        }
+
+        // Thực hiện gỡ bỏ
+        master.equipRing.splice(index, 1);
+        await master.save();
+
+        ring.isAttach = false;
+        await ring.save();
+
+        embed.setTitle("Gỡ hồn hoàn thành công!")
+            .setDescription(`Bạn đã gỡ hồn hoàn **${ring.years.toLocaleString("en-US")} năm** khỏi võ hồn ${spirit.icon} **${spirit.name}**`)
+            .setThumbnail(spirit.imgUrl || "https://cdn-icons-png.flaticon.com/512/7486/7486754.png")
+
+        return { embeds: [embed] };
     }
 
     static async getSpiritInfo(userId) {
