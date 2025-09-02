@@ -12,6 +12,14 @@
     },
     "inv":{
         "ad_succ":"/Invited. Your invite code is: ",
-        "ad_succ2":" .Give it to your friends and use **/invite"
+        "ad_succ2":" .Give it to your friends and use **/invite",
+        "int":"You was invited!",
+        "404":"Don't found this code!",
+        "yours":"You can't invite yourself!",
+        "inv_suc":"Invite success!"
+    }
+    ,
+    "game":{
+        "start_title":"Game is started!"
     }
 }

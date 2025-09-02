@@ -1,19 +1,26 @@
 {
-    "w":{
-        "new_prefix":"Bạn cần nhập prefix mới trước!"
+    "w": {
+        "new_prefix": "Bạn cần nhập prefix mới trước!"
     },
-    "e":{
-        "d":"Đã xảy ra lỗi hệ thống!",
-        "embed":"Đã xảy ra lỗi khi xử lý embed",
-        "permission":"Bạn không có đủ quyền để thực hiện lệnh này trong server này!!"
+    "e": {
+        "d": "Đã xảy ra lỗi hệ thống!",
+        "embed": "Đã xảy ra lỗi khi xử lý embed",
+        "permission": "Bạn không có đủ quyền để thực hiện lệnh này trong server này!!"
     },
-    "s":{
-        "prefix_succ":"Prefix của server đã được đổi thành: ",
-        "cur_la":"Ngôn ngữ hiện tại của server là :flag_vn: **Tiếng Việt**!",
-        "miss_cmd":"Thiếu thành phần của lệnh!"
+    "s": {
+        "prefix_succ": "Prefix của server đã được đổi thành: ",
+        "cur_la": "Ngôn ngữ hiện tại của server là :flag_vn: **Tiếng Việt**!",
+        "miss_cmd": "Thiếu thành phần của lệnh!"
     },
-    "inv":{
-        "ad_succ":"/Lời giới thiệu. Mã giới thiệu của bạn là: ",
-        "ad_succ2":" .Hãy đưa nó cho người bạn của bạn và nhập **/invite"
+    "inv": {
+        "ad_succ": "/Lời giới thiệu. Mã giới thiệu của bạn là: ",
+        "ad_succ2": " .Hãy đưa nó cho người bạn của bạn và nhập **/invite",
+        "int": "Bạn đã được mời rồi! Đừng tham lam thế!",
+        "404": "Không tìm thấy người chơi nào có code này! Bạn có đùa với tôi không?",
+        "yours": "Bạn không thể tự mời chính mình chứ?!",
+        "inv_suc": "Lời mời thành công rồi nè!"
+    },
+    "game": {
+        "start_title": "Game đã bắt đầu rồi"
     }
 }

@@ -1,4 +1,5 @@
 const GameController = require("../controllers/gameController");
+const { handle123Result } = require("../controllers/miniGameController");
 const GameService = require("../services/gameService");
 const toggleComponents = require("../utils/toggleComponents");
 
@@ -50,6 +51,9 @@ module.exports = async (interaction) => {
                     return GameController.handleStartDayPhase(currentGame, interaction);
                 }
             }
+        }
+        else if(actionType ==="onetwothree"){
+            return await handle123Result(interaction)
         }
     // } catch (err) {
     //     console.error("❌ Lỗi handleButtonInteraction:", err);

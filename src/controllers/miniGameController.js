@@ -2,6 +2,7 @@ const { ActionRowBuilder, ButtonComponent, ButtonBuilder, ButtonStyle, EmbedBuil
 const UserService = require("../services/userService");
 const { wolfCoin } = require("../utils/wolfCoin");
 const { weightedRandom } = require("../utils/weightRnd");
+const UserController = require("./userController");
 
 class MiniGameController {
     static identifyMoney(bet) {
@@ -19,22 +20,112 @@ class MiniGameController {
         return bet;
     }
 
-    static async oneTwoThree(userId,msg,money){
-        // const bet = 
+    static async oneTwoThree(userId, msg, money) {
+        const user = await UserService.findUserById(userId);
+        const bet = this.identifyMoney(money, user);
+
+        if (user.coin < bet) {
+            return msg.reply("🚫 Bạn không đủ coin để đặt cược!");
+        }
+
+        const choice = {
+            "scissors": "✂️",
+            "hammer": "🔨",
+            "paper": "📄"
+        };
+
+        const scissorsButton = new ButtonBuilder()
+            .setCustomId(`onetwothree|scissors|${bet}|${userId}`)
+            .setEmoji("✂️")
+            .setLabel("Scissors")
+            .setStyle(1);
+
+        const hammerButton = new ButtonBuilder()
+            .setCustomId(`onetwothree|hammer|${bet}|${userId}`)
+            .setEmoji("🔨")
+            .setLabel("Hammer")
+            .setStyle(1);
+
+        const paperButton = new ButtonBuilder()
+            .setCustomId(`onetwothree|paper|${bet}|${userId}`)
+            .setEmoji("📄")
+            .setLabel("Paper")
+            .setStyle(1);
+
+        const row = new ActionRowBuilder().addComponents(
+            scissorsButton,
+            hammerButton,
+            paperButton
+        );
+
+        await msg.reply({
+            content: `Bạn đã cược **${bet}** coin!\nHãy chọn:`,
+            components: [row]
+        });
     }
+
+    static async handle123Result(interaction) {
+        const [_, playerChoice, bet, userId] = interaction.customId.split("|");
+        const betAmount = parseInt(bet);
+
+        if (interaction.user.id !== userId) {
+            return interaction.reply({ content: "🚫 Đây không phải trò chơi của bạn!", ephemeral: true });
+        }
+
+        const botChoices = ["scissors", "hammer", "paper"];
+        const choiceEmojis = {
+            "scissors": "✂️",
+            "hammer": "🔨",
+            "paper": "📄"
+        };
+
+        const botChoice = botChoices[Math.floor(Math.random() * botChoices.length)];
+
+        const loadingEmoji = "<a:load:1410394844324429886>"; // emoji loading
+
+        // Gửi loading trước
+        await interaction.update({
+            content: `👉 Bạn chọn: ${choiceEmojis[playerChoice]}\n🤖 Bot đang chọn ${loadingEmoji}`,
+            components: [] // xoá button ngay khi user bấm
+        });
+
+
+        // Sau 3 giây dừng và show kết quả thật
+        setTimeout(async () => {
+            let result;
+            let coinChange = 0;
+
+            if (playerChoice === botChoice) {
+                result = "🤝 Hòa!";
+            } else if (
+                (playerChoice === "scissors" && botChoice === "paper") ||
+                (playerChoice === "hammer" && botChoice === "scissors") ||
+                (playerChoice === "paper" && botChoice === "hammer")
+            ) {
+                result = `🎉 Bạn thắng! **+${wolfCoin(betAmount)}**`;
+                coinChange = betAmount;
+            } else {
+                result = `💀 Bạn thua! **-${wolfCoin(betAmount)}**`;
+                coinChange = -betAmount;
+            }
+
+            const user = await UserService.findUserById(userId);
+            user.coin += coinChange;
+            if (user.coin < 0) user.coin = 0;
+            await user.save();
+
+            await interaction.editReply({
+                content: `👉 Bạn chọn: ${choiceEmojis[playerChoice]}\n🤖 Bot chọn: ${choiceEmojis[botChoice]}\n\n${result}`
+            });
+        }, 500); // 3 giây loading
+
+    }
+
     static async bauCua(userId, msg, money) {
         const bet = parseInt(this.identifyMoney(money))
         const user = await UserService.findUserById(userId)
         if (user.coin < bet) return msg.reply("🚫 Bạn không đủ coin để đặt cược!");
 
-        const choices = {
-            "🍐": "Bầu",
-            "🦀": "Cua",
-            "🐟": "Cá",
-            "🐓": "Gà",
-            "🦌": "Nai",
-            "🦁": "Hổ"
-        };
         const list = [
             {
                 label: "Nai/Deer",
@@ -84,46 +175,6 @@ class MiniGameController {
             .setDescription(`🎲 You bet **${wolfCoin(bet)}**\n Select random button below and you'll become a **Tycoon**!`)
             .setImage("https://i.pinimg.com/736x/b0/55/7e/b0557ea48b720f61455d10f5dce24eb8.jpg")
         await msg.reply({ embeds: [embed], components: [rows] })
-        // gửi tin nhắn mời chọn
-        // const msgGame = await msg.reply(
-        //     `🎲 Bạn cược **${bet} coin**. Chọn 1 con bằng reaction trong **30s**:\n🍐 Bầu | 🦀 Cua | 🐟 Cá | 🐓 Gà | 🦌 Nai | 🦁 Hổ`
-        // );
-
-        // thêm reactions
-        // for (const emoji of Object.keys(choices)) {
-        //     await msgGame.react(emoji);
-        // }
-
-        // filter chỉ nhận reaction từ người gọi lệnh
-        // const filter = (reaction, userReact) => {
-        //     return Object.keys(choices).includes(reaction.emoji.name) && userReact.id === msg.author.id;
-        // };
-
-        // try {
-        //     const collected = await msgGame.awaitReactions({ filter, max: 1, time: 50000, errors: ["time"] });
-        //     const reaction = collected.first();
-        //     const userChoice = choices[reaction.emoji.name];
-
-        //     // roll kết quả
-        //     const resultEmoji = Object.keys(choices)[Math.floor(Math.random() * Object.keys(choices).length)];
-        //     const resultName = choices[resultEmoji];
-
-        //     let win = -bet;
-        //     if (userChoice === resultName) win = bet * 2; // thắng x2
-
-        //     user.coin += win;
-        //     await user.save();
-
-        //     msg.reply(
-        //         `🎲 Bạn chọn: ${reaction.emoji.name} **${userChoice}**\n` +
-        //         `Kết quả: ${resultEmoji} **${resultName}**\n` +
-        //         `${win > 0 ? `🎉 Bạn thắng +${win} coin` : `😢 Bạn thua ${Math.abs(win)} coin`}\n` +
-        //         `💰 Coin hiện tại: **${user.coin}**`
-        //     );
-
-        // } catch (err) {
-        //     msg.reply("⌛ Hết thời gian chọn! Trò chơi bị hủy.");
-        // }
     }
     static async bauCuaFinal(bet, userId, userChoice, interaction) {
         if (interaction.user.id !== userId) {
@@ -228,9 +279,6 @@ class MiniGameController {
                 ]
             });
 
-            // if (i < 2) {
-            //     await new Promise(resolve => setTimeout(resolve, 800));
-            // }
         }
     }
 }

@@ -26,41 +26,25 @@ try {
     // Sự kiện
     client.once('ready', () => {
         console.log(`✅ Bot đã đăng nhập với tên: ${client.user.tag}`);
-        const developerUser = client.users.cache.get(process.env.DEVELOPER_ID);
-
-        if (developerUser) {
-            let guildList = "";
-            client.guilds.cache.forEach(guild => {
-                guildList += `📌 ${guild.name} (ID: ${guild.id}) | 👥 ${guild.memberCount} thành viên\n`;
-            });
-
-            const embed = new EmbedBuilder()
-                .setTitle("📊 Danh sách server bot đã join")
-                .setDescription(guildList || "Bot chưa tham gia server nào.")
-                .setColor("Blue");
-
-            developerUser.send({ embeds: [embed] }).catch(err => {
-                console.error("Không thể gửi DM tới developer:", err);
-            });
-        }
+        
     });
     // Sự kiện thành viên tham gia
     client.on('guildMemberAdd', async (member) => {
         console.log("add");
-        
-        await SettingController.sendNotification(member.guild.id, 'welcome', member,client);
+
+        await SettingController.sendNotification(member.guild.id, 'welcome', member, client);
     });
 
     // Sự kiện thành viên rời đi
     client.on('guildMemberRemove', async (member) => {
         console.log("remove");
-        await SettingController.sendNotification(member.guild.id, 'goodbye', member,client);
+        await SettingController.sendNotification(member.guild.id, 'goodbye', member, client);
     });
 
     // Sự kiện boost server
     client.on('guildMemberUpdate', async (oldMember, newMember) => {
         if (!oldMember.premiumSince && newMember.premiumSince) {
-            await SettingController.sendNotification(newMember.guild.id, 'booster', newMember,client, true);
+            await SettingController.sendNotification(newMember.guild.id, 'booster', newMember, client, true);
         }
     });
     client.on('messageCreate', async (message) => {
@@ -266,6 +250,20 @@ try {
             console.error("Không thể gửi DM cho developer:", error);
         }
     });
+    client.on(Events.GuildDelete, async (guild) => {
+        try {
+            const developer = await client.users.fetch(process.env.DEVELOPER_ID);
+
+            if (developer) {
+                await developer.send(
+                    `❌ Bot vừa bị xoá khỏi server!\n\n**Tên server:** ${guild.name}\n🆔 **Server ID:** ${guild.id}`
+                );
+            }
+        } catch (error) {
+            console.error("Không thể gửi DM cho developer:", error);
+        }
+    });
+
     process.on('unhandledRejection', (reason, promise) => {
         console.error('⚠️ Unhandled Rejection:', reason);
 

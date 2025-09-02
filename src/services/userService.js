@@ -15,7 +15,6 @@ class UserService {
             user = await this.createNewUser(userId)
         return user;
     }
-
 }
 
 module.exports = UserService;

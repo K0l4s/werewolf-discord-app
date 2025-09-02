@@ -2,7 +2,7 @@
 const GameController = require('../controllers/gameController');
 const GameService = require('../services/gameService');
 const { TEAMS, PHASES, ITEM_RARITY, ITEM_TYPE, DEFAULT_EXP_LVL1, STEP_EXP } = require('../config/constants');
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const UserService = require('../services/userService');
 const UserController = require('../controllers/userController');
 const Item = require('../models/Item');
@@ -65,6 +65,29 @@ const handleMessageCreate = async (client, msg) => {
         const code = args[0]
         const embed = await UserController.fillInviteCode(msg.author.id, code)
         return msg.reply(embed)
+    }
+    if (cmd === "status") {
+        const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
+        console.log(devUser)
+        if (msg.author.id = process.env.DEVELOPER_ID)
+            // return;
+
+            if (devUser) {
+                console.log("Send server!")
+                let guildList = "";
+                client.guilds.cache.forEach(guild => {
+                    guildList += `📌 ${guild.name} (ID: ${guild.id}) | 👥 ${guild.memberCount} thành viên\n`;
+                });
+
+                const embed = new EmbedBuilder()
+                    .setTitle("📊 Danh sách server bot đã join")
+                    .setDescription(guildList || "Bot chưa tham gia server nào.")
+                    .setColor("Blue")
+                    .setFooter({ text: `Total Server: ${client.guilds.cache.size}` })
+                devUser.send({ embeds: [embed] }).catch(err => {
+                    console.error("Không thể gửi DM tới developer:", err);
+                });
+            }
     }
     if (cmd === "check") {
         if (!args[0])
@@ -432,7 +455,7 @@ const handleMessageCreate = async (client, msg) => {
             }
             embed.addFields({
                 name: `Join Our Support Server`,
-                value: `👉 [Click here](https://discord.com/oauth2/authorize?client_id=123&scope=bot) to join!"`,
+                value: `👉 [Click here](https://discord.gg/kDkydXrtua) to join!`,
                 inline: false
             })
             return msg.reply({ embeds: [embed] });
@@ -753,74 +776,36 @@ const handleMessageCreate = async (client, msg) => {
 
 
 
+    else if (cmd === "donate") {
+        const donateEmbed = new EmbedBuilder()
+            .setColor("#ff4081")
+            .setTitle("💖 Ủng Hộ / Donate")
+            .setDescription("Nếu bạn muốn ủng hộ để duy trì và phát triển bot, bạn có thể chuyển khoản qua thông tin dưới đây:")
+            .addFields(
+                { name: "📱 Momo QR", value: "Quét mã QR bên dưới để thanh toán nhanh chóng." },
+                { name: "🏦 Thông tin chuyển khoản", value: "💳 **Ngân hàng:** MB Bank\n👤 **Chủ TK:** HUỲNH TRUNG KIÊN\n🔢 **Số TK:** 8888827626203" }
+            )
+            .setImage("https://i.ibb.co/5hyjcdXc/d843e510-f7ed-4b6d-ac8a-1f87aae068db.jpg") // thay link QR Momo thật vào đây
+            .setFooter({ text: "Cảm ơn bạn rất nhiều ❤️" });
 
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setLabel("Momo App")
+                .setStyle(ButtonStyle.Link)
+                .setURL("https://me.momo.vn/werewolf"), // link nhận tiền momo
+            new ButtonBuilder()
+                .setLabel("Liên hệ Admin")
+                .setStyle(ButtonStyle.Link)
+                .setURL("https://discord.gg/kDkydXrtua") // link server hoặc contact
+        );
+
+        await msg.reply({ embeds: [donateEmbed], components: [row] });
+    }
     // ================= KÉO BÚA BAO =================
     else if (cmd === "keobuabao") {
         let bet = args[0];
 
-        // Nếu người dùng nhập "all", đặt cược toàn bộ hoặc tối đa 300000
-        if (bet === "all") {
-            bet = Math.min(user.coin, 300000);
-        } else {
-            bet = parseInt(bet);
-
-            // Nếu không phải số hợp lệ hoặc <=0, đặt mặc định 20
-            if (isNaN(bet) || bet <= 0) bet = 20;
-
-            // Giới hạn tối đa 300000
-            if (bet > 300000) bet = 300000;
-        }
-        if (user.coin < bet) return msg.reply("🚫 Bạn không đủ coin để đặt cược!");
-
-        const rps = ["✊", "✋", "✌️"]; // keo, bua, bao
-        const prompt = await msg.reply(
-            `⚔️ ${msg.author} cược **${bet}** coin!\n` +
-            `Chọn trong 30s bằng reaction:\n✊ = Kéo | ✋ = Búa | ✌️ = Bao`
-        );
-
-        await prompt.react("✊");
-        await prompt.react("✋");
-        await prompt.react("✌️");
-
-        const filter = (reaction, userReact) => rps.includes(reaction.emoji.name) && userReact.id === msg.author.id;
-        const collected = await prompt.awaitReactions({ filter, max: 1, time: 30000 });
-
-        if (!collected.size) return msg.reply("⏳ Hết thời gian chọn!");
-
-        const userPick = collected.first().emoji.name;
-        const botPick = rps[Math.floor(Math.random() * rps.length)];
-
-        let result = "";
-        let delta = 0;
-
-        if (
-            (userPick === "✊" && botPick === "✌️") ||
-            (userPick === "✋" && botPick === "✊") ||
-            (userPick === "✌️" && botPick === "✋")
-        ) {
-            result = `🎉 ${msg.author} thắng!`;
-            delta = bet;
-        } else if (
-            (userPick === "✊" && botPick === "✋") ||
-            (userPick === "✋" && botPick === "✌️") ||
-            (userPick === "✌️" && botPick === "✊")
-        ) {
-            result = `😢 ${msg.author} thua!`;
-            delta = -bet;
-        } else {
-            result = "🤝 Hòa!";
-            delta = 0;
-        }
-
-        user.coin += delta;
-        await user.save();
-
-        msg.reply(
-            `🤖 Bot chọn: ${botPick}\n` +
-            `👤 Bạn chọn: ${userPick}\n` +
-            `${result}\n` +
-            `Kết toán: ${delta > 0 ? `+${delta}` : delta} | Coin: **${user.coin}**`
-        );
+        return await MiniGameController.oneTwoThree(msg.author.id, msg, bet)
     }
     else if (cmd === "baicao") {
         let bet = args[0];

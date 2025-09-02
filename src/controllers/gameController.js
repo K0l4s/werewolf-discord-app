@@ -11,6 +11,7 @@ const Game = require("../models/Game");
 const { listeners } = require("../models/Phase");
 const { interactionToMessage } = require("../utils/fakeMessage");
 const UserController = require("./userController");
+const { t } = require('../i18n');
 
 class GameController {
     static async handleCreateRoom(message) {

@@ -5,7 +5,7 @@ const { wolfCoin } = require("../utils/wolfCoin");
 const SpiritController = require("./DauLaDaiLuc/spiritController");
 const InviteCode = require("../models/InviteCode");
 const User = require("../models/User");
-
+const { t } = require("../i18n/index")
 class UserController {
     static async handleBalance(message) {
         const user = await UserService.findUserById(message.author.id);
@@ -18,24 +18,24 @@ class UserController {
             .setColor('Yellow')
         return message.reply({ embeds: [embed] });
     }
-    static async fillInviteCode(userId, code) {
+    static async fillInviteCode(userId, code, lang = "en") {
         const inputUser = await UserService.findUserById(userId)
         if (inputUser.inviteCode)
-            return "You was invited!"
+            return t('inv.int', lang)
         const codeInf = await InviteCode.findOne({
             code
         })
         if (!code)
-            return "Don't found this code!"
+            return t('inv.404', lang)
         // console.log(userId,codeInf.userId)
         // const codeUser = await UserService.findUserById(code.userId)
         if (userId == codeInf.userId)
-            return "You can't invite your!"
+            return t('inv.yours', lang)
         // if()
         await this.addCoin(codeInf.userId, 10000)
         await this.addCoin(userId, 5000)
         const embed = new EmbedBuilder();
-        embed.setTitle("Invite Success!")
+        embed.setTitle(t('inv.suc', lang))
             .setDescription(`<@${userId}> + **${wolfCoin(10000)}**.\n
         <@${codeInf.userId}> + **${wolfCoin(5000)}**.`)
         await User.updateOne(

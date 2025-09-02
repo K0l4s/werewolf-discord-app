@@ -73,7 +73,7 @@ module.exports = async (interaction, client) => {
 
                     // Lấy ID kênh
                     const channelId = channel.id;
-                    await SettingController.setNoti(interaction,channelId)
+                    await SettingController.setNoti(interaction, channelId)
                     return
                 }
                 break;
@@ -275,8 +275,13 @@ module.exports = async (interaction, client) => {
                             inline: true
                         });
                     }
+                    embed.addFields({
+                        name: `Join Our Support Server`,
+                        value: `👉 [Click here](https://discord.gg/kDkydXrtua) to join!`,
+                        inline: false
+                    })
 
-                    return interaction.reply({ embeds: [embed], ephemeral: true });
+                    return interaction.reply({ embeds: [embed] });
                 }
 
                 const groupKey = {
@@ -310,7 +315,11 @@ module.exports = async (interaction, client) => {
                         inline: false
                     });
                 });
-
+                 embed.addFields({
+                        name: `Join Our Support Server`,
+                        value: `👉 [Click here](https://discord.gg/kDkydXrtua) to join!`,
+                        inline: false
+                    })
                 await interaction.reply({ embeds: [embed] });
                 return;
             }
