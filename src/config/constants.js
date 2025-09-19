@@ -23,7 +23,8 @@ module.exports = {
     },
     ITEM_TYPE:{
         PRESENT_BOX: 'present',
-        NORMAL: 'normal'
+        NORMAL: 'normal',
+        PET_FOOD: 'pet_food'
     },
     ITEM_RARITY:{
         C:'Common',

@@ -4,6 +4,7 @@ const BattleController = require('../controllers/DauLaDaiLuc/battleController');
 const SpiritController = require('../controllers/DauLaDaiLuc/spiritController');
 const SpiritRingController = require('../controllers/DauLaDaiLuc/spiritRingController');
 const GameController = require('../controllers/gameController');
+const LanguageController = require('../controllers/languageController');
 const MiniGameController = require('../controllers/miniGameController');
 const SettingController = require('../controllers/settingController');
 const UserController = require('../controllers/userController');
@@ -17,6 +18,7 @@ module.exports = async (interaction, client) => {
     if (!interaction.isChatInputCommand()) return;
 
     const { commandName } = interaction;
+    let lang = await LanguageController.getLang(msg.guild.id)
 
     try {
         switch (commandName) {
@@ -125,12 +127,12 @@ module.exports = async (interaction, client) => {
             // }
 
             case 'join': {
-                await GameController.handleJoinCommand(interactionToMessage(interaction));
+                await GameController.handleJoinCommand(interactionToMessage(interaction), lang);
                 return;
             }
 
             case 'new': {
-                const embed = await GameController.handleCreateNewRoom(interaction.channel.id);
+                const embed = await GameController.handleCreateNewRoom(interaction.channel.id, lang);
                 await interaction.reply({ embeds: [embed] });
                 return;
             }
@@ -315,11 +317,11 @@ module.exports = async (interaction, client) => {
                         inline: false
                     });
                 });
-                 embed.addFields({
-                        name: `Join Our Support Server`,
-                        value: `👉 [Click here](https://discord.gg/kDkydXrtua) to join!`,
-                        inline: false
-                    })
+                embed.addFields({
+                    name: `Join Our Support Server`,
+                    value: `👉 [Click here](https://discord.gg/kDkydXrtua) to join!`,
+                    inline: false
+                })
                 await interaction.reply({ embeds: [embed] });
                 return;
             }
@@ -439,7 +441,7 @@ module.exports = async (interaction, client) => {
             }
 
             case 'start': {
-                await GameController.handleStartGame(interactionToMessage(interaction));
+                await GameController.handleStartGame(interactionToMessage(interaction), lang);
                 return;
             }
 

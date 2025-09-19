@@ -6,6 +6,7 @@ const SpiritRingController = require('./controllers/DauLaDaiLuc/spiritRingContro
 const Notification = require('./models/Notification');
 const SettingController = require('./controllers/settingController');
 const { cleanupTempImages } = require('./utils/drawImage');
+const ShopController = require('./controllers/shopController');
 try {
     const client = new Client({
         intents: [
@@ -26,7 +27,7 @@ try {
     // Sự kiện
     client.once('ready', () => {
         console.log(`✅ Bot đã đăng nhập với tên: ${client.user.tag}`);
-        
+
     });
     // Sự kiện thành viên tham gia
     client.on('guildMemberAdd', async (member) => {
@@ -185,6 +186,7 @@ try {
         }
 
         try {
+
             // Xử lý select menu sort
             if (interaction.customId.startsWith('spirit_rings_sort_')) {
                 const userId = interaction.customId.split('_')[3];
@@ -224,6 +226,107 @@ try {
 
                 const { embeds, components } = await SpiritRingController.getSpiritRingsEmbed(userId, page);
                 await interaction.editReply({ embeds, components });
+            }
+            else if (interaction.customId.startsWith('shop_prev_') || interaction.customId.startsWith('shop_next_')) {
+                const parts = interaction.customId.split('_');
+                const action = parts[1];
+                const page = parseInt(parts[2]);
+                const sortBy = parts[3];
+                const sortOrder = parts[4];
+                const rarityFilter = parts[5];
+                const typeFilter = parts[6];
+
+                const newPage = action === 'prev' ? page - 1 : page + 1;
+
+                const embedData = await ShopController.getShopEmbed(
+                    newPage,
+                    5,
+                    sortBy,
+                    sortOrder,
+                    rarityFilter,
+                    typeFilter
+                );
+
+                await interaction.update(embedData);
+            }
+
+            // else if (interaction.customId === 'shop_reset_filters') {
+            //     const embedData = await ShopController.getShopEmbed(1, 5, 'name', 'asc', 'all', 'all');
+            //     await interaction.update(embedData);
+            // }
+            if (interaction.isStringSelectMenu()) {
+                // Lấy các tham số hiện tại từ message components
+                const message = interaction.message;
+                const currentEmbed = message.embeds[0];
+                const footerText = currentEmbed.footer.text;
+
+                // Trích xuất trang hiện tại từ footer
+                const pageMatch = footerText.match(/Trang (\d+)\/(\d+)/);
+                const currentPage = pageMatch ? parseInt(pageMatch[1]) : 1;
+
+                // Lấy các tham số từ customId của các nút phân trang
+                let currentSortBy = 'name';
+                let currentSortOrder = 'asc';
+                let currentRarityFilter = 'all';
+                let currentTypeFilter = 'all';
+
+                // Tìm nút phân trang để lấy các tham số hiện tại
+                const actionRowWithButtons = message.components.find(row =>
+                    row.components.some(comp => comp.type === 2 && comp.customId && comp.customId.includes('_prev_'))
+                );
+
+                if (actionRowWithButtons) {
+                    const prevButton = actionRowWithButtons.components.find(comp =>
+                        comp.customId && comp.customId.includes('_prev_')
+                    );
+
+                    if (prevButton) {
+                        const parts = prevButton.customId.split('_');
+                        currentSortBy = parts[3] || 'name';
+                        currentSortOrder = parts[4] || 'asc';
+                        currentRarityFilter = parts[5] || 'all';
+                        currentTypeFilter = parts[6] || 'all';
+                    }
+                }
+
+                if (interaction.customId === 'shop_rarity_filter') {
+                    const rarityFilter = interaction.values[0];
+                    const embedData = await ShopController.getShopEmbed(
+                        1, // reset về trang đầu khi thay đổi bộ lọc
+                        5,
+                        currentSortBy,
+                        currentSortOrder,
+                        rarityFilter,
+                        currentTypeFilter
+                    );
+                    await interaction.update(embedData);
+                }
+
+                if (interaction.customId === 'shop_type_filter') {
+                    const typeFilter = interaction.values[0];
+                    const embedData = await ShopController.getShopEmbed(
+                        1, // reset về trang đầu khi thay đổi bộ lọc
+                        5,
+                        currentSortBy,
+                        currentSortOrder,
+                        currentRarityFilter,
+                        typeFilter
+                    );
+                    await interaction.update(embedData);
+                }
+
+                if (interaction.customId === 'shop_sort') {
+                    const [newSortBy, newSortOrder] = interaction.values[0].split('_');
+                    const embedData = await ShopController.getShopEmbed(
+                        1, // reset về trang đầu khi thay đổi sắp xếp
+                        5,
+                        newSortBy,
+                        newSortOrder,
+                        currentRarityFilter,
+                        currentTypeFilter
+                    );
+                    await interaction.update(embedData);
+                }
             }
         } catch (error) {
             console.error('Lỗi khi xử lý interaction:', error);

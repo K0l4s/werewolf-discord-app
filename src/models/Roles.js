@@ -6,6 +6,7 @@ const roleSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     enName: { type: String, required: true, unique: true },
     description: { type: String, required: true },
+    enDescription: { type: String, required: false },
     team: {
         type: Number,
         enum: [TEAMS.WOLVES, TEAMS.VILLAGERS, TEAMS.THIRD_PARTY],

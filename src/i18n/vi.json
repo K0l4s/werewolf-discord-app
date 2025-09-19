@@ -1,26 +1,36 @@
 {
     "w": {
-        "new_prefix": "Bạn cần nhập prefix mới trước!"
+        "new_prefix": "Ơ kìa, nhập cái prefix mới đi chứ!"
     },
     "e": {
-        "d": "Đã xảy ra lỗi hệ thống!",
-        "embed": "Đã xảy ra lỗi khi xử lý embed",
-        "permission": "Bạn không có đủ quyền để thực hiện lệnh này trong server này!!"
+        "embed": "Đợi lát đê, cái tờ giấy của tao bị gì rồi nè",
+        "notJ":"Ê, nãy kêu chơi không chơi mà giờ tấy mấy gì đó?",
+        "ro":"Ê mày ơi, tao không thấy cái role của mày trong kho",
+        "miss_cmd":"Ơ, mày có đưa cho tao thiếu cái gì không nhể?",
+        "permission": "Ủa alo? Bạn không đủ quyền để làm trò này ở server này đâu!"
     },
     "s": {
-        "prefix_succ": "Prefix của server đã được đổi thành: ",
-        "cur_la": "Ngôn ngữ hiện tại của server là :flag_vn: **Tiếng Việt**!",
-        "miss_cmd": "Thiếu thành phần của lệnh!"
+        "prefix_succ": "Prefix của server đổi thành: ",
+        "role":"Thương lắm mới tiết lộ nhá, role mày nè",
+        "cur_la": "Ngôn ngữ hiện tại của server này là **Việt Nam :flag_vn:** (Nếu như mày không biết 😏) nha!",
+        "cur_lucky": "Buff may mắn hiện tại của bạn là"
     },
     "inv": {
-        "ad_succ": "/Lời giới thiệu. Mã giới thiệu của bạn là: ",
-        "ad_succ2": " .Hãy đưa nó cho người bạn của bạn và nhập **/invite",
-        "int": "Bạn đã được mời rồi! Đừng tham lam thế!",
-        "404": "Không tìm thấy người chơi nào có code này! Bạn có đùa với tôi không?",
-        "yours": "Bạn không thể tự mời chính mình chứ?!",
-        "inv_suc": "Lời mời thành công rồi nè!"
+        "ad_succ": "Xong! Code mời của bạn đây: ",
+        "ad_succ2": " .Đưa cho bạn bè đi rồi dùng **/invite** cho sang mồm.",
+        "int": "Bạn vừa bị lôi vào đây rồi đấy!",
+        "404": "Cái code này kiếm hoài hổng thấy!",
+        "yours": "Mời chính mình á? Ủa alo?",
+        "inv_suc": "Mời thành công nhé, giỏi ghê!"
     },
     "game": {
-        "start_title": "Game đã bắt đầu rồi"
+        "start_title": "Game chạy rồi, nhanh chân thì còn!",
+        "wait": "Đợi đi, hoặc gõ **/new** mở game mới cho lẹ!",
+        "al_joined": "Vô rồi thì ngồi yên đi, nóng tính quá!",
+        "joined": "Vô game rồi nha, đừng réo nữa!",
+        "total": "**Tổng số người chơi: **",
+        "ref_s_ti":"Rồi, rồi, rồi. Tao tạo lại game mới cho mày rồi đây!",
+        "ref_s_de":"Đợi một lát, tao đang khởi tạo lại đây nè, làm gì phải nóng?",
+        "eJ":"Please **create new"
     }
 }

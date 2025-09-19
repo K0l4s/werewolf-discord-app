@@ -22,12 +22,12 @@ class GameController {
         console.log(game.isStart)
         return game;
     }
-    static async handleJoinCommand(message) {
+    static async handleJoinCommand(message, lang = "en") {
         const embed = new EmbedBuilder();
         const game = await this.handleCreateRoom(message);
         if (game.isStart) {
-            embed.setTitle("The game is started!")
-                .setDescription("Please wait or use **/new** to create new game!")
+            embed.setTitle(t('game.start_title', lang))
+                .setDescription(t('game.wait', lang))
             return message.reply({ embeds: [embed] })
             // return message.reply("The game is started! Please wait or use **/new** to create new game!")
         }
@@ -38,9 +38,9 @@ class GameController {
                 .join("\n");
 
             embed
-                .setTitle("You can't join this game twice times!")
+                .setTitle(t('game.al_joined', lang))
                 .setDescription(
-                    `**Total players**: ${game.player.length}\n\n` +
+                    `${t('game.total', lang)} ${game.player.length}\n\n` +
                     `${playerList}`
                 );
             return message.reply({ embeds: [embed] })
@@ -59,14 +59,14 @@ class GameController {
             .join("\n");
 
         embed
-            .setTitle("You're joined to this game! Please enjoy!")
+            .setTitle(t('game.joined', lang))
             .setDescription(
-                `**Total players**: ${game.player.length}\n\n` +
+                `${t('game.total', lang)}: ${game.player.length}\n\n` +
                 `${playerList}`
             );
         return message.reply({ embeds: [embed] })
     }
-    static async handleCreateNewRoom(channelId) {
+    static async handleCreateNewRoom(channelId, lang = "en") {
         let game = await GameService.getGameByChannel(channelId);
 
         if (game) {
@@ -77,19 +77,19 @@ class GameController {
         const newGame = await GameService.initNewGame(channelId);
         // return newGame;
         const embed = new EmbedBuilder();
-        embed.setTitle("Refresh new game successfuly!")
-            .setDescription("We're stopped the last game and create new game. Please enjoy it!")
+        embed.setTitle(t('game.ref_s_ti', lang))
+            .setDescription(t('game.ref_s_de', lang))
         // message.reply(embed)s
         // await message.reply({ embeds: [embed] })
         return embed;
     }
-    static async handleGetRole(channelId, userId) {
+    static async handleGetRole(channelId, userId, lang) {
         const currentGame = await GameService.getGameByChannel(channelId)
         const player = currentGame.player.find(p => p.userId === userId);
         if (!player) {
             const error = new EmbedBuilder()
-                .setTitle(`Error`)
-                .setDescription(`You're not in game`)
+                .setTitle(t('e.title', lang))
+                .setDescription(t('e.notJ', lang))
                 .setColor('Red');
             return { embeds: [error] };
         }
@@ -97,26 +97,26 @@ class GameController {
         const role = await RoleService.getRoleById(player.roleId);
         if (!role) {
             const error = new EmbedBuilder()
-                .setTitle(`Error`)
-                .setDescription(`Role not found`)
+                .setTitle('e.title', lang)
+                .setDescription(t('e.ro', lang))
                 .setColor('Red');
             return { embeds: [error] };
         }
         const embed = new EmbedBuilder()
-            .setTitle(`Your role is: ${role.name}`)
-            .setDescription(role.description)
+            .setTitle(`${t('s.role', lang)}: ${lang == "en" ? role.enName : role.name}`)
+            .setDescription(lang == "vi" ? role.description : role.enDescription)
             .setColor('Blue')
             .setImage(role.image ? role.image : "https://i.ibb.co/fdrvpKB0/VLG.png")
             ;
         return { embeds: [embed], ephemeral: true };
     }
-    static async handleStartGame(message) {
+    static async handleStartGame(message, lang = "en") {
         const game = await GameService.getGameByChannel(message.channel.id);
         if (!game)
             return message.reply("Please create/ join new game!")
         if (game.isStart)
             return message.reply("This game started. Please wait!")
-        if (game.player.length < 4 && game.player.length>10) {
+        if (game.player.length < 4 && game.player.length > 10) {
             const embed = new EmbedBuilder();
             let playerList = game.player
                 .map((p, index) => `${index + 1}. <@${p.userId}> ${p.isAlive ? "🧑🏻" : "🧟"}`)

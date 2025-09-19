@@ -19,7 +19,6 @@ class MiniGameController {
         }
         return bet;
     }
-
     static async oneTwoThree(userId, msg, money) {
         const user = await UserService.findUserById(userId);
         const bet = this.identifyMoney(money, user);

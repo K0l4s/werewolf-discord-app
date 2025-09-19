@@ -135,20 +135,6 @@ class SettingController {
                 .setCustomId(`setupModal|${selectedType}|${channelId}`)
                 .setTitle(`Thiết lập Thông báo ${selectedType}`);
 
-            // // Tạo dropdown chọn kênh (sẽ được thay thế bằng ID kênh thực tế)
-            // const channelSelect = new StringSelectMenuBuilder()
-            //     .setCustomId('channelSelect')
-            //     .setPlaceholder('Chọn kênh thông báo')
-            //     .addOptions(
-            //         interaction.guild.channels.cache
-            //             .filter(channel => channel.isTextBased())
-            //             .map(channel => ({
-            //                 label: `#${channel.name}`,
-            //                 value: channel.id,
-            //                 description: `Kênh văn bản: ${channel.name}`
-            //             }))
-            //     );
-
             const titleInput = new TextInputBuilder()
                 .setCustomId('titleInput')
                 .setLabel('Tiêu đề thông báo')

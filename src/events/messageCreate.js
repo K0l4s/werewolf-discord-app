@@ -18,11 +18,14 @@ const { wolfCoin } = require('../utils/wolfCoin');
 const MiniGameController = require('../controllers/miniGameController');
 const LanguageController = require("../controllers/languageController")
 const { t } = require('../i18n');
+const PetService = require('../services/petService');
+const PetController = require('../controllers/petController');
+const { calculateLuckyBuff } = require('../utils/calculateLuckyBuff');
 
 const handleMessageCreate = async (client, msg) => {
     // try {
     if (msg.author.bot || !msg.guild) return;
-    console.log(msg.author.globalName + ": " + msg.content + " " + msg.guild.name)
+    // console.log(msg.author.globalName + ": " + msg.content + " " + msg.guild.name)
     // if (!msg.content.startsWith("/")) {
     //     return;
     // } 
@@ -55,8 +58,8 @@ const handleMessageCreate = async (client, msg) => {
     //     // msg.reply(embed)
     // }
     let lang = await LanguageController.getLang(msg.guild.id)
-    console.log(lang)
-    console.log(cmd)
+    // console.log(lang)
+    // console.log(cmd)
     if (cmd === "invite") {
         if (!args[0]) {
             const inv = await UserController.createInviteCode(msg.author.id)
@@ -89,6 +92,64 @@ const handleMessageCreate = async (client, msg) => {
                 });
             }
     }
+    if (cmd === 'unlockpet') {
+        // try {
+        const embed = await PetController.unlockServerPet(msg.guild.id);
+        msg.reply({ embeds: [embed] });
+        // } catch (error) {
+        //     msg.reply('❌ Có lỗi xảy ra khi mở khóa pet!');
+        // }
+    }
+    if (cmd === 'createpet') {
+        try {
+            // Kiểm tra quyền admin
+            if (!msg.member.permissions.has('ADMINISTRATOR')) {
+                return msg.reply('❌ Bạn cần quyền ADMIN để sử dụng lệnh này!');
+            }
+
+            const petType = args[0] || 'random'; // Lấy type từ argument hoặc mặc định random
+
+            const createdPet = await PetService.createPet(petType);
+
+            msg.reply({
+                embeds: [{
+                    title: '🐾 Pet Đã Được Tạo!',
+                    description: `Pet **${createdPet.type}** đã được tạo thành công!`,
+                    color: 0x00FF00,
+                    fields: [
+                        { name: 'ID', value: createdPet._id.toString(), inline: true },
+                        { name: 'Loại', value: createdPet.type, inline: true },
+                        { name: 'Lucky Boost', value: `${createdPet.luckyBoost}%`, inline: true },
+                        { name: 'Giá', value: `${createdPet.price} coins`, inline: true },
+                        { name: 'Yêu cầu Level', value: createdPet.lvlRequirement.toString(), inline: true }
+                    ],
+                    thumbnail: { url: createdPet.image },
+                    timestamp: new Date()
+                }]
+            });
+
+        } catch (error) {
+            console.error(error);
+            msg.reply('❌ Có lỗi xảy ra khi tạo pet!');
+        }
+    }
+    if (cmd === "luckybuff" || cmd === "lb") {
+        // chỉ cần buff số
+        const { totalBuff, userBuff, itemBuffValue, petBuff } = await calculateLuckyBuff(msg.author.id, msg.guild.id);
+        // return embed
+        const embed = new EmbedBuilder()
+            .setTitle("🍀 Thông Tin Lucky Buff")
+            .addFields(
+                { name: "User Buff", value: `${userBuff}%`, inline: true },
+                { name: "Item Buff", value: `${itemBuffValue}%`, inline: true },
+                { name: "Pet Buff", value: `${petBuff}%`, inline: true },
+                { name: "Total Buff", value: `**${totalBuff}%**`, inline: false }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Nếu vượt quá 100% sẽ bị giới hạn ở 100%' });
+
+        msg.reply({ embeds: [embed] });
+    }
     if (cmd === "check") {
         if (!args[0])
             return msg.reply(t('e.miss_cmd', lang))
@@ -97,7 +158,7 @@ const handleMessageCreate = async (client, msg) => {
     }
     if (cmd === "set") {
         if (!args[0])
-            return msg.reply("Missing command")
+            return msg.reply(t('e.miss_cmd', lang))
         if (args[0] === "prefix") {
             if (!args[1]) return msg.reply(`⚠️ ${t('w.newPrefix', lang)}`);
             if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
@@ -120,35 +181,35 @@ const handleMessageCreate = async (client, msg) => {
             const newLang = args[1];
             await LanguageController.setLanguage(newLang, msg.guild.id);
             const embed = new EmbedBuilder()
-            let lang = "Ngôn ngữ đã được đổi sang :flag_vn: **Tiếng Việt**";
+            let lang = "Rồi tao đổi sang  **Tiếng Việt** :flag_vn:(Nếu như mày không biết 😏) ngay đây";
             if (newLang == "en")
-                lang = "The language change to **:england: English**"
+                lang = "Hold on, I changed the language to **English :england:** (as if you didn’t know 😏)"
             msg.reply(`✅ ${lang}`);
 
         }
     }
     else if (cmd === "awake") {
         const userId = msg.author.id;
-        console.log("Đang tiến hành thức tỉnh võ hồn cho user:", userId);
+        // console.log("Đang tiến hành thức tỉnh võ hồn cho user:", userId);
 
         try {
             // Debug: kiểm tra số spirit hiện có
-            const currentCount = await SpiritMaster.countDocuments({ userId });
-            console.log("Số spirit hiện tại:", currentCount);
+            // const currentCount = await sSpiritMaster.countDocuments({ userId });
+            // console.log("Số spirit hiện tại:", currentCount);
 
             const embed = await SpiritController.awakenRandomSpirit(userId);
-            console.log("Kết quả trả về:", typeof embed, embed);
+            // console.log("Kết quả trả về:", typeof embed, embed);
 
             if (typeof embed === 'string') {
                 msg.reply(embed);
             } else if (embed && embed.data) {
                 msg.reply({ embeds: [embed] });
             } else {
-                console.error("Embed không hợp lệ:", embed);
+                // console.error("Embed không hợp lệ:", embed);
                 msg.reply(`❌ ${t('e.embed', lang)}`);
             }
         } catch (error) {
-            console.error("Lỗi khi thức tỉnh:", error);
+            // console.error("Lỗi khi thức tỉnh:", error);
             msg.reply(`❌ ${t('e.d', lang)}`);
         }
     }
@@ -270,7 +331,7 @@ const handleMessageCreate = async (client, msg) => {
         return;
     }
     else if (cmd === "new" || cmd === "n") {
-        const embed = await GameController.handleCreateNewRoom(msg.channel.id);
+        const embed = await GameController.handleCreateNewRoom(msg.channel.id, lang);
         await msg.reply({ embeds: [embed] });
         return;
     }
@@ -279,7 +340,7 @@ const handleMessageCreate = async (client, msg) => {
     //     return;
     // }
     else if (cmd === "start" || cmd === "s") {
-        await GameController.handleStartGame(msg);
+        await GameController.handleStartGame(msg, lang);
         return;
     }
     else if (cmd === "shop") {

@@ -1,25 +1,36 @@
 {
-    "w":{
-        "new_prefix":"You need input new prefix!"
+    "w": {
+        "new_prefix": "Uh hello? Enter the new prefix already!"
     },
-    "e":{
-        "embed":"",
-        "permission":"You don't have permission to do this action in this server!"
+    "e": {
+        "title": "Wait... it's some error!",
+        "notJ": "Yo, you said you wouldn’t play, and now look at you?",
+        "embed": "Hold up, my paper’s acting weird right now.",
+        "ro": "Yo dude, I don’t see your role anywhere in the stash.",
+        "miss_cmd": "Wait… didn’t you, like, forget to give me something?",
+        "permission": "Oops… looks like you’re not important enough to do this here!"
     },
-    "s":{
-        "prefix_succ":"Prefix server change to: ",
-        "cur_la":"Current language of this server is **:england: English**!"
+    "s": {
+        "prefix_succ": "Server prefix changed to: ",
+        "role": "Feeling generous here… fine, I’ll spill it. Here’s your role.",
+        "cur_la": "This server’s language is **English :england:** (as if you didn’t know 😏).",
+        "cur_lucky": "Your current lucky buff is"
     },
-    "inv":{
-        "ad_succ":"/Invited. Your invite code is: ",
-        "ad_succ2":" .Give it to your friends and use **/invite",
-        "int":"You was invited!",
-        "404":"Don't found this code!",
-        "yours":"You can't invite yourself!",
-        "inv_suc":"Invite success!"
-    }
-    ,
-    "game":{
-        "start_title":"Game is started!"
+    "inv": {
+        "ad_succ": "Done! Here’s your precious invite code: ",
+        "ad_succ2": " .Go flex it with your friends and use **/invite** properly.",
+        "int": "Congrats, you’ve been dragged in!",
+        "404": "That code? Doesn’t even exist!",
+        "yours": "Inviting yourself? Really?",
+        "inv_suc": "Invite successful! Look at you, making friends."
+    },
+    "game": {
+        "start_title": "Game’s already running, you’re late!",
+        "wait": "Sit tight, or just type **/new** if you’re that impatient!",
+        "al_joined": "You already joined, calm down!",
+        "joined": "You’re in! Stop screaming about it.",
+        "total": "**Total players: **",
+        "ref_s_ti": "Alright, alright, alright. I’ve set up a new game for you, happy now?",
+        "ref_s_de": "Hold on a sec, I’m restarting it here. No need to get all worked up!"
     }
 }
