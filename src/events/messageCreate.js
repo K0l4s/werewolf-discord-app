@@ -140,13 +140,13 @@ const handleMessageCreate = async (client, msg) => {
         const embed = new EmbedBuilder()
             .setTitle("🍀 Thông Tin Lucky Buff")
             .addFields(
-                { name: "User Buff", value: `${userBuff}%`, inline: true },
-                { name: "Item Buff", value: `${itemBuffValue}%`, inline: true },
-                { name: "Pet Buff", value: `${petBuff}%`, inline: true },
-                { name: "Total Buff", value: `**${totalBuff}%**`, inline: false }
+                { name: "User Buff", value: `${userBuff}`, inline: true },
+                { name: "Item Buff", value: `${itemBuffValue}`, inline: true },
+                { name: "Pet Buff", value: `${petBuff}`, inline: true },
+                { name: "Total Buff", value: `**${totalBuff}**`, inline: false }
             )
             .setTimestamp()
-            .setFooter({ text: 'Nếu vượt quá 100% sẽ bị giới hạn ở 100%' });
+            .setFooter({ text: 'Nếu vượt quá 100 sẽ bị giới hạn ở 100' });
 
         msg.reply({ embeds: [embed] });
     }
