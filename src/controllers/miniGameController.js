@@ -1,8 +1,9 @@
-const { ActionRowBuilder, ButtonComponent, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require("discord.js");
+const { ActionRowBuilder, ButtonComponent, InteractionResponseFlags, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } = require("discord.js");
 const UserService = require("../services/userService");
 const { wolfCoin } = require("../utils/wolfCoin");
 const { weightedRandom } = require("../utils/weightRnd");
 const UserController = require("./userController");
+const { calculateLuckyBuff } = require("../utils/calculateLuckyBuff");
 
 class MiniGameController {
     static identifyMoney(bet) {
@@ -22,7 +23,6 @@ class MiniGameController {
     static async oneTwoThree(userId, msg, money) {
         const user = await UserService.findUserById(userId);
         const bet = this.identifyMoney(money, user);
-
         if (user.coin < bet) {
             return msg.reply("🚫 Bạn không đủ coin để đặt cược!");
         }
@@ -64,61 +64,94 @@ class MiniGameController {
     }
 
     static async handle123Result(interaction) {
+        await interaction.deferUpdate()
+        const loadingEmoji = "<a:load:1410394844324429886>";
+        const choiceEmojis = {
+            scissors: "✂️",
+            hammer: "🔨",
+            paper: "📄",
+        };
         const [_, playerChoice, bet, userId] = interaction.customId.split("|");
+
+        // Gửi loading trước
+        await interaction.editReply({
+            content: `👉 Bạn chọn: ${choiceEmojis[playerChoice]}\n🤖 Bot đang chọn ${loadingEmoji}`,
+            components: [],
+        });
+
         const betAmount = parseInt(bet);
 
         if (interaction.user.id !== userId) {
             return interaction.reply({ content: "🚫 Đây không phải trò chơi của bạn!", ephemeral: true });
         }
 
-        const botChoices = ["scissors", "hammer", "paper"];
-        const choiceEmojis = {
-            "scissors": "✂️",
-            "hammer": "🔨",
-            "paper": "📄"
-        };
 
-        const botChoice = botChoices[Math.floor(Math.random() * botChoices.length)];
 
-        const loadingEmoji = "<a:load:1410394844324429886>"; // emoji loading
+        // lấy buff (0–100)
+        const buff = await calculateLuckyBuff(userId, interaction.guildId);
 
-        // Gửi loading trước
-        await interaction.update({
-            content: `👉 Bạn chọn: ${choiceEmojis[playerChoice]}\n🤖 Bot đang chọn ${loadingEmoji}`,
-            components: [] // xoá button ngay khi user bấm
+
+
+        // xác định botChoice theo trọng số
+        let winChoice, loseChoice, drawChoice;
+
+        if (playerChoice === "scissors") {
+            winChoice = "paper";
+            loseChoice = "hammer";
+            drawChoice = "scissors";
+        } else if (playerChoice === "hammer") {
+            winChoice = "scissors";
+            loseChoice = "paper";
+            drawChoice = "hammer";
+        } else {
+            winChoice = "hammer";
+            loseChoice = "scissors";
+            drawChoice = "paper";
+        }
+
+        // tính trọng số
+        const winWeight = 1 + buff / 100; // buff càng cao → càng dễ thắng
+        const loseWeight = 1;
+        const drawWeight = 1;
+
+        const totalWeight = winWeight + loseWeight + drawWeight;
+        const rand = Math.random() * totalWeight;
+
+        let botChoice;
+        if (rand < winWeight) botChoice = winChoice;
+        else if (rand < winWeight + loseWeight) botChoice = loseChoice;
+        else botChoice = drawChoice;
+
+        // xử lý kết quả
+        let result;
+        let coinChange = 0;
+
+        if (playerChoice === botChoice) {
+            result = "🤝 Hòa!";
+        } else if (
+            (playerChoice === "scissors" && botChoice === "paper") ||
+            (playerChoice === "hammer" && botChoice === "scissors") ||
+            (playerChoice === "paper" && botChoice === "hammer")
+        ) {
+            result = `🎉 Bạn thắng! **+${wolfCoin(betAmount)}**`;
+            coinChange = betAmount;
+        } else {
+            result = `💀 Bạn thua! **-${wolfCoin(betAmount)}**`;
+            coinChange = -betAmount;
+        }
+
+        const user = await UserService.findUserById(userId);
+        user.coin += coinChange;
+        if (user.coin < 0) user.coin = 0;
+        await user.save();
+
+        await interaction.editReply({
+            content: `👉 Bạn chọn: ${choiceEmojis[playerChoice]}\n🤖 Bot chọn: ${choiceEmojis[botChoice]}\n\n${result}`,
         });
-
-
-        // Sau 3 giây dừng và show kết quả thật
-        setTimeout(async () => {
-            let result;
-            let coinChange = 0;
-
-            if (playerChoice === botChoice) {
-                result = "🤝 Hòa!";
-            } else if (
-                (playerChoice === "scissors" && botChoice === "paper") ||
-                (playerChoice === "hammer" && botChoice === "scissors") ||
-                (playerChoice === "paper" && botChoice === "hammer")
-            ) {
-                result = `🎉 Bạn thắng! **+${wolfCoin(betAmount)}**`;
-                coinChange = betAmount;
-            } else {
-                result = `💀 Bạn thua! **-${wolfCoin(betAmount)}**`;
-                coinChange = -betAmount;
-            }
-
-            const user = await UserService.findUserById(userId);
-            user.coin += coinChange;
-            if (user.coin < 0) user.coin = 0;
-            await user.save();
-
-            await interaction.editReply({
-                content: `👉 Bạn chọn: ${choiceEmojis[playerChoice]}\n🤖 Bot chọn: ${choiceEmojis[botChoice]}\n\n${result}`
-            });
-        }, 500); // 3 giây loading
-
     }
+
+
+
 
     static async bauCua(userId, msg, money) {
         const bet = parseInt(this.identifyMoney(money))
@@ -176,108 +209,168 @@ class MiniGameController {
         await msg.reply({ embeds: [embed], components: [rows] })
     }
     static async bauCuaFinal(bet, userId, userChoice, interaction) {
-        if (interaction.user.id !== userId) {
-            return interaction.reply({ content: "🚫 Đây không phải lượt của bạn!", ephemeral: true });
-        }
-
-        const user = await UserService.findUserById(userId);
-        if (!user) return interaction.message.send("❌ Không tìm thấy người chơi!");
-
-        // danh sách có trọng số
-        const list = [
-            { label: "nai", weight: 10 },
-            { label: "bau", weight: 15 },
-            { label: "ga", weight: 20 },
-            { label: "ca", weight: 15 },
-            { label: "cua", weight: 20 },
-            { label: "tom", weight: 20 }
-        ];
-
-        const emojis = {
-            nai: "🦌",
-            bau: "🍐",
-            ga: "🐓",
-            ca: "🐟",
-            cua: "🦀",
-            tom: "🦐"
-        };
-
-        // emoji loading custom
-        const loadingEmoji = "<a:load:1410394844324429886>";
-
-        // Tạo kết quả thật từ 3 lần roll
-        const result = [];
-        for (let i = 0; i < 3; i++) {
-            result.push(weightedRandom(list));
-        }
-
-        // tính tiền
-        let win = -bet;
-        const matches = result.filter(r => r === userChoice).length;
-        if (matches > 0) win = bet * matches;
-
-        user.coin += win;
-        await user.save();
-
-        // gửi embed rolling ban đầu
-        await interaction.update({
-            embeds: [
-                new EmbedBuilder()
-                    .setTitle("🎲 Đang gieo xúc xắc...")
-                    .setDescription(`${loadingEmoji} ${loadingEmoji} ${loadingEmoji}`)
-                    .setColor(0xffff00)
-            ],
-            components: []
-        });
-
-        // Hiển thị từng mặt một với animation
-        const displayResult = [];
-        for (let i = 0; i < 3; i++) {
-            // Tạo hiệu ứng roll cho từng mặt
-            // for (let j = 0; j < 3; j++) {
-            // await new Promise(resolve => setTimeout(resolve, 10));
-
-            // Tạo kết quả tạm thời cho animation
-            const tempDisplay = [...displayResult];
-            while (tempDisplay.length <= i) {
-                tempDisplay.push(weightedRandom(list));
+        try {
+            if (interaction.user.id !== userId) {
+                return await interaction.followUp({
+                    content: "🚫 Đây không phải lượt của bạn!",
+                    flags: InteractionResponseFlags.Ephemeral
+                });
             }
 
-            await interaction.editReply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setTitle("🎲 Đang gieo xúc xắc...")
-                        .setDescription(
-                            `Bạn chọn: ${emojis[userChoice]} **${userChoice.toUpperCase()}**\n` +
-                            `Kết quả: ${tempDisplay.map((r, idx) =>
-                                idx === i ? `${loadingEmoji}` : emojis[r]
-                            ).join(" ")}\n\n` +
-                            `${loadingEmoji} Đang lắc mặt thứ ${i + 1}...`
-                        )
-                        .setColor(0xffff00)
-                ]
-            });
-            // }
+            const loadingEmoji = "<a:diceRoll:1418927558086492312>";
+            const diceColors = [0xFFD700, 0xFF6B6B, 0x4ECDC4];
 
-            // Hiển thị kết quả thật cho mặt hiện tại
-            displayResult.push(result[i]);
+            // defer để tránh lỗi Unknown interaction
+            // await interaction.deferUpdate();
 
-            await interaction.editReply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setTitle(i === 2 ? "🎲 Kết quả Bầu cua" : "🎲 Đang gieo xúc xắc...")
-                        .setDescription(
-                            `Bạn chọn: ${emojis[userChoice]} **${userChoice.toUpperCase()}**\n` +
-                            `Kết quả: ${displayResult.map(r => emojis[r]).join(" ")}${i < 2 && i > 1 ? ` ${loadingEmoji} ` : ''}\n\n` +
-                            (i === 2 ?
-                                `${win > 0 ? `🎉 Bạn thắng +${wolfCoin(win)} coin` : `😢 Bạn thua ${wolfCoin(Math.abs(win))} coin`}\n` +
-                                `💰 Coin hiện tại: **${wolfCoin(user.coin)}**` :
-                                `${loadingEmoji} Đang lắc mặt thứ ${i + 2}...`)
-                        )
-                        .setColor(i === 2 ? (win > 0 ? 0x00ff00 : 0xff0000) : 0xffff00)
-                ]
+            const initialEmbed = new EmbedBuilder()
+                .setTitle("🎲 BẦU CUA - ĐANG LẮC XÚC XẮC")
+                .setDescription(`${loadingEmoji} ${loadingEmoji} ${loadingEmoji}`)
+                .setColor(0xF9A825)
+                .setFooter({ text: "Vui lòng chờ trong giây lát..." });
+
+            await interaction.update({
+                embeds: [initialEmbed],
+                components: []
             });
 
+            const user = await UserService.findUserById(userId);
+            if (!user) {
+                return await interaction.followUp({
+                    content: "❌ Không tìm thấy người chơi!",
+                    flags: InteractionResponseFlags.Ephemeral
+                });
+            }
+
+            // Lucky Buff
+            const { totalBuff } = await calculateLuckyBuff(userId, interaction.guildId);
+
+            // danh sách có trọng số cơ bản
+            const baseList = [
+                { label: "nai", weight: 10 },
+                { label: "bau", weight: 15 },
+                { label: "ga", weight: 20 },
+                { label: "ca", weight: 15 },
+                { label: "cua", weight: 20 },
+                { label: "tom", weight: 20 }
+            ];
+
+            // clone list và tăng trọng số cho userChoice dựa vào luckyBuff
+            const list = baseList.map(item => {
+                if (item.label === userChoice) {
+                    const multiplier = 1 + totalBuff / 100;
+                    return { ...item, weight: Math.floor(item.weight * multiplier) };
+                }
+                return { ...item };
+            });
+
+            const emojis = {
+                nai: "🦌",
+                bau: "🍐",
+                ga: "🐓",
+                ca: "🐟",
+                cua: "🦀",
+                tom: "🦐"
+            };
+
+            const names = {
+                nai: "Nai",
+                bau: "Bầu",
+                ga: "Gà",
+                ca: "Cá",
+                cua: "Cua",
+                tom: "Tôm"
+            };
+
+            // Roll 3 mặt
+            const result = [];
+            for (let i = 0; i < 3; i++) {
+                result.push(weightedRandom(list));
+            }
+
+            // tính tiền
+            let win = -bet;
+            const matches = result.filter(r => r === userChoice).length;
+            if (matches > 0) win = bet * matches;
+
+            user.coin += win;
+            await user.save();
+
+            // Hiển thị từng mặt một với animation
+            const displayResult = [];
+            for (let i = 0; i < 3; i++) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                displayResult.push(result[i]);
+
+                const tempDisplay = [...displayResult];
+                while (tempDisplay.length < 3) tempDisplay.push("waiting");
+
+                let description = `**Bạn đặt cược:** ${emojis[userChoice]} ${names[userChoice]}\n`;
+                description += `**Kết quả:** `;
+
+                tempDisplay.forEach(r => {
+                    description += r === "waiting" ? `${loadingEmoji} ` : `${emojis[r]} `;
+                });
+
+                description += `\n\n${loadingEmoji} Đang lắc mặt xúc xắc thứ ${i + 1}...`;
+
+                const rollingEmbed = new EmbedBuilder()
+                    .setTitle(i === 2 ? "🎲 KẾT QUẢ BẦU CUA" : "🎲 ĐANG LẮC XÚC XẮC")
+                    .setDescription(description)
+                    .setColor(diceColors[i]);
+
+                await interaction.editReply({
+                    embeds: [rollingEmbed]
+                });
+            }
+
+            // await new Promise(resolve => setTimeout(resolve, 800));
+
+            // Tạo embed kết quả cuối cùng
+            const winAmount = bet * matches;
+            const resultDescription =
+                `**Bạn đặt cược:** ${emojis[userChoice]} ${names[userChoice]}\n` +
+                `**Kết quả:** ${emojis[result[0]]} ${emojis[result[1]]} ${emojis[result[2]]}\n\n` +
+                `**Số khớp:** ${matches}/3\n` +
+                (matches > 0
+                    ? `🎉 **Bạn thắng:** +${wolfCoin(winAmount)}`
+                    : `😢 **Bạn thua:** ${wolfCoin(bet)}`
+                ) +
+                `\n💰 **Coin hiện tại:** ${wolfCoin(user.coin)}`;
+
+            const finalEmbed = new EmbedBuilder()
+                .setTitle("🎲 KẾT QUẢ BẦU CUA")
+                .setDescription(resultDescription)
+                .setColor(win > 0 ? 0x4CAF50 : 0xF44336)
+                .setFooter({
+                    text: win > 0 ? "Chúc mừng bạn!" : "Chúc bạn may mắn lần sau!",
+                    iconURL: "https://cdn.discordapp.com/emojis/1065110910836715570.webp"
+                })
+                .setTimestamp();
+
+            await interaction.editReply({
+                embeds: [finalEmbed]
+            });
+
+        } catch (error) {
+            console.error("Lỗi trong trò chơi Bầu Cua:", error);
+
+            try {
+                if (interaction.replied || interaction.deferred) {
+                    await interaction.followUp({
+                        content: "❌ Đã xảy ra lỗi khi thực hiện trò chơi!",
+                        flags: InteractionResponseFlags.Ephemeral
+                    });
+                } else {
+                    await interaction.reply({
+                        content: "❌ Đã xảy ra lỗi khi thực hiện trò chơi!",
+                        flags: InteractionResponseFlags.Ephemeral
+                    });
+                }
+            } catch (followUpError) {
+                console.error("Lỗi khi gửi thông báo lỗi:", followUpError);
+            }
         }
     }
 }

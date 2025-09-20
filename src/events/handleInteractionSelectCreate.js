@@ -90,7 +90,7 @@ module.exports = async (interaction) => {
         // if(userId!=interaction.user.id){
         //     return await interaction.reply({content:"This game not yours!"},ephemeral=true)
         // }
-        interaction.message.edit({components:[]})
+        // await interaction.message.edit({components:[]})
         const choice = interaction.values[0]
         return await MiniGameController.bauCuaFinal(bet,userId,choice,interaction)
     }

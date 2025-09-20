@@ -257,12 +257,12 @@ try {
             if (interaction.isStringSelectMenu()) {
                 // Lấy các tham số hiện tại từ message components
                 const message = interaction.message;
-                const currentEmbed = message.embeds[0];
-                const footerText = currentEmbed.footer.text;
+                // const currentEmbed = message.embeds[0];
+                // const footerText = currentEmbed.footer.text;
 
                 // Trích xuất trang hiện tại từ footer
-                const pageMatch = footerText.match(/Trang (\d+)\/(\d+)/);
-                const currentPage = pageMatch ? parseInt(pageMatch[1]) : 1;
+                // const pageMatch = footerText.match(/Trang (\d+)\/(\d+)/);
+                // const currentPage = pageMatch ? parseInt(pageMatch[1]) : 1;
 
                 // Lấy các tham số từ customId của các nút phân trang
                 let currentSortBy = 'name';
@@ -332,12 +332,12 @@ try {
             console.error('Lỗi khi xử lý interaction:', error);
 
             // Chỉ gửi thông báo lỗi nếu chưa trả lời
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({
-                    content: 'Đã xảy ra lỗi khi xử lý yêu cầu.',
-                    ephemeral: true
-                });
-            }
+            // if (!interaction.replied && !interaction.deferred) {
+            //     await interaction.reply({
+            //         content: 'Đã xảy ra lỗi khi xử lý yêu cầu.',
+            //         ephemeral: true
+            //     });
+            // }
         }
     });
     client.on(Events.GuildCreate, async (guild) => {
