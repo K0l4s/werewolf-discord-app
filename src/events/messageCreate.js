@@ -21,6 +21,7 @@ const { t } = require('../i18n');
 const PetService = require('../services/petService');
 const PetController = require('../controllers/petController');
 const { calculateLuckyBuff } = require('../utils/calculateLuckyBuff');
+const Notification = require('../models/Notification');
 
 const handleMessageCreate = async (client, msg) => {
     // try {
@@ -99,6 +100,10 @@ const handleMessageCreate = async (client, msg) => {
         // } catch (error) {
         //     msg.reply('❌ Có lỗi xảy ra khi mở khóa pet!');
         // }
+    }
+    if(cmd === 'serverpet' || cmd === 'spet') {
+        const embed = await PetController.getServerPet(msg.guild.id);
+        msg.reply({ embeds: [embed] });
     }
     if (cmd === 'createpet') {
         try {
@@ -186,6 +191,29 @@ const handleMessageCreate = async (client, msg) => {
                 lang = "Hold on, I changed the language to **English :england:** (as if you didn’t know 😏)"
             msg.reply(`✅ ${lang}`);
 
+        }
+        if (args[0] === "voice" || args[0] == "v") {
+            if (!args[1]) return msg.reply(`⚠️ ${t('e.miss_cmd', lang)}`);
+            if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
+                return msg.reply(`❌ ${t('e.permission', lang)}`);
+            }
+            const newVC = args[1];
+            //chuyển sang true/ false
+            const isEnabled = newVC === "true";
+            // await VoiceChannelController.setVoiceChannel(isEnabled, msg.guild.id);
+            const serverSetting = await Notification.findOne({ guildId: msg.guild.id });
+            if (serverSetting) {
+                serverSetting.isChannelEnabled = isEnabled;
+                await serverSetting.save();
+            } else {
+                const newSetting = new Notification({
+                    guildId: msg.guild.id,
+                    isChannelEnabled: isEnabled
+                });
+                await newSetting.save();
+            }
+
+            msg.reply(`✅ ${t('s.vc_succ', lang)} \`${newVC}\` ${t('s.vc_succ2', lang)}`);
         }
     }
     else if (cmd === "awake") {

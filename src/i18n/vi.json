@@ -13,7 +13,9 @@
         "prefix_succ": "Prefix của server đổi thành: ",
         "role":"Thương lắm mới tiết lộ nhá, role mày nè",
         "cur_la": "Ngôn ngữ hiện tại của server này là **Việt Nam :flag_vn:** (Nếu như mày không biết 😏) nha!",
-        "cur_lucky": "Buff may mắn hiện tại của bạn là"
+        "cur_lucky": "Buff may mắn hiện tại của bạn là",
+        "vc_succ":" Rồi, tao đã đặt voice channel là ",
+        "vc_succ2":" .Giờ thì đừng làm phiền tao!"
     },
     "inv": {
         "ad_succ": "Xong! Code mời của bạn đây: ",

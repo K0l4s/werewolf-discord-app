@@ -2,6 +2,9 @@ const Pet = require("../models/Pet");
 const ServerPet = require("../models/ServerPet");
 
 class PetService {
+    static async getServerPet(guildId) {
+        return await ServerPet.findOne({ guildId }).populate('pet');
+    }
     static async createServerPet(guildId) {
         const existing = await ServerPet.findOne({ guildId });
         if (existing) throw new Error("Server pet **already exists**");

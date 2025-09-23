@@ -12,9 +12,10 @@ const notificationSchema = new mongoose.Schema({
                 enum: ["welcome", "goodbye", "booster"]
             },
             title: String,
-            description:String,
-            imageUrl:String,
+            description: String,
+            imageUrl: String,
         }
-    ]
+    ],
+    isChannelEnabled: { type: Boolean, default: false },
 })
 module.exports = mongoose.model('Notification', notificationSchema);

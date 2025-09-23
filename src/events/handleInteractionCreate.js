@@ -18,7 +18,7 @@ module.exports = async (interaction, client) => {
     if (!interaction.isChatInputCommand()) return;
 
     const { commandName } = interaction;
-    let lang = await LanguageController.getLang(msg.guild.id)
+    let lang = await LanguageController.getLang(interaction.guildId)
 
     try {
         switch (commandName) {
