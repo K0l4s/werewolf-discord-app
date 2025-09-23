@@ -220,7 +220,6 @@ try {
                     // })
                     .catch(error => console.error('Không thể gửi tin nhắn vào voice channel:', error));
             }
-
             if (await isNotificationEnabled(newState.guild.id)) {
                 const embed = createEmbed(
                     'Đã tham gia phòng',
@@ -229,15 +228,6 @@ try {
                     '🔄',
                     newState.channel
                 );
-
-                // Add time spent in previous channel if available
-                if (oldState.channel) {
-                    embed.addFields({
-                        name: '⏱️ Thời gian ở phòng trước',
-                        value: `Khoảng **${Math.floor(Math.random() * 60) + 1} phút**`,
-                        inline: true
-                    });
-                }
 
                 newState.channel.send({ embeds: [embed] })
                     // .then(msg => {
