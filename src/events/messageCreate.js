@@ -22,6 +22,7 @@ const PetService = require('../services/petService');
 const PetController = require('../controllers/petController');
 const { calculateLuckyBuff } = require('../utils/calculateLuckyBuff');
 const Notification = require('../models/Notification');
+const TopController = require('../controllers/topController');
 
 const handleMessageCreate = async (client, msg) => {
     // try {
@@ -70,6 +71,9 @@ const handleMessageCreate = async (client, msg) => {
         const embed = await UserController.fillInviteCode(msg.author.id, code)
         return msg.reply(embed)
     }
+    if (cmd === "top") {
+        return await TopController.handleTopCommand(msg, args, false,client);
+    }
     if (cmd === "status") {
         const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
         console.log(devUser)
@@ -101,7 +105,7 @@ const handleMessageCreate = async (client, msg) => {
         //     msg.reply('❌ Có lỗi xảy ra khi mở khóa pet!');
         // }
     }
-    if(cmd === 'serverpet' || cmd === 'spet') {
+    if (cmd === 'serverpet' || cmd === 'spet') {
         const embed = await PetController.getServerPet(msg.guild.id);
         msg.reply({ embeds: [embed] });
     }

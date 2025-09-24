@@ -130,6 +130,60 @@ const commands = [
                 .setDescription('Bet amout')
                 .setRequired(false)
         ),
+    //         const topCommand = {
+    //     name: 'top',
+    //     description: 'Xem bảng xếp hạng',
+    //     options: [
+    //         {
+    //             name: 'scope',
+    //             description: 'Phạm vi xếp hạng',
+    //             type: 3, // STRING
+    //             choices: [
+    //                 { name: 'Toàn cầu', value: 'global' },
+    //                 { name: 'Trong server', value: 'guild' }
+    //             ],
+    //             required: false
+    //         },
+    //         {
+    //             name: 'type',
+    //             description: 'Loại xếp hạng',
+    //             type: 3, // STRING
+    //             choices: [
+    //                 { name: 'Coin', value: 'coin' },
+    //                 { name: 'Level', value: 'level' },
+    //                 { name: 'Spirit Level', value: 'spirit' }
+    //             ],
+    //             required: false
+    //         }
+    //     ]
+    // };
+    new SlashCommandBuilder()
+        .setName('top')
+        .setDescription('Xem bảng xếp hạng')
+        .addStringOption(option =>
+            option.setName('scope')
+                .setDescription('Phạm vi xếp hạng')
+                .addChoices(
+                    { name: 'Toàn cầu', value: 'global' },
+                    { name: 'Trong server', value: 'guild' }
+                )
+                .setRequired(false)
+        )
+        .addStringOption(option =>
+            option.setName('type')
+                .setDescription('Loại xếp hạng')
+                .addChoices(
+                    { name: 'Coin', value: 'coin' },
+                    { name: 'Level', value: 'level' },
+                    { name: 'Spirit Level', value: 'spirit' }
+                )
+                .setRequired(false)
+        )
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('daily')
+        .setDescription('Nhận thưởng hằng ngày')
+        .toJSON(),
 ];
 
 const token = process.env.DISCORD_TOKEN;

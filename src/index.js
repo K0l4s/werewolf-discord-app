@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Partials, Events, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Events, EmbedBuilder, ActivityType } = require('discord.js');
 const connectDB = require('./config/database');
 const { handleMessageCreate } = require('./events/messageCreate');
 const SpiritRingController = require('./controllers/DauLaDaiLuc/spiritRingController');
@@ -29,7 +29,15 @@ try {
     client.once('ready', () => {
         console.log(`✅ Bot đã đăng nhập với tên: ${client.user.tag}`);
         console.log(`📊 Bot đang ở ${client.guilds.cache.size} server`);
-        client.user.setActivity('Playing werewolf | /help', { type: 'WATCHING' });
+        client.user.setPresence({
+            status: "online", // online | idle | dnd | invisible
+            activities: [
+                {
+                    name: "/help for more information!", // tên hoạt động
+                    type: ActivityType.Playing // Playing | Listening | Watching | Competing
+                }
+            ]
+        });
 
     });
     // Sự kiện thành viên tham gia
