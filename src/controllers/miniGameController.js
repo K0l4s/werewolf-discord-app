@@ -238,7 +238,7 @@ class MiniGameController {
             if (!user) {
                 return await interaction.followUp({
                     content: "❌ Không tìm thấy người chơi!",
-                    flags: InteractionResponseFlags.Ephemeral
+                    // flags: InteractionResponseFlags.Ephemeral
                 });
             }
 
@@ -360,12 +360,12 @@ class MiniGameController {
                 if (interaction.replied || interaction.deferred) {
                     await interaction.followUp({
                         content: "❌ Đã xảy ra lỗi khi thực hiện trò chơi!",
-                        flags: InteractionResponseFlags.Ephemeral
+                        // flags: InteractionResponseFlags.Ephemeral
                     });
                 } else {
                     await interaction.reply({
                         content: "❌ Đã xảy ra lỗi khi thực hiện trò chơi!",
-                        flags: InteractionResponseFlags.Ephemeral
+                        // flags: InteractionResponseFlags.Ephemeral
                     });
                 }
             } catch (followUpError) {

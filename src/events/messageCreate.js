@@ -379,7 +379,7 @@ const handleMessageCreate = async (client, msg) => {
         const embed = await ShopController.getShopEmbed()
         msg.reply(embed)
     }
-    else if (cmd === "wallet" || cmd == "w") {
+    else if (cmd === "wallet" || cmd == "w" || cmd === "cash" || cmd === "money") {
         await UserController.handleBalance(msg);
         return;
     }
