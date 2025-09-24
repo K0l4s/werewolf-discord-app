@@ -285,11 +285,11 @@ try {
     client.on('interactionCreate', async (interaction) => {
         try {
             if (interaction.isCommand() || interaction.isChatInputCommand()) {
-                await require('./events/handleInteractionCreate')(interaction, client);
+                return await require('./events/handleInteractionCreate')(interaction, client);
             } else if (interaction.isStringSelectMenu() || interaction.isSelectMenu()) {
-                await require('./events/handleInteractionSelectCreate')(interaction);
+                return await require('./events/handleInteractionSelectCreate')(interaction);
             } else if (interaction.isButton()) {
-                await require('./events/handleButtonInteraction')(interaction);
+                return await require('./events/handleButtonInteraction')(interaction);
             }
         } catch (error) {
             console.error("⚠️ Lỗi interactionCreate:", error);

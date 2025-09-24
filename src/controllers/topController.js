@@ -9,26 +9,25 @@ class TopController {
 
             const { scope, type, user } = options;
             const guildId = isSlash ? interactionOrMessage.guildId : (interactionOrMessage.guild ? interactionOrMessage.guild.id : null);
+
             // Lấy dữ liệu top
             const topData = await this.getTopData(scope, type, 10, user.id, guildId, client);
             if (!topData || topData.topUsers.length === 0) {
                 return this.sendResponse(interactionOrMessage, {
                     content: '❌ Không có dữ liệu leaderboard!',
-                    isSlash
-                });
+                }, isSlash);
             }
 
             // Tạo embed
             const embed = await this.createLeaderboardEmbed(client, topData, scope, type, user);
 
-            return this.sendResponse(interactionOrMessage, { embeds: [embed], isSlash });
+            return this.sendResponse(interactionOrMessage, { embeds: [embed] }, isSlash);
 
         } catch (error) {
             console.error('Error in handleTopCommand:', error);
             return this.sendResponse(interactionOrMessage, {
                 content: '❌ Đã có lỗi xảy ra khi lấy leaderboard!',
-                isSlash
-            });
+            }, isSlash);
         }
     }
 
@@ -138,19 +137,6 @@ class TopController {
             return { userId: null };
         }
     }
-
-
-    // Lấy members trong guild
-    // static async getGuildMembers(guildId, client) {
-    //     try {
-    //         const guild = await client.guilds.fetch(guildId);
-    //         const members = await guild.members.fetch();
-    //         return members.map(member => member.id);
-    //     } catch (error) {
-    //         console.error('Lỗi khi lấy guild members:', error);
-    //         return [];
-    //     }
-    // }
 
     // Tiêu chí sắp xếp
     static getSortCriteria(type) {
@@ -264,7 +250,6 @@ class TopController {
         return embed;
     }
 
-
     // Thông tin type
     static getTypeInfo(type) {
         switch (type) {
@@ -310,17 +295,24 @@ class TopController {
         }
     }
 
-    // Gửi response
-    static async sendResponse(interactionOrMessage, response, isSlash) {
+    // Gửi response (FIXED - Quan trọng nhất)
+    static async sendResponse(interactionOrMessage, response, isSlash = false) {
+        console.log('Sending response:', response);
+
         if (isSlash) {
+            // Kiểm tra xem interaction đã được acknowledged chưa
             if (interactionOrMessage.deferred || interactionOrMessage.replied) {
-                return await interactionOrMessage.editReply(response);
+                // Đã được acknowledged, sử dụng followUp
+                return await interactionOrMessage.followUp(response);
             } else {
+                // Chưa được acknowledged, sử dụng reply
                 return await interactionOrMessage.reply(response);
             }
         } else {
+            // Prefix command - sử dụng reply bình thường
             return await interactionOrMessage.reply(response);
         }
     }
 }
+
 module.exports = TopController;
