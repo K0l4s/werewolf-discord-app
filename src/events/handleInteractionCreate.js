@@ -116,7 +116,7 @@ module.exports = async (interaction, client) => {
 
         case 'new': {
             const embed = await GameController.handleCreateNewRoom(interaction.channel.id, lang);
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.followUp({ embeds: [embed] });
             return;
         }
 

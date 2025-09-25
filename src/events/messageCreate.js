@@ -219,6 +219,28 @@ const handleMessageCreate = async (client, msg) => {
 
             msg.reply(`✅ ${t('s.vc_succ', lang)} \`${newVC}\` ${t('s.vc_succ2', lang)}`);
         }
+        if(args[0] === "embed" || args[0] == "e") {
+            if (!args[1]) return msg.reply(`⚠️ ${t('e.miss_cmd', lang)}`);
+            if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
+                return msg.reply(`❌ ${t('e.permission', lang)}`);
+            }
+            const newE = args[1];
+            //chuyển sang true/ false
+            const isEnabled = newE === "true";
+            // await VoiceChannelController.setVoiceChannel(isEnabled, msg.guild.id);
+            const serverSetting = await Notification.findOne({ guildId: msg.guild.id });
+            if (serverSetting) {
+                serverSetting.isEmbedEnabled = isEnabled;
+                await serverSetting.save();
+            } else {
+                const newSetting = new Notification({
+                    guildId: msg.guild.id,
+                    isEmbedEnabled: isEnabled
+                });
+                await newSetting.save();
+            }
+            msg.reply(`✅ ${t('s.embed_succ', lang)} \`${newE}\` ${t('s.embed_succ2', lang)}`);
+        }
     }
     else if (cmd === "awake") {
         const userId = msg.author.id;

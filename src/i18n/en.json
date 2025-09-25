@@ -16,7 +16,9 @@
         "cur_la": "This server’s language is **English :england:** (as if you didn’t know 😏).",
         "cur_lucky": "Your current lucky buff is",
         "vc_succ":" Alright, I’ve set the voice channel notification to ",
-        "vc_succ2":" .Now stop wasting my time!"
+        "vc_succ2":" .Now stop wasting my time!",
+        "embed_succ":" Alright, I’ve set the embed notification to ",
+        "embed_succ2":" .Now stop wasting my time!"
     },
     "inv": {
         "ad_succ": "Done! Here’s your precious invite code: ",

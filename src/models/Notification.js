@@ -17,5 +17,6 @@ const notificationSchema = new mongoose.Schema({
         }
     ],
     isChannelEnabled: { type: Boolean, default: false },
+    isEmbedEnabled: { type: Boolean, default: true },
 })
 module.exports = mongoose.model('Notification', notificationSchema);
