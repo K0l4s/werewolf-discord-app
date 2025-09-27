@@ -12,6 +12,9 @@ const routes = require('./routes');
 const app = express();
 const port = process.env.PORT || 3000;
 const cors = require('cors');
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+
 // Discord client setup
 const client = new Client({
     intents: [
@@ -37,8 +40,8 @@ app.use(cors());
 
 // Nếu muốn giới hạn origin (frontend chạy ở http://localhost:5173 chẳng hạn)
 app.use(cors({
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: process.env.FE_URL || 'http://localhost:5173',
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true
 }));
 // Make Discord client accessible in routes
@@ -46,7 +49,7 @@ app.set('discordClient', client);
 
 // Import routes
 app.use('/', routes);
-
+app.use(cookieParser());
 async function startServer() {
     try {
         // Connect DB and cleanup
@@ -54,8 +57,8 @@ async function startServer() {
         cleanupTempImages();
 
         // Start Express server
-        app.listen(port, () => {
-            console.log(`🚀 Express server chạy trên http://localhost:${port}`);
+        app.listen(port, "0.0.0.0", () => {
+            console.log(`🚀 Express server chạy trên http://0.0.0.0:${port}`);
         });
 
         // Discord bot events
@@ -66,7 +69,7 @@ async function startServer() {
                 status: "online",
                 activities: [
                     {
-                        name: "/help for more information!",
+                        name: "using w instead splash command if bug!!!",
                         type: ActivityType.Playing
                     }
                 ]

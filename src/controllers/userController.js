@@ -152,42 +152,82 @@ class UserController {
     static async addExperience(userId, exp, interaction) {
         const user = await UserService.findUserById(userId);
         const maxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
-        const newExp = Number(user.exp) + Number(exp)
+        const newExp = Number(user.exp) + Number(exp);
+
         console.log(newExp, " ", maxExp);
-        if (newExp >= maxExp) {
-            user.lvl = Number(user.lvl) + 1;
-            user.exp = Number(newExp) - Number(maxExp); // Correct residual exp
-            const nexMaxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
-            const nextLvl = Number(user.lvl) + 1;
+
+        // Xử lý level up nhiều lần nếu exp nhận được rất lớn
+        let currentExp = newExp;
+        let levelUps = 0;
+        let currentLevel = Number(user.lvl);
+
+        while (currentExp >= maxExp) {
+            currentExp -= maxExp;
+            currentLevel++;
+            levelUps++;
+
+            // Tính maxExp cho level mới
+            const newMaxExp = currentLevel * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
+
+            // Nếu exp còn lại vẫn đủ để lên level tiếp, tiếp tục vòng lặp
+            if (currentExp < newMaxExp) {
+                break;
+            }
+        }
+
+        if (levelUps > 0) {
+            user.lvl = currentLevel;
+            user.exp = currentExp;
+
+            const nextMaxExp = currentLevel * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
+            const nextLvl = currentLevel + 1;
+
             const path = require('path');
             const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
             const imgPath = path.join(__dirname, '../../assets/image/star.gif');
             const attachment = new AttachmentBuilder(imgPath);
+
             const embed = new EmbedBuilder()
                 .setTitle(`${globalName} Level up!`)
-                .setDescription(`Congratulations, <@${userId}> reached **level ${user.lvl}** and you need **${nexMaxExp} exp** to reach **level ${nextLvl}**!`)
+                .setDescription(`Congratulations, <@${userId}> reached **level ${user.lvl}** and you need **${nextMaxExp} exp** to reach **level ${nextLvl}**!`)
                 .setThumbnail('attachment://star.gif');
 
             await interaction.channel.send({ embeds: [embed], files: [attachment] }).catch(console.error);
+        } else {
+            user.exp = currentExp;
         }
-        else {
-            user.exp = newExp;
-        }
-        await user.save();
 
-        user.save();
+        await user.save();
     }
     static async addExperienceSpirit(userId, exp) {
         const user = await UserService.findUserById(userId);
 
-        const maxExp = Number(user.spiritLvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
-        const newExp = Number(user.spiritExp) + Number(exp);
+        let currentLevel = Number(user.spiritLvl);
+        let currentExp = Number(user.spiritExp) + Number(exp);
 
-        if (newExp >= maxExp) {
-            user.spiritLvl = parseInt(user.spiritLvl) + 1;
-            user.spiritExp = newExp - maxExp; // giữ lại exp dư
+        // Xử lý level up nhiều lần nếu exp nhận được rất lớn
+        let levelUps = 0;
+
+        while (true) {
+            const maxExp = currentLevel * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
+
+            if (currentExp >= maxExp) {
+                currentExp -= maxExp;
+                currentLevel++;
+                levelUps++;
+            } else {
+                break;
+            }
+        }
+
+        if (levelUps > 0) {
+            user.spiritLvl = currentLevel;
+            user.spiritExp = currentExp;
+
+            // Có thể thêm thông báo level up ở đây nếu cần
+            console.log(`User ${userId} leveled up ${levelUps} times to level ${currentLevel}`);
         } else {
-            user.spiritExp = newExp; // ✅ sửa từ user.exp thành user.spiritExp
+            user.spiritExp = currentExp;
         }
 
         await user.save();

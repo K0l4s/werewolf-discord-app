@@ -21,11 +21,9 @@ module.exports = async (interaction, client) => {
     const { commandName } = interaction;
     let lang = await LanguageController.getLang(interaction.guildId);
 
-    // try {
-    // DEFER REPLY NGAY ĐẦU - QUAN TRỌNG
-
     switch (commandName) {
         case 'spirit': {
+            await interaction.deferReply();
             if (interaction.options.getSubcommand() === "list") {
                 try {
                     const page = interaction.options.getString("pagenumber");
@@ -57,11 +55,11 @@ module.exports = async (interaction, client) => {
 
         case 'top': {
             await interaction.deferReply({ ephemeral: false });
-
             return await TopController.handleTopCommand(interaction, [], true, client);
         }
 
         case 'set': {
+            await interaction.deferReply();
             if (interaction.options.getSubcommand() === "prefix") {
                 const newPrefix = interaction.options.getString("value");
                 await Prefix.findOneAndUpdate(
@@ -81,6 +79,7 @@ module.exports = async (interaction, client) => {
         }
 
         case 'awake': {
+            await interaction.deferReply();
             const userId = interaction.user.id;
             console.log("Đang tiến hành thức tỉnh võ hồn cho user:", userId);
 
@@ -105,22 +104,26 @@ module.exports = async (interaction, client) => {
         }
 
         case 'battle': {
+            await interaction.deferReply();
             await BattleController.handleBattleCommand(interaction);
             return;
         }
 
         case 'join': {
+            await interaction.deferReply();
             await GameController.handleJoinCommand(interactionToMessage(interaction), lang);
             return;
         }
 
         case 'new': {
+            await interaction.deferReply();
             const embed = await GameController.handleCreateNewRoom(interaction.channel.id, lang);
-            await interaction.followUp({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
 
         case 'give': {
+            await interaction.deferReply();
             const mentionUser = interaction.options.getUser('user');
             const balance = interaction.options.getNumber('amount');
             const embed = new EmbedBuilder();
@@ -150,11 +153,13 @@ module.exports = async (interaction, client) => {
         }
 
         case 'baucua': {
+            await interaction.deferReply();
             const balance = interaction.options.getNumber('amount');
             return await MiniGameController.bauCua(interaction.user.id, interactionToMessage(interaction), balance);
         }
 
         case 'help': {
+            await interaction.deferReply();
             const commandGroups = {
                 werewolf: {
                     name: "Werewolf",
@@ -297,7 +302,7 @@ module.exports = async (interaction, client) => {
         }
 
         case 'daily': {
-            // Lấy user data từ database
+            await interaction.deferReply();
             let userData = await UserController.getUserData(interaction.user.id);
             if (!userData) {
                 userData = await UserController.createUser(interaction.user.id);
@@ -310,7 +315,6 @@ module.exports = async (interaction, client) => {
                 bonus: Math.random() < 0.2
             };
 
-            // Check cooldown
             if (userData.lastDaily && Date.now() - userData.lastDaily.getTime() < cooldown) {
                 const timeLeft = cooldown - (Date.now() - userData.lastDaily.getTime());
                 const hours = Math.floor(timeLeft / (1000 * 60 * 60));
@@ -329,7 +333,6 @@ module.exports = async (interaction, client) => {
                 return await interaction.editReply({ embeds: [cooldownEmbed] });
             }
 
-            // Tính toán reward
             let totalCoin = reward.coin;
             let totalExp = reward.exp;
             let bonusText = '';
@@ -342,11 +345,9 @@ module.exports = async (interaction, client) => {
                 bonusText = `🎁 **Bonus:** +${bonusCoin} coin +${bonusExp} exp`;
             }
 
-            // Cập nhật dữ liệu
             userData.coin += totalCoin;
             userData.exp += totalExp;
 
-            // Check level up
             let levelUpText = '';
             let levelsGained = 0;
             const originalLevel = userData.lvl;
@@ -370,7 +371,6 @@ module.exports = async (interaction, client) => {
             userData.lastDaily = new Date();
             await userData.save();
 
-            // Tạo embed thành công
             const successEmbed = new EmbedBuilder()
                 .setColor('#55FF55')
                 .setTitle('🎉 Daily Reward')
@@ -396,6 +396,7 @@ module.exports = async (interaction, client) => {
         }
 
         case 'about': {
+            await interaction.deferReply();
             const embed = new EmbedBuilder()
                 .setTitle("🤖 About This Bot")
                 .setDescription("This bot is a Discord game and utility bot created by **Huỳnh Trung Kiên**.")
@@ -413,35 +414,27 @@ module.exports = async (interaction, client) => {
         }
 
         case 'start': {
+            await interaction.deferReply();
             await GameController.handleStartGame(interactionToMessage(interaction), lang);
             return;
         }
 
         case 'wallet': {
+            await interaction.deferReply();
             await UserController.handleBalance(interactionToMessage(interaction));
             return;
         }
 
         case 'donate': {
+            await interaction.deferReply();
             await interaction.editReply({ content: "🔗 Momo: 0827626203 \n Name: Huỳnh Trung Kiên" });
             return;
         }
 
         default: {
+            await interaction.deferReply();
             await interaction.editReply({ content: "⚠️ Lệnh không hợp lệ." });
             return;
         }
     }
-    // } catch (error) {
-    //     console.error("⚠️ Lỗi interactionCreate:", error);
-
-    //     if (interaction.deferred || interaction.replied) {
-    //         await interaction.editReply({ content: "❌ Có lỗi xảy ra khi xử lý lệnh!" });
-    //     } else {
-    //         await interaction.followUp({ 
-    //             content: "❌ Có lỗi xảy ra khi xử lý lệnh!",
-    //             flags: MessageFlags.Ephemeral 
-    //         });
-    //     }
-    // }
 };
