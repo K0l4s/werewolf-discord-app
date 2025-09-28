@@ -27,21 +27,14 @@ const TopController = require('../controllers/topController');
 const handleMessageCreate = async (client, msg) => {
     // try {
     if (msg.author.bot || !msg.guild) return;
-    // console.log(msg.author.globalName + ": " + msg.content + " " + msg.guild.name)
-    // if (!msg.content.startsWith("/")) {
-    //     return;
-    // } 
-    // console.log(msg.content)
     // Lấy prefix server từ DB
     let serverPrefixData = await Prefix.findOne({ guildId: msg.guild.id });
     let serverPrefix = serverPrefixData ? serverPrefixData.prefix : 'w';
     let prefixes = [];
 
     if (serverPrefix) {
-        // Nếu có local prefix → chỉ dùng local thôi
         prefixes.push(serverPrefix.toLowerCase(), serverPrefix.toUpperCase());
     } else {
-        // Nếu không có local prefix → dùng global
         prefixes.push("w", "W");
     }
 
@@ -52,8 +45,6 @@ const handleMessageCreate = async (client, msg) => {
     // Cắt prefix ra khỏi message
     const args = msg.content.slice(usedPrefix.length).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
-    // const args = msg.content.slice(1).trim().split(/ +/);
-    // const cmd = args.shift().toLowerCase();
     const user = await UserService.findUserById(msg.author.id)
     // if (cmd === "cspirit") {
     //     await SpiritController.addSpirit()

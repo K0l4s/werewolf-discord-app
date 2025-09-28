@@ -72,7 +72,69 @@ router.get("", async (req, res) => {
     }
 });
 
+router.get("/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
 
+        const authHeader = req.headers["authorization"];
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ error: "No token provided" });
+        }
+        const token = authHeader.split(" ")[1];
+        
+        // tìm token trong DB
+        const tokenRow = await Token.findOne({ token });
+        if (!tokenRow) {
+            return res.status(400).json({ error: "Token not found" });
+        }
+        if (tokenRow.isExpired) {
+            return res.status(400).json({ error: "Token is expired" });
+        }
+
+        const access_token = tokenRow.discordToken;
+
+        // 1. Lấy guilds của user
+        const userGuildsResponse = await axios.get(
+            "https://discord.com/api/users/@me/guilds",
+            { headers: { Authorization: `Bearer ${access_token}` } }
+        );
+        const userGuilds = userGuildsResponse.data;
+
+        // 2. Lấy guilds của bot
+        const botGuildsResponse = await axios.get(
+            "https://discord.com/api/users/@me/guilds",
+            { headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}` } }
+        );
+        const botGuilds = botGuildsResponse.data;
+        const botGuildIds = new Set(botGuilds.map(g => g.id));
+
+        // 3. Tìm guild theo id
+        const guild = userGuilds.find(g => g.id === id);
+        if (!guild) {
+            return res.status(404).json({ error: "Guild not found" });
+        }
+
+        const permissions = BigInt(guild.permissions);
+        const isAdmin = (permissions & 0x8n) === 0x8n; // ADMINISTRATOR
+        const isManager = (permissions & 0x20n) === 0x20n; // MANAGE_GUILD
+
+        const result = {
+            id: guild.id,
+            name: guild.name,
+            icon: guild.icon,
+            banner: guild.banner,
+            owner: guild.owner,
+            hasBot: botGuildIds.has(guild.id),
+            admin: guild.owner || isAdmin,
+            manager: isManager,
+        };
+
+        res.json(result);
+    } catch (err) {
+        console.error(err?.response?.data || err.message || err);
+        res.status(500).json({ error: "Failed to fetch guild info" });
+    }
+});
 
 
 module.exports = router;
