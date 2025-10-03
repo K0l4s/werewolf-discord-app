@@ -373,15 +373,35 @@ async function startServer() {
                 // Gửi báo cáo bug tới dev
                 const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
                 if (devUser) {
-                    await devUser.send({
-                        content: `🐞 **Báo cáo lỗi messageCreate**\n` +
-                            `**User:** ${message.author.username} (${message.author.id})\n` +
-                            `**Interaction Type:** ${message.type}\n` +
-                            `**Error:**\n\`\`\`${error.stack}\`\`\``
-                    });
+                    await devUser.send({ content: formatMessageError(message, error) });
                 }
             }
         });
+        function formatMessageError(message, error) {
+            const user = message.author;
+            const guild = message.guild;
+            const channel = message.channel;
+
+            let details =
+                `🐞 **Báo cáo lỗi Message**\n` +
+                `**User:** ${user.tag} (${user.id})\n` +
+                `**User Avatar:** ${user.displayAvatarURL({ dynamic: true })}\n` +
+                `**Server:** ${guild?.name || "DM"}\n` +
+                `**Server ID:** ${guild?.id || "N/A"}\n` +
+                `**Channel:** ${channel?.name || "DM"}\n` +
+                `**Channel ID:** ${channel?.id || "N/A"}\n` +
+                `**Message Content:** ${message.content || "No content"}\n`;
+
+            if (guild && channel) {
+                details += `**Message Link:** https://discord.com/channels/${guild.id}/${channel.id}/${message.id}\n`;
+            }
+
+            details += `**Time:** ${new Date().toISOString()}\n`;
+            details += `**Error:**\n\`\`\`${error.stack}\`\`\``;
+
+            return details;
+        }
+
         client.on('messageReactionAdd', async (reaction, user) => {
             if (user.bot) return;
             // Nếu message chưa cache thì fetch
@@ -409,15 +429,50 @@ async function startServer() {
                 // Gửi báo cáo bug tới dev
                 const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
                 if (devUser) {
-                    await devUser.send({
-                        content: `🐞 **Báo cáo lỗi interaction**\n` +
-                            `**User:** ${interaction.user.tag} (${interaction.user.id})\n` +
-                            `**Interaction Type:** ${interaction.type}\n` +
-                            `**Error:**\n\`\`\`${error.stack}\`\`\``
-                    });
+                    await devUser.send({ content: formatInteractionError(interaction, error) });
                 }
             }
         });
+        function formatInteractionError(interaction, error) {
+            const user = interaction.user;
+            const guild = interaction.guild;
+            const channel = interaction.channel;
+
+            let details =
+                `🐞 **Báo cáo lỗi Interaction**\n` +
+                `**User:** ${user.tag} (${user.id})\n` +
+                `**User Avatar:** ${user.displayAvatarURL({ dynamic: true })}\n` +
+                `**Server:** ${guild?.name || "DM"}\n` +
+                `**Server ID:** ${guild?.id || "N/A"}\n` +
+                `**Channel:** ${channel?.name || "DM"}\n` +
+                `**Channel ID:** ${channel?.id || "N/A"}\n`;
+
+            if (interaction.isChatInputCommand()) {
+                details += `**Command:** /${interaction.commandName}\n`;
+                const options = interaction.options.data.map(o => `${o.name}: ${o.value}`).join(", ");
+                details += `**Options:** ${options || "None"}\n`;
+            } else if (interaction.isButton()) {
+                details += `**Button ID:** ${interaction.customId}\n`;
+                if (interaction.message) {
+                    details += `**Message Link:** https://discord.com/channels/${guild?.id}/${channel?.id}/${interaction.message.id}\n`;
+                    details += `**Message Content:** ${interaction.message.content || "No content"}\n`;
+                }
+            } else if (interaction.isStringSelectMenu()) {
+                details += `**Select Menu ID:** ${interaction.customId}\n`;
+                details += `**Values:** ${interaction.values.join(", ")}\n`;
+            } else if (interaction.isUserContextMenuCommand()) {
+                details += `**User Context Menu:** ${interaction.commandName}\n`;
+            } else if (interaction.isMessageContextMenuCommand()) {
+                details += `**Message Context Menu:** ${interaction.commandName}\n`;
+            } else {
+                details += `**Interaction Type:** ${interaction.type}\n`;
+            }
+
+            details += `**Time:** ${new Date().toISOString()}\n`;
+            details += `**Error:**\n\`\`\`${error.stack}\`\`\``;
+
+            return details;
+        }
         // Xử lý interactions
         client.on('interactionCreate', async (interaction) => {
             if (interaction.isModalSubmit()) {
@@ -648,12 +703,12 @@ async function startServer() {
                 console.error('Lỗi khi xử lý interaction:', error);
 
                 // Chỉ gửi thông báo lỗi nếu chưa trả lời
-                // if (!interaction.replied && !interaction.deferred) {
-                //     await interaction.reply({
-                //         content: 'Đã xảy ra lỗi khi xử lý yêu cầu.',
-                //         ephemeral: true
-                //     });
-                // }
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({
+                        content: 'Đã xảy ra lỗi khi xử lý yêu cầu.',
+                        ephemeral: true
+                    });
+                }
             }
         });
         client.on(Events.GuildCreate, async (guild) => {

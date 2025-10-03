@@ -11,9 +11,8 @@ const TopController = require('../controllers/topController');
 const UserController = require('../controllers/userController');
 const SpiritMaster = require('../models/DauLaDaiLuc/SpiritMaster');
 const Prefix = require('../models/Prefix');
-const GameService = require('../services/gameService');
 const { interactionToMessage } = require('../utils/fakeMessage');
-const { EmbedBuilder, MessageFlags } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 
 module.exports = async (interaction, client) => {
     if (!interaction.isChatInputCommand()) return;
@@ -117,6 +116,7 @@ module.exports = async (interaction, client) => {
 
         case 'new': {
             await interaction.deferReply();
+
             const embed = await GameController.handleCreateNewRoom(interaction.channel.id, lang);
             await interaction.editReply({ embeds: [embed] });
             return;
@@ -415,6 +415,17 @@ module.exports = async (interaction, client) => {
 
         case 'start': {
             await interaction.deferReply();
+            if (!interaction.guild) {
+                console.log("Interaction không ở trong server (guild) → guild = null");
+                interaction.reply("You must authorization for bot to access this guild!")
+                return;
+            }
+
+            if (!interaction.channel) {
+                console.log("Bot không truy cập được channel này → channel = null");
+                interaction.reply("You must authorization for bot to access this channel!")
+                return;
+            }
             await GameController.handleStartGame(interactionToMessage(interaction), lang);
             return;
         }

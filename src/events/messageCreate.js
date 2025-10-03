@@ -53,6 +53,16 @@ const handleMessageCreate = async (client, msg) => {
     let lang = await LanguageController.getLang(msg.guild.id)
     // console.log(lang)
     // console.log(cmd)
+    const perms = msg.channel.permissionsFor(msg.client.user);
+    if (!perms.has("SendMessages")) {
+        console.log("❌ Bot không có quyền SendMessages trong channel này");
+        return await msg.channel.send("Bot không có quyền SendMessages trong channel");
+    }
+    if (!perms.has("EmbedLinks")) {
+        console.log("⚠️ Bot không có quyền EmbedLinks, sẽ gửi plain text");
+        return await msg.channel.send("Bot không có quyền EmbedLinks");
+    }
+
     if (cmd === "invite") {
         if (!args[0]) {
             const inv = await UserController.createInviteCode(msg.author.id)
@@ -63,7 +73,7 @@ const handleMessageCreate = async (client, msg) => {
         return msg.reply(embed)
     }
     if (cmd === "top") {
-        return await TopController.handleTopCommand(msg, args, false,client);
+        return await TopController.handleTopCommand(msg, args, false, client);
     }
     if (cmd === "status") {
         const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
@@ -210,7 +220,7 @@ const handleMessageCreate = async (client, msg) => {
 
             msg.reply(`✅ ${t('s.vc_succ', lang)} \`${newVC}\` ${t('s.vc_succ2', lang)}`);
         }
-        if(args[0] === "embed" || args[0] == "e") {
+        if (args[0] === "embed" || args[0] == "e") {
             if (!args[1]) return msg.reply(`⚠️ ${t('e.miss_cmd', lang)}`);
             if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
                 return msg.reply(`❌ ${t('e.permission', lang)}`);
@@ -359,18 +369,38 @@ const handleMessageCreate = async (client, msg) => {
         }
     }
     else if (cmd === "hunt") {
-        // const lastUser = await UserService.findUserById(msg.author.id);
-        const embed = await HuntSpiritController.huntSpirits(msg.author.id);
-        msg.reply(embed);
-        const currentUser = await UserService.findUserById(msg.author.id);
-        if (currentUser.spiritLvl > user.spiritLvl) {
-            const lvlUpEmbed = new EmbedBuilder();
-            lvlUpEmbed.setTitle("Spirit Level Up!")
-                .setDescription(`Congratulations, < @${msg.author.id} > reached ** level ${currentUser.spiritLvl} ** !`)
-                .setThumbnail("https://i.ibb.co/YBQPxrNy/Lam-Ngan-Thao.png")
-            msg.reply({ embeds: [lvlUpEmbed] })
+        try {
+            const embed = await HuntSpiritController.huntSpirits(msg.author.id);
+
+            // check quyền trước khi gửi
+            const perms = msg.channel.permissionsFor(msg.client.user);
+            if (!perms.has("SendMessages")) {
+                console.log("❌ Bot không có quyền SendMessages trong channel này");
+                return;
+            }
+            if (!perms.has("EmbedLinks")) {
+                console.log("⚠️ Bot không có quyền EmbedLinks, sẽ gửi plain text");
+                await msg.channel.send("Bạn vừa hunt spirit thành công!");
+            } else {
+                await msg.reply(embed);
+            }
+
+            const currentUser = await UserService.findUserById(msg.author.id);
+            const user = await UserService.findUserById(msg.author.id); // cái này mày quên khai báo `user`
+
+            if (currentUser.spiritLvl > user.spiritLvl) {
+                const lvlUpEmbed = new EmbedBuilder()
+                    .setTitle("Spirit Level Up!")
+                    .setDescription(`Congratulations, <@${msg.author.id}> reached **level ${currentUser.spiritLvl}**!`)
+                    .setThumbnail("https://i.ibb.co/YBQPxrNy/Lam-Ngan-Thao.png");
+
+                await msg.channel.send({ embeds: [lvlUpEmbed] });
+            }
+        } catch (err) {
+            console.error("❌ Lỗi khi xử lý lệnh hunt:", err);
         }
     }
+
     else if (cmd === "join" || cmd === "j") {
         await GameController.handleJoinCommand(msg);
         return;
