@@ -363,17 +363,23 @@ async function startServer() {
             } catch (error) {
                 console.error("⚠️ Lỗi interactionCreate:", error);
 
-
-                // const logChannel = message.guild.channels.cache.get(severSetting.channels.find(c => c.channelType === 'booster').channelId);
-                // if (logChannel) {
-                //     await logChannel.send({
-                //         content: `❌ <@${message.author.id}>, Đã xảy ra lỗi khi xử lý tin nhắn của bạn. Vui lòng thử lại sau hoặc liên hệ với quản trị viên server nếu lỗi vẫn tiếp diễn.`,
-                //     });
-                // }
                 // Gửi báo cáo bug tới dev
                 const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
                 if (devUser) {
                     await devUser.send({ content: formatMessageError(message, error) });
+                }
+                try {
+                    await message.author.send(
+                        `Error message: \n\`\`\`${error.message}\`\`\`\n` +
+                        `❌ Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn của bạn.\n` +
+                        `Đội ngũ dev đã được báo cáo, vui lòng thử lại sau.\n` +
+                        `➡️ Để đẩy nhanh tiến độ sửa lỗi, hãy tham gia server Discord của chúng tôi!\n\n` +
+                        `❌ Sorry, it's some bug when you use our bot.\n` +
+                        `The dev team were notified, please try again.\n` +
+                        `➡️ Please join our Discord for more information!`
+                    );
+                } catch (dmError) {
+                    console.warn(`⚠️ Không thể gửi DM tới user ${message.author.tag}:`, dmError);
                 }
             }
         });
@@ -431,6 +437,41 @@ async function startServer() {
                 if (devUser) {
                     await devUser.send({ content: formatInteractionError(interaction, error) });
                 }
+                try {
+                    await interaction.user.send(
+                        `Error message: \n\`\`\`${error.message}\`\`\`\n` +
+                        `❌ Xin lỗi, đã xảy ra lỗi khi xử lý yêu cầu của bạn.\n` +
+                        `Đội ngũ dev đã được báo cáo, vui lòng thử lại sau.\n` +
+                        `➡️ Để đẩy nhanh tiến độ sửa lỗi, hãy tham gia server Discord của chúng tôi!\n\n` +
+                        `❌ Sorry, it's some bug when you use our bot.\n` +
+                        `The dev team were notified, please try again.\n` +
+                        `➡️ Please join our Discord for more information!`
+                    );
+
+                    // Optional: thông báo nhẹ trong kênh rằng user đã được gửi DM
+                    if (!interaction.replied) {
+                        await interaction.reply({
+                            content: "📩 Mình đã gửi chi tiết lỗi cho bạn qua DM.",
+                            ephemeral: true
+                        });
+                    }
+                } catch (dmError) {
+                    console.warn(`⚠️ Không thể gửi DM tới user ${interaction.user.tag}:`, dmError);
+
+                    // Nếu không gửi DM được (user tắt DM), báo trực tiếp
+                    if (!interaction.replied) {
+                        await interaction.reply({
+                            content: "❌ Không thể gửi DM cho bạn. Vui lòng bật tin nhắn riêng hoặc thử lại sau.",
+                            ephemeral: true
+                        });
+                    } else {
+                        await interaction.followUp({
+                            content: "❌ Không thể gửi DM cho bạn. Vui lòng bật tin nhắn riêng hoặc thử lại sau.",
+                            ephemeral: true
+                        });
+                    }
+                }
+
             }
         });
         function formatInteractionError(interaction, error) {
