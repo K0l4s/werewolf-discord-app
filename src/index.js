@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const { Client, GatewayIntentBits, Partials, Events, EmbedBuilder, ActivityType } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Events, EmbedBuilder, ActivityType, PermissionsBitField, ChannelType } = require('discord.js');
 const connectDB = require('./config/database');
 const { handleMessageCreate } = require('./events/messageCreate');
 const SpiritRingController = require('./controllers/DauLaDaiLuc/spiritRingController');
@@ -374,9 +374,11 @@ async function startServer() {
                         `❌ Xin lỗi, đã xảy ra lỗi khi xử lý tin nhắn của bạn.\n` +
                         `Đội ngũ dev đã được báo cáo, vui lòng thử lại sau.\n` +
                         `➡️ Để đẩy nhanh tiến độ sửa lỗi, hãy tham gia server Discord của chúng tôi!\n\n` +
+                        `**KIỂM TRA LẠI QUYỀN CỦA BOT TRONG SERVER/ CHANNEL!**` +
                         `❌ Sorry, it's some bug when you use our bot.\n` +
                         `The dev team were notified, please try again.\n` +
-                        `➡️ Please join our Discord for more information!`
+                        `➡️ Please join our Discord for more information!` +
+                        `**CHECK THE BOT’S PERMISSIONS IN THE SERVER/CHANNEL!**`
                     );
                 } catch (dmError) {
                     console.warn(`⚠️ Không thể gửi DM tới user ${message.author.tag}:`, dmError);
@@ -443,9 +445,11 @@ async function startServer() {
                         `❌ Xin lỗi, đã xảy ra lỗi khi xử lý yêu cầu của bạn.\n` +
                         `Đội ngũ dev đã được báo cáo, vui lòng thử lại sau.\n` +
                         `➡️ Để đẩy nhanh tiến độ sửa lỗi, hãy tham gia server Discord của chúng tôi!\n\n` +
+                        `**KIỂM TRA LẠI QUYỀN BOT TRONG SERVER/CHANNEL!**` +
                         `❌ Sorry, it's some bug when you use our bot.\n` +
                         `The dev team were notified, please try again.\n` +
-                        `➡️ Please join our Discord for more information!`
+                        `➡️ Please join our Discord for more information!` +
+                        `**CHECK THE BOT’S PERMISSIONS IN THE SERVER/CHANNEL!**`
                     );
 
                     // Optional: thông báo nhẹ trong kênh rằng user đã được gửi DM
@@ -761,8 +765,58 @@ async function startServer() {
                         `✅ Bot vừa được add vào server mới!\n\n**Tên server:** ${guild.name}\n👥 **Thành viên:** ${guild.memberCount}\n🆔 **Server ID:** ${guild.id}`
                     );
                 }
+
+                // Kiểm tra quyền của bot trong server
+                const botMember = guild.members.me;
+                if (!botMember.permissions.has(PermissionsBitField.Flags.Administrator)) {
+                    // Tìm kênh mặc định (system channel) hoặc kênh đầu tiên có thể gửi tin nhắn
+                    const defaultChannel = guild.systemChannel ||
+                        guild.channels.cache.find(channel =>
+                            channel.type === ChannelType.GuildText &&
+                            channel.permissionsFor(botMember).has(PermissionsBitField.Flags.SendMessages)
+                        );
+
+                    if (defaultChannel) {
+                        await defaultChannel.send(
+                            `⚠️ **Cảnh báo quan trọng!**\n\n` +
+                            `Tôi cần quyền **Quản trị viên (Administrator)** để hoạt động đầy đủ.\n` +
+                            `Vui lòng cấp quyền Administrator cho tôi trong cài đặt vai trò (roles) của server.\n` +
+                            `Nếu không, một số tính năng có thể không hoạt động chính xác.` +
+                            `========English========`+
+                            `⚠️ **Important Warning!**\n\n` +
+                            `I need Administrator permission to function properly.\n`+
+                            `Please grant me the Administrator role in your server settings. \n`+
+                            `Without it, some features may not work correctly. \n`
+                        );
+                    }
+
+                    // Gửi thông báo cho developer
+                    if (developer) {
+                        await developer.send(
+                            `⚠️ Bot được thêm vào server **${guild.name}** nhưng **KHÔNG CÓ** quyền Administrator!\n` +
+                            `Server ID: ${guild.id}`
+                        );
+                    }
+                } else {
+                    // Nếu bot có quyền admin, thông báo thành công
+                    const defaultChannel = guild.systemChannel ||
+                        guild.channels.cache.find(channel =>
+                            channel.type === ChannelType.GuildText &&
+                            channel.permissionsFor(botMember).has(PermissionsBitField.Flags.SendMessages)
+                        );
+
+                    if (defaultChannel) {
+                        await defaultChannel.send(
+                            `👋 Xin chào! Cảm ơn bạn đã mời tôi vào server!\n` +
+                            `✅ Tôi đã có đủ quyền để hoạt động. Sử dụng \`whelp\` để xem các lệnh có sẵn.`+
+                            `👋 Hello! Thanks for add me!\n` +
+                            `✅ Allready done. Use \`whelp\` to view our command.`
+                        );
+                    }
+                }
+
             } catch (error) {
-                console.error("Không thể gửi DM cho developer:", error);
+                console.error("Lỗi khi xử lý sự kiện GuildCreate:", error);
             }
         });
         client.on(Events.GuildDelete, async (guild) => {

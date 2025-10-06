@@ -110,6 +110,21 @@ const handleMessageCreate = async (client, msg) => {
         const embed = await PetController.getServerPet(msg.guild.id);
         msg.reply({ embeds: [embed] });
     }
+    if (cmd === 'serverfeed' || cmd === 'sfeed') {
+        // const args = msg.content.split(' ');
+        const itemRef = args[0];
+        console.log(itemRef)
+        if (!itemRef)
+            return await msg.reply("The correct command is `wsfeed`. Please try again!")
+        const guildId = msg.guild.id;
+        if (!guildId)
+            return await msg.reply("I can't find guild. Please try again!")
+        const userId = msg.author.id;
+        if (!userId)
+            return await msg.reply("Hey, I can't found you. Try again!")
+        const embed = await PetController.feedPetCommand(guildId, itemRef, userId)
+        return msg.reply({ embeds: [embed] })
+    }
     if (cmd === 'createpet') {
         try {
             // Kiểm tra quyền admin

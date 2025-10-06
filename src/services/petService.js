@@ -1,9 +1,50 @@
+const Inventory = require("../models/Inventory");
 const Pet = require("../models/Pet");
+const Item = require("../models/Item")
 const ServerPet = require("../models/ServerPet");
+const ItemService = require("./itemService");
+const { ITEM_TYPE } = require("../config/constants");
+const FoodBuff = require("../models/FoodBuff");
 
 class PetService {
     static async getServerPet(guildId) {
-        return await ServerPet.findOne({ guildId }).populate('pet');
+        try {
+            let serverPet = await ServerPet.findOne({ guildId }).populate('pet');
+
+            if (!serverPet) {
+                return null;
+            }
+
+            // Tính toán lại stats
+            const now = new Date();
+
+            // Tính toán độ đói dựa trên lastFed
+            const lastFed = new Date(serverPet.lastFed);
+            const minutesSinceLastFed = Math.floor((now - lastFed) / (1000 * 60));
+            const hungerDecrease = Math.floor(minutesSinceLastFed / 15); // Mỗi 15 phút giảm 1 độ đói
+            serverPet.hunger = Math.max(0, serverPet.hunger - hungerDecrease);
+
+            // Tính toán độ vui vẻ dựa trên lastPlayed
+            const lastPlayed = new Date(serverPet.lastPlayed);
+            const minutesSinceLastPlayed = Math.floor((now - lastPlayed) / (1000 * 60));
+            const happinessDecrease = Math.floor(minutesSinceLastPlayed / 10); // Mỗi 10 phút giảm 1 độ vui vẻ
+            serverPet.happiness = Math.max(0, serverPet.happiness - happinessDecrease);
+
+            // Cập nhật thời gian cuối cùng nếu có thay đổi
+            if (hungerDecrease > 0 || happinessDecrease > 0) {
+                await ServerPet.findByIdAndUpdate(serverPet._id, {
+                    hunger: serverPet.hunger,
+                    happiness: serverPet.happiness,
+                    lastFed: hungerDecrease > 0 ? now : serverPet.lastFed,
+                    lastPlayed: happinessDecrease > 0 ? now : serverPet.lastPlayed
+                });
+            }
+
+            return serverPet;
+        } catch (error) {
+            console.error('Error getting server pet:', error);
+            return null;
+        }
     }
     static async createServerPet(guildId) {
         const existing = await ServerPet.findOne({ guildId });
@@ -133,6 +174,114 @@ class PetService {
         } catch (error) {
             console.error("❌ Lỗi khi tạo pet:", error);
             throw new Error("Không thể tạo pet");
+        }
+    }
+
+    static async feedPet(guildId, itemRef, userId) {
+        try {
+            // Lấy thông tin server pet
+            const serverPet = await ServerPet.findOne({ guildId }).populate('pet');
+            if (!serverPet) {
+                throw new Error("Server chưa có pet nào!");
+            }
+
+            // Kiểm tra item có tồn tại và là pet food không
+            // const item = await Item.findById(itemId).populate('foodBuff');
+            const item = await ItemService.getItemByRef(itemRef)
+            if (!item) {
+                throw new Error("Vật phẩm không tồn tại!");
+            }
+
+            if (item.type !== ITEM_TYPE.PET_FOOD) {
+                throw new Error("Vật phẩm này không phải là thức ăn cho pet!");
+            }
+            // console.log(item)
+            // Kiểm tra người dùng có item này và số lượng đủ không
+            const userItem = await Inventory.findOne({ userId, item: item._id });
+            // console.log(userItem)
+            if (!userItem || userItem.quantity < 1) {
+                throw new Error("Bạn không có vật phẩm này trong túi đồ!");
+            }
+
+            // Kiểm tra food buff
+            // if (!item.foodBuff) {
+            //     throw new Error("Vật phẩm này không có hiệu ứng!");
+            // }
+
+            // const foodBuff = item.foodBuff || 0;
+            // const createFood = await FoodBuff.create({
+            //     item:item._id,
+            //     petExpEarn:20,
+            //     hungerBuff:20,
+            //     happinessBuff:20,
+            //     luckyBuff:20
+            // })
+            // console.log(createFood)
+            const foodBuff = await FoodBuff.findOne({ item: item._id })
+            console.log(foodBuff)
+            if (!foodBuff)
+                throw new Error("Can't found effect! Can't feed this food")
+            // Tính toán stats mới
+            let newHunger = Math.min(serverPet.pet.hungerStats, serverPet.hunger + foodBuff.hungerBuff);
+            // if (newHunger > serverPet.pet.hungerStats)
+            //     newHunger = serverPet.pet.hungerStats
+            const newHappiness = Math.min(serverPet.pet.hungerStats, serverPet.happiness + foodBuff.happinessBuff);
+            // if (newHappiness > serverPet.pet.happinessStats)
+            //     newHunger = serverPet.pet.happinessStats
+            const newExp = serverPet.exp + (foodBuff.petExpEarn || 0);
+
+            // Kiểm tra level up
+            let newLevel = serverPet.lvl;
+            let remainingExp = newExp;
+            const expRequired = serverPet.pet.expStats * newLevel;
+
+            if (newExp >= expRequired) {
+                newLevel += 1;
+                remainingExp = newExp - expRequired;
+                // Có thể thêm logic thông báo level up ở đây
+            }
+
+            // Cập nhật server pet
+            const updatedPet = await ServerPet.findByIdAndUpdate(
+                serverPet._id,
+                {
+                    hunger: newHunger,
+                    happiness: newHappiness,
+                    exp: remainingExp,
+                    lvl: newLevel,
+                    lastFed: new Date()
+                },
+                { new: true }
+            ).populate('pet');
+
+            // Giảm số lượng item trong inventory
+            if (userItem.quantity === 1) {
+                // Nếu chỉ còn 1 thì xóa luôn document
+                await Inventory.findByIdAndDelete(userItem._id);
+            } else {
+                // Ngược lại giảm số lượng
+                await Inventory.findByIdAndUpdate(
+                    userItem._id,
+                    { $inc: { quantity: -1 } }
+                );
+            }
+
+            return {
+                success: true,
+                pet: updatedPet,
+                foodBuff: foodBuff,
+                levelUp: newLevel > serverPet.lvl,
+                oldLevel: serverPet.lvl,
+                newLevel: newLevel,
+                itemUsed: item
+            };
+
+        } catch (error) {
+            console.error('Error feeding pet:', error);
+            return {
+                success: false,
+                error: error.message
+            };
         }
     }
 }
