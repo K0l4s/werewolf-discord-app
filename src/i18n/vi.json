@@ -17,7 +17,9 @@
         "vc_succ":" Rồi, tao đã đặt voice channel là ",
         "vc_succ2":" .Giờ thì đừng làm phiền tao!",
         "embed_succ":" Rồi, tao đã đặt embed là ",
-        "embed_succ2":" .Giờ thì đừng làm **phìn** tao!"
+        "embed_succ2":" .Giờ thì đừng làm **phìn** tao!",
+        "streak_succ":" Rồi, tao đã đặt trạng thái chuỗi là ",
+        "streak_succ2":" .Giờ thì đừng làm **phìn** tao!"
     },
     "inv": {
         "ad_succ": "Xong! Code mời của bạn đây: ",

@@ -18,7 +18,9 @@
         "vc_succ":" Alright, I’ve set the voice channel notification to ",
         "vc_succ2":" .Now stop wasting my time!",
         "embed_succ":" Alright, I’ve set the embed notification to ",
-        "embed_succ2":" .Now stop wasting my time!"
+        "embed_succ2":" .Now stop wasting my time!",
+        "streak_succ":" Alright, I’ve set the streak notification to ",
+        "streak_succ2":" .Now stop wasting my time!"
     },
     "inv": {
         "ad_succ": "Done! Here’s your precious invite code: ",

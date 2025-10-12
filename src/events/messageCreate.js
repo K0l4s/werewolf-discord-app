@@ -212,6 +212,28 @@ const handleMessageCreate = async (client, msg) => {
             msg.reply(`✅ ${lang}`);
 
         }
+        if(args[0] === "streak" || args[0] == "s") {
+            if (!args[1]) return msg.reply(`⚠️ ${t('e.miss_cmd', lang)}`);
+            if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
+                return msg.reply(`❌ ${t('e.permission', lang)}`);
+            }
+            const newS = args[1];
+            //chuyển sang true/ false
+            const isEnabled = newS === "on";
+            // await VoiceChannelController.setVoiceChannel(isEnabled, msg.guild.id);
+            const serverSetting = await Notification.findOne({ guildId: msg.guild.id });
+            if (serverSetting) {
+                serverSetting.isStreakEnabled = isEnabled;
+                await serverSetting.save();
+            } else {
+                const newSetting = new Notification({
+                    guildId: msg.guild.id,
+                    isStreakEnabled: isEnabled
+                });
+                await newSetting.save();
+            }
+            msg.reply(`✅ ${t('s.streak_succ', lang)} \`${newS}\` ${t('s.streak_succ2', lang)}`);
+        }
         if (args[0] === "voice" || args[0] == "v") {
             if (!args[1]) return msg.reply(`⚠️ ${t('e.miss_cmd', lang)}`);
             if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {

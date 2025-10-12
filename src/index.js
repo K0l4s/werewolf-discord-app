@@ -13,6 +13,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 const cors = require('cors');
 const cookieParser = require("cookie-parser");
+const { setupDailyStreakCheck } = require('./jobs/dailyStreakCheck');
+const StreakService = require('./services/StreakService');
+const LanguageController = require('./controllers/languageController');
 app.use(cookieParser());
 
 // Discord client setup
@@ -25,7 +28,7 @@ const client = new Client({
         GatewayIntentBits.DirectMessages,
         GatewayIntentBits.DirectMessageReactions,
         GatewayIntentBits.GuildMessageReactions,
-        GatewayIntentBits.GuildVoiceStates
+        GatewayIntentBits.GuildVoiceStates,
     ],
     partials: [Partials.Channel, Partials.Message, Partials.Reaction, Partials.User]
 });
@@ -75,7 +78,7 @@ async function startServer() {
                 ]
             });
         });
-
+        setupDailyStreakCheck();
         // ... (all your other Discord event handlers here, unchanged)
         // For brevity, copy all your event handlers from your original code:
         // guildMemberAdd, guildMemberRemove, guildMemberUpdate, voiceStateUpdate, messageCreate, messageReactionAdd, interactionCreate, Events.GuildCreate, Events.GuildDelete
@@ -97,6 +100,88 @@ async function startServer() {
             if (!oldMember.premiumSince && newMember.premiumSince) {
                 await SettingController.sendNotification(newMember.guild.id, 'booster', newMember, client, true);
             }
+        });
+        client.on('voiceStateUpdate', async (oldState, newState) => {
+            // Chỉ xử lý khi user join voice channel
+            const getNotificationSettings = async (guildId) => {
+                const setting = await Notification.findOne({ guildId });
+                return {
+                    isStreak: setting ? setting.isStreakEnabled : true // Default to true if not set
+                };
+            };
+            const settings = await getNotificationSettings(newState.guild.id);
+            if (!settings.isStreak) return;
+            let channel = newState.channel || oldState.channel;
+            if (!channel || channel.type !== ChannelType.GuildVoice) return;
+            // xử lý streak
+            const userId = newState.member.id;
+            const guildId = newState.guild.id;
+            try {
+                const result = await StreakService.handleUserJoin(userId, guildId);
+                // Gửi thông báo tùy theo hành động
+                let embed;
+                let lang = await LanguageController.getLang(guildId) || 'en';
+                console.log(lang)
+                switch (result.action) {
+                    case 'created':
+                        embed = new EmbedBuilder()
+                            .setColor(0x00FFFF)
+                            .setTitle(lang === 'vi' ? '✨ Chuỗi mới!' : '✨ New Streak!')
+                            .setDescription(`<@${userId}> ${lang === 'vi' ? 'vừa bắt đầu chuỗi!' : 'has started a new streak!'}`)
+                            .addFields(
+                                { name: lang === 'vi' ? '🔥 Chuỗi hiện tại' : '🔥 Current Streak', value: `**${result.streak.currentStreak}** ${lang === 'vi' ? 'ngày' : 'days'}`, inline: true },
+                            )
+                            .setTimestamp();
+                        break;
+                    case 'incremented':
+                        embed = new EmbedBuilder()
+                            .setColor(0x00FF00)
+                            .setTitle(lang === 'vi' ? '🔥 Chuỗi tăng!' : '🔥 Streak Increased!')
+                            .setDescription(`<@${userId}> ${lang === 'vi' ? 'vừa duy trì chuỗi!' : 'has maintained their streak!'}`)
+                            .addFields(
+                                // { name: '🔥 Chuỗi hiện tại', value: `**${result.streak.currentStreak}** ngày`, inline: true },
+                                // { name: '🔥 Chuỗi dài nhất', value: `**${result.streak.longestStreak}** ngày`, inline: true }
+                                { name: lang === 'vi' ? '🔥 Chuỗi hiện tại' : '🔥 Current Streak', value: `**${result.streak.currentStreak}** ${lang === 'vi' ? 'ngày' : 'days'}`, inline: true },
+                                { name: lang === 'vi' ? '🔥 Chuỗi dài nhất' : '🔥 Longest Streak', value: `**${result.streak.longestStreak}** ${lang === 'vi' ? 'ngày' : 'days'}`, inline: true }
+                            )
+                            .setTimestamp();
+                        break;
+
+                    case 'recovered':
+                        embed = new EmbedBuilder()
+                            .setColor(0xFFA500)
+                            .setTitle(lang === 'vi' ? '🔄 Chuỗi đã được hồi phục!' : '🔄 Streak Recovered!')
+                            .setDescription(`<@${userId}> ${lang === 'vi' ? 'đã sử dụng 1 lần hồi phục' : 'has used 1 recovery'}`)
+                            .addFields(
+                                { name: lang === 'vi' ? '🔥 Chuỗi hiện tại' : '🔥 Current Streak', value: `**${result.streak.currentStreak}** ${lang === 'vi' ? 'ngày' : 'days'}`, inline: true },
+                                { name: lang === 'vi' ? '🔥 Lần hồi phục còn lại' : '🔥 Remaining Recoveries', value: `**${result.streak.recoveryCount}**/3`, inline: true }
+                            )
+                            .setTimestamp();
+                        break;
+
+                    case 'reset':
+                        embed = new EmbedBuilder()
+                            .setColor(0xFF0000)
+                            .setTitle(lang === 'vi' ? '💔 Chuỗi đã bị ngắt!' : '💔 Streak Reset!')
+                            .setDescription(`<@${userId}> ${lang === 'vi' ? 'đã không duy trì được chuỗi' : 'has not maintained their streak'}`)
+                            .addFields(
+                                { name: lang === 'vi' ? '🔥 Chuỗi dài nhất' : '🔥 Longest Streak', value: `**${result.streak.longestStreak}** ${lang === 'vi' ? 'ngày' : 'days'}`, inline: true },
+                                { name: lang === 'vi' ? '🔥 Chuỗi mới' : '🔥 New Streak', value: `**1** ${lang === 'vi' ? 'ngày' : 'days'}`, inline: true }
+                            )
+                            .setTimestamp();
+                        break;
+                }
+
+                if (embed) {
+                    embed.setFooter({
+                        text: `${lang === 'vi' ? 'Bật/ tắt chuỗi bằng lệnh wset streak on/off •' : 'Toggle streak with wset streak on/off in your server •'} ${client.user.username}`,
+                    });
+                    await channel.send({ embeds: [embed] });
+                }
+            } catch (error) {
+                console.error('Error handling voice state update:', error);
+            }
+
         });
 
         client.on('voiceStateUpdate', async (oldState, newState) => {
@@ -782,10 +867,10 @@ async function startServer() {
                             `Tôi cần quyền **Quản trị viên (Administrator)** để hoạt động đầy đủ.\n` +
                             `Vui lòng cấp quyền Administrator cho tôi trong cài đặt vai trò (roles) của server.\n` +
                             `Nếu không, một số tính năng có thể không hoạt động chính xác.` +
-                            `========English========`+
+                            `========English========` +
                             `⚠️ **Important Warning!**\n\n` +
-                            `I need Administrator permission to function properly.\n`+
-                            `Please grant me the Administrator role in your server settings. \n`+
+                            `I need Administrator permission to function properly.\n` +
+                            `Please grant me the Administrator role in your server settings. \n` +
                             `Without it, some features may not work correctly. \n`
                         );
                     }
@@ -808,7 +893,7 @@ async function startServer() {
                     if (defaultChannel) {
                         await defaultChannel.send(
                             `👋 Xin chào! Cảm ơn bạn đã mời tôi vào server!\n` +
-                            `✅ Tôi đã có đủ quyền để hoạt động. Sử dụng \`whelp\` để xem các lệnh có sẵn.`+
+                            `✅ Tôi đã có đủ quyền để hoạt động. Sử dụng \`whelp\` để xem các lệnh có sẵn.` +
                             `👋 Hello! Thanks for add me!\n` +
                             `✅ Allready done. Use \`whelp\` to view our command.`
                         );

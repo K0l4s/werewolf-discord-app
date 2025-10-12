@@ -14,6 +14,10 @@ class RoleService {
     static async getRoleListByPlayerCount(playerCount) {
         const allRoles = await Roles.find({ minPlayer: { $lte: playerCount } });
 
+        // DEBUG: Kiểm tra số lượng role có sẵn
+        console.log(`Total roles available: ${allRoles.length}`);
+        console.log(`Player count: ${playerCount}`);
+
         // 1. Luôn giữ những role bắt buộc
         const alwaysShowRoles = allRoles.filter(r => r.isAlwaysShow);
 
@@ -38,7 +42,10 @@ class RoleService {
 
         const villagerRoles = shuffleRole(allRoles.filter(r =>
             r.team === TEAMS.VILLAGERS && r.name === "Dân làng"
-        )).slice(0, numVillagersLeft);
+        ));
+
+        // FIX: Đảm bảo luôn có đủ role "Dân làng"
+        const pickedVillagers = villagerRoles.slice(0, numVillagersLeft);
 
         // 4. Nếu đủ điều kiện thì thêm 1 vai thứ ba
         let thirdPartyRole = [];
@@ -52,10 +59,31 @@ class RoleService {
             ...alwaysShowRoles,
             ...werewolfRoles,
             ...pickedSpecialVillagers,
-            ...villagerRoles,
+            ...pickedVillagers,
             ...thirdPartyRole
         ]);
 
+        // FIX: Kiểm tra và thêm role nếu cần
+        if (finalRoles.length < playerCount) {
+            console.warn(`Warning: Only ${finalRoles.length} roles for ${playerCount} players. Adding more villagers.`);
+
+            const additionalVillagersNeeded = playerCount - finalRoles.length;
+            const additionalVillagers = villagerRoles.slice(pickedVillagers.length, pickedVillagers.length + additionalVillagersNeeded);
+
+            finalRoles.push(...additionalVillagers);
+
+            // Nếu vẫn không đủ, tạo role Dân làng mặc định
+            if (finalRoles.length < playerCount) {
+                const defaultVillager = allRoles.find(r => r.name === "Dân làng");
+                if (defaultVillager) {
+                    while (finalRoles.length < playerCount) {
+                        finalRoles.push(defaultVillager);
+                    }
+                }
+            }
+        }
+
+        console.log(`Final roles count: ${finalRoles.length}`);
         return finalRoles;
     }
     static async getRoleById(roleId) {
