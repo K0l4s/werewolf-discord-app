@@ -23,9 +23,11 @@ const PetController = require('../controllers/petController');
 const { calculateLuckyBuff } = require('../utils/calculateLuckyBuff');
 const Notification = require('../models/Notification');
 const TopController = require('../controllers/topController');
-
+const ServerController = require('../controllers/serverController');
+// Thêm vào phần imports
 const handleMessageCreate = async (client, msg) => {
     // try {
+    // deleteSpam = await ServerController.deleteSpamMessages(msg);
     if (msg.author.bot || !msg.guild) return;
     // Lấy prefix server từ DB
     let serverPrefixData = await Prefix.findOne({ guildId: msg.guild.id });
@@ -62,7 +64,17 @@ const handleMessageCreate = async (client, msg) => {
         console.log("⚠️ Bot không có quyền EmbedLinks, sẽ gửi plain text");
         return await msg.channel.send("Bot không có quyền EmbedLinks");
     }
-
+    if (cmd === "clear" || cmd === "purge") {
+        if (!msg.member.permissions.has("ManageMessages")) {
+            return msg.reply(`❌ ${t('e.permission', lang)}`);
+        }
+        const deleteCount = parseInt(args[0], 10);
+        if (!deleteCount || deleteCount < 1 || deleteCount > 1000) {
+            return msg.reply(`⚠️ ${t('w.del_limit', lang)}`);
+        }
+        await ServerController.deleteMessages(msg.channel, deleteCount);
+        return;
+    }
     if (cmd === "invite") {
         if (!args[0]) {
             const inv = await UserController.createInviteCode(msg.author.id)
@@ -71,6 +83,11 @@ const handleMessageCreate = async (client, msg) => {
         const code = args[0]
         const embed = await UserController.fillInviteCode(msg.author.id, code)
         return msg.reply(embed)
+    }
+    if (cmd === "gaveaway" || cmd === "gaw") {
+        // console.log(`Giveaway command by ${userId} in guild ${guildId}: ${subCommand}`);
+        // return await handleGiveawayCommand(msg, args, serverPrefix, lang);
+
     }
     if (cmd === "top") {
         return await TopController.handleTopCommand(msg, args, false, client);
@@ -180,6 +197,9 @@ const handleMessageCreate = async (client, msg) => {
             return msg.reply(t('e.miss_cmd', lang))
         if (args[0] === "lang")
             return msg.reply(`✅ ${t('s.cur_la', lang)}`);
+        if (args[0] === "prefix") {
+            return msg.reply(`✅ ${t('s.cur_pr', lang)} \`${serverPrefix}\``);
+        }
     }
     if (cmd === "set") {
         if (!args[0])
@@ -212,7 +232,7 @@ const handleMessageCreate = async (client, msg) => {
             msg.reply(`✅ ${lang}`);
 
         }
-        if(args[0] === "streak" || args[0] == "s") {
+        if (args[0] === "streak" || args[0] == "s") {
             if (!args[1]) return msg.reply(`⚠️ ${t('e.miss_cmd', lang)}`);
             if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
                 return msg.reply(`❌ ${t('e.permission', lang)}`);

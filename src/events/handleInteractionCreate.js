@@ -11,6 +11,7 @@ const TopController = require('../controllers/topController');
 const UserController = require('../controllers/userController');
 const SpiritMaster = require('../models/DauLaDaiLuc/SpiritMaster');
 const Prefix = require('../models/Prefix');
+const UserService = require('../services/userService');
 const { interactionToMessage } = require('../utils/fakeMessage');
 const { EmbedBuilder } = require('discord.js');
 
@@ -58,7 +59,7 @@ module.exports = async (interaction, client) => {
         }
 
         case 'set': {
-            await interaction.deferReply();
+            // await interaction.deferReply();
             if (interaction.options.getSubcommand() === "prefix") {
                 const newPrefix = interaction.options.getString("value");
                 await Prefix.findOneAndUpdate(
@@ -303,7 +304,7 @@ module.exports = async (interaction, client) => {
 
         case 'daily': {
             await interaction.deferReply();
-            let userData = await UserController.getUserData(interaction.user.id);
+            let userData = await UserService.findUserById(interaction.user.id);
             if (!userData) {
                 userData = await UserController.createUser(interaction.user.id);
             }

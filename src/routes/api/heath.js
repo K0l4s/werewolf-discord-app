@@ -21,6 +21,7 @@ router.get('/', (req, res) => {
         status: 'OK',
         bot: client.isReady() ? 'Connected' : 'Disconnected',
         botUser: client.user?.tag || 'Not logged in',
+        usersCount: client.users.cache.size,
         guildsCount: client.guilds.cache.size,
         topGuilds: topGuilds.map(g => ({
             id: g.id,

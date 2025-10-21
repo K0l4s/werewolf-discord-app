@@ -1,6 +1,7 @@
 {
     "w": {
-        "new_prefix": "Uh hello? Enter the new prefix already!"
+        "new_prefix": "Uh hello? Enter the new prefix already!",
+        "del_limit": "Whoa there! It's an error!"
     },
     "e": {
         "title": "Wait... it's some error!",
@@ -14,6 +15,7 @@
         "prefix_succ": "Server prefix changed to: ",
         "role": "Feeling generous here… fine, I’ll spill it. Here’s your role.",
         "cur_la": "This server’s language is **English :england:** (as if you didn’t know 😏).",
+        "cur_pr": "Your current server prefix is",
         "cur_lucky": "Your current lucky buff is",
         "vc_succ":" Alright, I’ve set the voice channel notification to ",
         "vc_succ2":" .Now stop wasting my time!",

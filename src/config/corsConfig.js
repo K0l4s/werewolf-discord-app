@@ -3,6 +3,7 @@ const developmentOrigins = [
     'http://localhost:5173',
     'http://localhost:5173',
     'https://wwolf.vercel.app',
+    'https://keldo.vercel.app/',
     'http://127.0.0.1:3000',
     'http://192.168.1.*', // Local network
     'https://localhost:3000'

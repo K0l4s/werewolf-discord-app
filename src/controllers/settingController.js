@@ -113,6 +113,12 @@ class SettingController {
                             description: 'Thông báo khi có thành viên boost server',
                             value: 'booster',
                             emoji: '✨'
+                        },
+                        {
+                            label: 'Giveaway',
+                            description: 'Thông báo khi có giveaway mới',
+                            value: 'giveaway',
+                            emoji: '🎉'
                         }
                     ])
             );

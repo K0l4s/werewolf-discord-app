@@ -3,7 +3,6 @@ const GameController = require("../controllers/gameController");
 const MiniGameController = require("../controllers/miniGameController");
 const GameService = require("../services/gameService");
 const RoleService = require("../services/roleService");
-const toggleComponents = require("../utils/toggleComponents");
 
 module.exports = async (interaction) => {
     if (!interaction.isStringSelectMenu() && !interaction.isButton()) return;

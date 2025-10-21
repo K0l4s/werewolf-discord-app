@@ -10,5 +10,6 @@ const userSchema = new mongoose.Schema(({
     spiritExp: { type: Number, require: true, default: 0 },
     inviteCode: { type: String, require: false },
     luckyBoost: { type: Number, require: true, default: 0 },
+    token: {type:Number, require:false,default:0}
 }));
 module.exports = mongoose.model('User', userSchema);

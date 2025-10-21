@@ -15,6 +15,12 @@ class UserService {
             user = await this.createNewUser(userId)
         return user;
     }
+    static async addToken(userId, amount) {
+        const user = await this.findUserById(userId);
+        user.token += amount;
+        await user.save();
+        return user;
+    }
 }
 
 module.exports = UserService;

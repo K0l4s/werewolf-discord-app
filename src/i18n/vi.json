@@ -1,6 +1,7 @@
 {
     "w": {
-        "new_prefix": "Ơ kìa, nhập cái prefix mới đi chứ!"
+        "new_prefix": "Ơ kìa, nhập cái prefix mới đi chứ!",
+        "del_limit": "Ơ, lỗi rồi thì phải!"
     },
     "e": {
         "embed": "Đợi lát đê, cái tờ giấy của tao bị gì rồi nè",
@@ -13,6 +14,7 @@
         "prefix_succ": "Prefix của server đổi thành: ",
         "role":"Thương lắm mới tiết lộ nhá, role mày nè",
         "cur_la": "Ngôn ngữ hiện tại của server này là **Việt Nam :flag_vn:** (Nếu như mày không biết 😏) nha!",
+        "cur_pr": "Prefix hiện tại của server này là",
         "cur_lucky": "Buff may mắn hiện tại của bạn là",
         "vc_succ":" Rồi, tao đã đặt voice channel là ",
         "vc_succ2":" .Giờ thì đừng làm phiền tao!",
