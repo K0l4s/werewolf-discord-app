@@ -24,24 +24,21 @@ router.get("", async (req, res) => {
 
         const access_token = tokenRow.discordToken;
 
-        // 1. Guilds của user
+        // 1. Guilds của user (vẫn dùng API vì cần OAuth2)
         const userGuildsResponse = await axios.get("https://discord.com/api/users/@me/guilds", {
             headers: { Authorization: `Bearer ${access_token}` },
         });
         const userGuilds = userGuildsResponse.data;
 
-        // 2. Guilds của bot
-        const botGuildsResponse = await axios.get("https://discord.com/api/users/@me/guilds", {
-            headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}` },
-        });
-        const botGuilds = botGuildsResponse.data;
-
+        // 2. Guilds của bot - sử dụng client
+        const client = req.app.get('discordClient');
+        const botGuilds = client.guilds.cache;
         const botGuildIds = new Set(botGuilds.map(g => g.id));
 
         // 3. Lọc và thêm field
         const result = userGuilds
             .map(guild => {
-                const permissions = BigInt(guild.permissions); // permissions là string, convert sang BigInt
+                const permissions = BigInt(guild.permissions);
                 const isAdmin = (permissions & 0x8n) === 0x8n; // ADMINISTRATOR
                 const isManager = (permissions & 0x20n) === 0x20n; // MANAGE_GUILD
 
@@ -93,19 +90,16 @@ router.get("/:id", async (req, res) => {
 
         const access_token = tokenRow.discordToken;
 
-        // 1. Lấy guilds của user
+        // 1. Lấy guilds của user (vẫn dùng API vì cần OAuth2)
         const userGuildsResponse = await axios.get(
             "https://discord.com/api/users/@me/guilds",
             { headers: { Authorization: `Bearer ${access_token}` } }
         );
         const userGuilds = userGuildsResponse.data;
 
-        // 2. Lấy guilds của bot
-        const botGuildsResponse = await axios.get(
-            "https://discord.com/api/users/@me/guilds",
-            { headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}` } }
-        );
-        const botGuilds = botGuildsResponse.data;
+        // 2. Lấy guilds của bot - sử dụng client
+        const client = req.app.get('discordClient');
+        const botGuilds = client.guilds.cache;
         const botGuildIds = new Set(botGuilds.map(g => g.id));
 
         // 3. Tìm guild theo id
