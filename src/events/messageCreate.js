@@ -24,6 +24,7 @@ const { calculateLuckyBuff } = require('../utils/calculateLuckyBuff');
 const Notification = require('../models/Notification');
 const TopController = require('../controllers/topController');
 const ServerController = require('../controllers/serverController');
+const GiveawayHandlers = require('./giveAwayHandlers');
 // Thêm vào phần imports
 const handleMessageCreate = async (client, msg) => {
     // try {
@@ -48,13 +49,9 @@ const handleMessageCreate = async (client, msg) => {
     const args = msg.content.slice(usedPrefix.length).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
     const user = await UserService.findUserById(msg.author.id)
-    // if (cmd === "cspirit") {
-    //     await SpiritController.addSpirit()
-    //     // msg.reply(embed)
-    // }
+
     let lang = await LanguageController.getLang(msg.guild.id)
-    // console.log(lang)
-    // console.log(cmd)
+
     const perms = msg.channel.permissionsFor(msg.client.user);
     if (!perms.has("SendMessages")) {
         console.log("❌ Bot không có quyền SendMessages trong channel này");
@@ -74,6 +71,9 @@ const handleMessageCreate = async (client, msg) => {
         }
         await ServerController.deleteMessages(msg.channel, deleteCount);
         return;
+    }
+    else if (cmd === "giveaway" || cmd === "gaw") {
+        return await GiveawayHandlers.handleGiveawayCommand(msg, args, serverPrefix, lang);
     }
     if (cmd === "invite") {
         if (!args[0]) {

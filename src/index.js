@@ -14,6 +14,7 @@ const { setupDailyStreakCheck } = require('./jobs/dailyStreakCheck');
 const StreakController = require('./controllers/streakController');
 const NotificationController = require('./controllers/notificationController');
 const handleMenu = require('./events/handleMenu');
+const GiveawayHandlers = require('./events/giveAwayHandlers');
 app.use(cookieParser());
 
 // Discord client setup
@@ -76,7 +77,8 @@ async function startServer() {
             });
         });
         setupDailyStreakCheck();
-
+        client.on('messageCreate', (msg) => GiveawayHandlers.handleMessageCreate(client, msg));
+        // client.on('interactionCreate', (interaction) => GiveawayHandlers.handleButtonInteraction(interaction));
         client.on('guildMemberAdd', async (member) => {
             console.log("add");
 
@@ -345,7 +347,7 @@ async function startServer() {
                 console.error("Không thể gửi DM cho developer:", error);
             }
         });
-    
+
 
 
         // Error handling

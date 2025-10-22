@@ -5,7 +5,9 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:5173/callback";
 const jwt = require('jsonwebtoken')
-const Token = require("../../models/Token")
+const Token = require("../../models/Token");
+const User = require('../../models/User');
+const UserService = require('../../services/userService');
 // import jwt from "jsonwebtoken";
 // import Token from "../../models/Token";
 
@@ -67,8 +69,14 @@ router.post("/discord/callback", async (req, res) => {
         //     maxAge: 7000 * 60 * 60 * 24, // 1 ngày
         // });
         console.log(req.cookies.access_token)
+        const result = userResponse.data;
+        const userOwn = await UserService.findUserById(userResponse.data.id);
+        result.premium = userOwn.isPremium;
+        result.coin = userOwn.coin;
+        result.level = userOwn.lvl;
+        result.token = userOwn.token;
         res.json({
-            user: userResponse.data,
+            user: result,
             guilds: guildsResponse.data,
             token: newToken, // hoặc bỏ nếu mày muốn tự generate JWT riêng
         });
@@ -80,8 +88,8 @@ router.post("/discord/callback", async (req, res) => {
 
 router.post("/infor", async (req, res) => {
     try {
-        const {token} = req.body
-        console.log("Token",token)
+        const { token } = req.body
+        console.log("Token", token)
         // tìm token trong DB
         const tokenRow = await Token.findOne({ token });
         console.log(tokenRow)
@@ -98,8 +106,14 @@ router.post("/infor", async (req, res) => {
         const userResponse = await axios.get("https://discord.com/api/users/@me", {
             headers: { Authorization: `Bearer ${access_token}` },
         });
-
-        res.json(userResponse.data);
+        const result = userResponse.data;
+        const userOwn = await UserService.findUserById(userResponse.data.id);
+        result.premium = userOwn.isPremium;
+        result.coin = userOwn.coin;
+        result.level = userOwn.lvl;
+        result.token = userOwn.token;
+        console.log(result)
+        res.json(result);
     } catch (err) {
         console.error(err.response?.data || err.message);
         res.status(500).json({ error: "Failed to fetch user info" });

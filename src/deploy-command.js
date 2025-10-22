@@ -11,6 +11,10 @@ const commands = [
         .setName('join')
         .setDescription('Tham gia phòng mới!')
         .toJSON(),
+        new SlashCommandBuilder()
+        .setName('giveaway')
+        .setDescription('Tạo giveaway!')
+        .toJSON(),
     new SlashCommandBuilder()
         .setName('new')
         .setDescription('Tạo phòng mới')

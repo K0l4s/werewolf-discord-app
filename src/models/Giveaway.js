@@ -10,9 +10,9 @@ const GA_STATUS = {
 };
 
 const GA_TYPE = {
-  ITEM: 'item',
   CURRENCY: 'currency',
-  REAL_WORLD: 'real_world'
+  OTHER: 'other',
+  ALL: 'all',
 };
 
 const giveawaySchema = new mongoose.Schema({
@@ -20,16 +20,14 @@ const giveawaySchema = new mongoose.Schema({
   description: { type: String, required: false },
   hostId: { type: String, required: true }, // User ID của người tạo GA
   guildId: { type: String, required: true }, // Server ID
-  channelId: { type: String, required: true }, // Kênh thông báo GA
-  requirementChannelId: { type: String, required: false }, // Kênh yêu cầu (nếu có)
   requirementMessage: { type: String, required: false }, // Tin nhắn yêu cầu (nếu có)
-  
+
   type: {
     type: String,
     enum: Object.values(GA_TYPE),
     required: true
   },
-  
+
   // Phần thưởng
   rewards: {
     // Nếu là item
@@ -37,18 +35,13 @@ const giveawaySchema = new mongoose.Schema({
       itemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
       quantity: { type: Number, default: 1 }
     }],
-    // Nếu là currency
-    currency: { type: Number, default: 0 },
-    // Nếu là vật phẩm ngoài đời
-    realWorldItem: { type: String, required: false },
-    realWorldValue: { type: Number, required: false } // Giá trị ước tính
+    currency: { type: Number, required:false },
+    otherItem: { type: String, required: false },
+    otherValue: { type: Number, required: false } // Giá trị ước tính
   },
-  
-  // Thời gian
-  startTime: { type: Date, required: true },
-  endTime: { type: Date, required: true },
+
   duration: { type: Number, required: true }, // Thời lượng tính bằng giây
-  
+
   // Người tham gia
   participants: [{
     userId: { type: String, required: true },
@@ -56,17 +49,16 @@ const giveawaySchema = new mongoose.Schema({
     hasMetRequirement: { type: Boolean, default: false },
     requirementMessageId: { type: String, required: false } // ID tin nhắn đã gửi
   }],
-  
-  // Kết quả
+
+  // // Kết quả
   winners: [{
     userId: { type: String, required: true },
-    position: { type: Number, required: true },
     claimed: { type: Boolean, default: false },
     claimedAt: { type: Date, required: false }
   }],
-  
+
   winnerCount: { type: Number, required: true, default: 1 },
-  
+
   // Trạng thái và duyệt
   status: {
     type: String,
@@ -75,25 +67,42 @@ const giveawaySchema = new mongoose.Schema({
   },
   approvedBy: { type: String, required: false }, // User ID của người duyệt
   approvedAt: { type: Date, required: false },
-  
+
   // Metadata
   messageId: { type: String, required: false }, // ID tin nhắn GA trong channel
-  createdByAdmin: { type: Boolean, default: false }, // Nếu admin tạo thì auto approve
-  
+
   // Settings
   requirements: {
-    minLevel: { type: Number, default: 1 },
-    minSpiritLevel: { type: Number, default: 1 },
-    roleRequired: { type: String, required: false }
+    minLevel: { type: Number, default: 0 },
+    roleRequired: [{ type: String, required: false }]
   }
 }, {
   timestamps: true
 });
+giveawaySchema.pre('save', function (next) {
+  if (this.approvedAt && this.duration && this.approvedBy && this.isModified('approvedAt')) {
+    this.endTime = new Date(this.approvedAt.getTime() + (this.duration * 1000));
+  }
+  next();
+});
+giveawaySchema.virtual('endTime').get(function () {
+  if (!this.approvedAt) {
+    return null;
+  }
 
+  // Tạo Date object từ approvedAt
+  const approvedTime = new Date(this.approvedAt);
+
+  // Cộng thêm duration (tính theo giây)
+  const endTime = new Date(approvedTime.getTime() + (this.duration * 1000));
+
+  return endTime;
+});
 // Indexes
 giveawaySchema.index({ guildId: 1, status: 1 });
-giveawaySchema.index({ endTime: 1 });
 giveawaySchema.index({ hostId: 1 });
+
+
 
 module.exports = mongoose.model('Giveaway', giveawaySchema);
 module.exports.GA_STATUS = GA_STATUS;

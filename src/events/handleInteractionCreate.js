@@ -14,6 +14,7 @@ const Prefix = require('../models/Prefix');
 const UserService = require('../services/userService');
 const { interactionToMessage } = require('../utils/fakeMessage');
 const { EmbedBuilder } = require('discord.js');
+const GiveawayHandlers = require('./giveAwayHandlers');
 
 module.exports = async (interaction, client) => {
     if (!interaction.isChatInputCommand()) return;
@@ -22,6 +23,10 @@ module.exports = async (interaction, client) => {
     let lang = await LanguageController.getLang(interaction.guildId);
 
     switch (commandName) {
+        case 'giveaway': {
+            
+            return await GiveawayHandlers.showGiveawayModal(interaction)
+        }
         case 'spirit': {
             await interaction.deferReply();
             if (interaction.options.getSubcommand() === "list") {
