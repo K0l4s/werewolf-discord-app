@@ -19,7 +19,7 @@ class GameController {
         if (!game) {
             game = await GameService.initNewGame(message.channel.id);
         }
-        console.log(game.isStart)
+        // console.log(game.isStart)
         return game;
     }
     static async handleJoinCommand(message, lang = "en") {
@@ -129,7 +129,7 @@ class GameController {
             return message.reply({ embeds: [embed] })
         }
         const roleList = await RoleService.getRoleListByPlayerCount(game.player.length);
-        console.log(roleList)
+        // console.log(roleList)
         const players = shufflePlayer(game.player);
         // const roleList = shuffleRole(roles);
         // console.log(players)
@@ -156,7 +156,7 @@ class GameController {
         await game.save();
         await message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] });
         // }
-        console.log(updatedPlayers);
+        // console.log(updatedPlayers);
 
 
         this.handleStartNightPhase(message);
@@ -200,7 +200,7 @@ class GameController {
                 emoji: emojis[i] || undefined
             });
         }
-        console.log(aliveList)
+        // console.log(aliveList)
         // Nếu không có player nào
         if (aliveList.length === 0) {
             return message.channel.send("❌ Không có người chơi nào để chọn.");
@@ -254,9 +254,9 @@ class GameController {
         const thirdPartyRoles = (await RoleService.getTeamRoleList(TEAMS.THIRD_PARTY))
             .map(role => role._id.toString());
 
-        console.log("WR", wolfRoles);
-        console.log("VR", villagerRoles);
-        console.log("TR", thirdPartyRoles);
+        // console.log("WR", wolfRoles);
+        // console.log("VR", villagerRoles);
+        // console.log("TR", thirdPartyRoles);
 
         // Lọc player còn sống
         const alivePlayers = currentGame.player.filter(p => p.isAlive);
@@ -270,9 +270,9 @@ class GameController {
         let winner = null;
         let winnerText = "";
 
-        console.log("W", wolfTeamAlive);
-        console.log("V", villagerAlive);
-        console.log("T", thirdPartyAlive);
+        // console.log("W", wolfTeamAlive);
+        // console.log("V", villagerAlive);
+        // console.log("T", thirdPartyAlive);
 
         // 🐺 Sói thắng
         if (wolfTeamAlive.length > 0 && wolfTeamAlive.length >= villagerAlive.length && thirdPartyAlive.length === 0) {
@@ -325,7 +325,7 @@ class GameController {
             return winner;
         }
 
-        console.log("👉 Chưa có ai thắng, game tiếp tục.");
+        // console.log("👉 Chưa có ai thắng, game tiếp tục.");
         return null;
     }
 
@@ -430,8 +430,8 @@ class GameController {
             playersHasSpecialRoles.some(player => player.userId === action.userId)
         );
 
-        console.log("Players done action:", playersDoneAction);
-        console.log("Players need action: ", playersHasSpecialRoles)
+        // console.log("Players done action:", playersDoneAction);
+        // console.log("Players need action: ", playersHasSpecialRoles)
         return playersDoneAction.length >= playersHasSpecialRoles.length;
 
     }
@@ -703,7 +703,7 @@ class GameController {
         // const currentGame = await GameService.getGameById(gameId);
         // this.checkToAction(currentGame, "Skip Night", userId);
         const currentPhase = await PhaseService.getCurrentPhase(currentGame._id);
-        console.log(currentPhase)
+        // console.log(currentPhase)
         if (!currentPhase)
             return await interaction.reply({ content: "Don't find any phase. Please restart the game or contact the developer!", ephemeral: true });
         if (currentPhase.phase === PHASES.DAY)
@@ -944,7 +944,7 @@ class GameController {
         const alivePlayers = currentGame.player.filter(p => p.isAlive);
 
         // Debug xem DB lưu thế nào
-        console.log("Raw actions:", lastDayPhase.action);
+        // console.log("Raw actions:", lastDayPhase.action);
 
         // Lấy userId đã vote
         const votePlayerIds = [
@@ -955,8 +955,8 @@ class GameController {
             )
         ];
 
-        console.log("Alive:", alivePlayers.map(p => p.userId));
-        console.log("Vote Player IDs:", votePlayerIds);
+        // console.log("Alive:", alivePlayers.map(p => p.userId));
+        // console.log("Vote Player IDs:", votePlayerIds);
 
         return votePlayerIds.length >= alivePlayers.length;
     }
@@ -990,7 +990,7 @@ class GameController {
             mostVotedPlayer = alivePlayers.find(p => p.userId === candidates[0]) || null;
         }
 
-        console.log('Most voted players:', mostVotedPlayer);
+        // console.log('Most voted players:', mostVotedPlayer);
         // console.log('Most voted players:', mostVotedPlayers);
         const embed = new EmbedBuilder();
         embed.setTitle("Player Votes")
@@ -1008,15 +1008,15 @@ class GameController {
         }
         lastDayPhase.isEnd = true;
         lastDayPhase.save()
-        console.log('cur: ', currentGame)
+        // console.log('cur: ', currentGame)
         await interaction.channel.send({ embeds: [embed] });
         alivePlayers = currentGame.player.filter(p => p.isAlive);
-        console.log('AL:', alivePlayers)
-        console.log('V: ', votes)
+        // console.log('AL:', alivePlayers)
+        // console.log('V: ', votes)
         if (votes.length >= alivePlayers.length) {
             // check win condition
             const win = await this.checkWinCondition(currentGame, interaction)
-            console.log(win)
+            // console.log(win)
             if (!win) {
                 return await this.handleStartNightPhase(interactionToMessage(interaction))
             }

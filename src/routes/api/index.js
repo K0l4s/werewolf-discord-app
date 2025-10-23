@@ -7,6 +7,7 @@ const guildRoutes = require('./guild')
 const petRoutes = require('./pet')
 const paymentRoutes = require('./payment')
 const guildSettingRoutes = require('./guildSetting')
+const momoRoutes = require('./momo')
 // const giveawayRoutes = require('./giveaway'); // Nếu có route cho GA
 
 // Group API routes
@@ -18,6 +19,7 @@ router.use('/guild', guildRoutes)
 router.use('/pet', petRoutes)
 router.use('/payment', paymentRoutes)
 router.use('/server', guildSettingRoutes)
+router.use('/momo',momoRoutes)
 // router.use('/giveaway', giveawayRoutes); // Nếu có route cho GA
 
 // Nếu có các route khác, thêm vào đây

@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const User = require("../models/User");
+const UserStreak = require("../models/userStreak");
 
 class TopController {
     static async handleTopCommand(interactionOrMessage, args, isSlash = false, client) {
@@ -10,8 +11,14 @@ class TopController {
             const { scope, type, user } = options;
             const guildId = isSlash ? interactionOrMessage.guildId : (interactionOrMessage.guild ? interactionOrMessage.guild.id : null);
 
-            // Lấy dữ liệu top
-            const topData = await this.getTopData(scope, type, 10, user.id, guildId, client);
+            // Lấy dữ liệu top - streak cần xử lý riêng
+            let topData;
+            if (type === 'streak') {
+                topData = await this.getStreakTopData(scope, 10, user.id, guildId, client);
+            } else {
+                topData = await this.getTopData(scope, type, 10, user.id, guildId, client);
+            }
+
             if (!topData || topData.topUsers.length === 0) {
                 return this.sendResponse(interactionOrMessage, {
                     content: '❌ Không có dữ liệu leaderboard!',
@@ -31,10 +38,10 @@ class TopController {
         }
     }
 
-    // Phân tích options từ command
+    // Phân tích options từ command - THÊM STREAK
     static parseOptions(interactionOrMessage, args, isSlash) {
         let scope = 'global'; // global hoặc guild
-        let type = 'coin'; // coin, level, spirit
+        let type = 'coin'; // coin, level, spirit, streak
 
         if (isSlash) {
             // Slash command
@@ -61,7 +68,7 @@ class TopController {
         }
     }
 
-    // Parse type từ string
+    // Parse type từ string - THÊM STREAK
     static parseType(typeStr) {
         switch (typeStr.toLowerCase()) {
             case 'level':
@@ -72,6 +79,10 @@ class TopController {
             case 'spiritlvl':
             case 'spiritlevel':
                 return 'spirit';
+            case 'streak':
+            case 'daily':
+            case 'streaks':
+                return 'streak';
             case 'coin':
             case 'coins':
             case 'money':
@@ -80,7 +91,96 @@ class TopController {
         }
     }
 
-    // Lấy dữ liệu top
+    // Lấy dữ liệu top cho streak (PHƯƠNG THỨC MỚI)
+    static async getStreakTopData(scope, limit = 10, userId = null, guildId = null, client) {
+        const query = scope === 'guild' ? await this.getGuildStreakQuery(guildId, client) : {};
+
+        // Lấy top users theo currentStreak
+        const topUsers = await UserStreak
+            .find(query)
+            .sort({ currentStreak: -1, longestStreak: -1, totalDaysJoined: -1 })
+            .limit(limit)
+            .select('userId currentStreak longestStreak totalDaysJoined')
+            .lean();
+
+        // Lấy rank của user hiện tại (nếu có)
+        let userRank = null;
+        let userData = null;
+
+        if (userId) {
+            userRank = await this.getUserStreakRank(userId, query);
+            if (userRank > limit) {
+                userData = await UserStreak
+                    .findOne({ userId, ...query })
+                    .select('userId currentStreak longestStreak totalDaysJoined')
+                    .lean();
+            }
+        }
+
+        return { 
+            topUsers, 
+            userRank, 
+            userData, 
+            totalUsers: await UserStreak.countDocuments(query) 
+        };
+    }
+
+    // Tạo query cho guild streak (PHƯƠNG THỨC MỚI)
+    static async getGuildStreakQuery(guildId, client) {
+        try {
+            if (!guildId) {
+                console.log('Không có guildId được cung cấp');
+                return { userId: null };
+            }
+
+            const guild = await client.guilds.fetch(guildId).catch(() => null);
+            if (!guild) {
+                console.log(`Không tìm thấy guild với ID: ${guildId}`);
+                return { userId: null };
+            }
+
+            // Lấy tất cả members
+            const members = await guild.members.fetch();
+            const memberIds = members.map(member => member.id);
+
+            console.log(`Tìm thấy ${memberIds.length} members trong guild: ${guild.name}`);
+
+            return { 
+                userId: { $in: memberIds },
+                guildId: guildId // Thêm điều kiện guildId
+            };
+
+        } catch (error) {
+            console.error('Lỗi khi lấy guild streak query:', error);
+            return { userId: null };
+        }
+    }
+
+    // Lấy rank của user cho streak (PHƯƠNG THỨC MỚI)
+    static async getUserStreakRank(userId, query = {}) {
+        const userStreak = await UserStreak.findOne({ userId, ...query }).lean();
+        if (!userStreak) return null;
+
+        const higherCount = await UserStreak.countDocuments({
+            ...query,
+            $or: [
+                { currentStreak: { $gt: userStreak.currentStreak } },
+                { 
+                    currentStreak: userStreak.currentStreak,
+                    longestStreak: { $gt: userStreak.longestStreak }
+                },
+                {
+                    currentStreak: userStreak.currentStreak,
+                    longestStreak: userStreak.longestStreak,
+                    totalDaysJoined: { $gt: userStreak.totalDaysJoined }
+                }
+            ]
+        });
+
+        return higherCount + 1;
+    }
+
+    // Lấy dữ liệu top cho các type khác (GIỮ NGUYÊN)
     static async getTopData(scope, type, limit = 10, userId = null, guildId = null, client) {
         const sortCriteria = this.getSortCriteria(type);
         const query = scope === 'guild' ? await this.getGuildQuery(guildId, client) : {};
@@ -110,7 +210,7 @@ class TopController {
         return { topUsers, userRank, userData, totalUsers: await User.countDocuments(query) };
     }
 
-    // Tạo query cho guild
+    // Tạo query cho guild (GIỮ NGUYÊN)
     static async getGuildQuery(guildId, client) {
         try {
             if (!guildId) {
@@ -138,20 +238,22 @@ class TopController {
         }
     }
 
-    // Tiêu chí sắp xếp
+    // Tiêu chí sắp xếp - THÊM STREAK
     static getSortCriteria(type) {
         switch (type) {
             case 'level':
                 return { lvl: -1, exp: -1 };
             case 'spirit':
                 return { spiritLvl: -1, spiritExp: -1 };
+            case 'streak':
+                return { currentStreak: -1, longestStreak: -1 };
             case 'coin':
             default:
                 return { coin: -1 };
         }
     }
 
-    // Lấy rank của user
+    // Lấy rank của user - THÊM STREAK
     static async getUserRank(userId, type, query = {}) {
         const user = await User.findOne({ userId }).lean();
         if (!user) return null;
@@ -164,7 +266,7 @@ class TopController {
         return higherCount + 1;
     }
 
-    // Điều kiện để tìm người có rank cao hơn
+    // Điều kiện để tìm người có rank cao hơn - THÊM STREAK
     static getHigherRankCondition(user, type) {
         switch (type) {
             case 'level':
@@ -181,13 +283,20 @@ class TopController {
                         { spiritLvl: user.spiritLvl, spiritExp: { $gt: user.spiritExp } }
                     ]
                 };
+            case 'streak':
+                return {
+                    $or: [
+                        { currentStreak: { $gt: user.currentStreak } },
+                        { currentStreak: user.currentStreak, longestStreak: { $gt: user.longestStreak } }
+                    ]
+                };
             case 'coin':
             default:
                 return { coin: { $gt: user.coin } };
         }
     }
 
-    // Tạo embed leaderboard
+    // Tạo embed leaderboard - CẬP NHẬT CHO STREAK
     static async createLeaderboardEmbed(client, topData, scope, type, user) {
         const { topUsers, userRank, userData, totalUsers } = topData;
 
@@ -250,7 +359,7 @@ class TopController {
         return embed;
     }
 
-    // Thông tin type
+    // Thông tin type - THÊM STREAK
     static getTypeInfo(type) {
         switch (type) {
             case 'level':
@@ -263,6 +372,11 @@ class TopController {
                     name: 'SPIRIT LEVEL',
                     description: 'Xếp hạng theo Spirit Level (nếu cùng Level thì so Spirit EXP)'
                 };
+            case 'streak':
+                return {
+                    name: 'STREAK',
+                    description: 'Xếp hạng theo Current Streak (nếu cùng thì so Longest Streak)'
+                };
             case 'coin':
             default:
                 return {
@@ -272,7 +386,7 @@ class TopController {
         }
     }
 
-    // Lấy medal/huy chương
+    // Lấy medal/huy chương (GIỮ NGUYÊN)
     static getMedal(rank) {
         switch (rank) {
             case 1: return '🥇';
@@ -282,34 +396,32 @@ class TopController {
         }
     }
 
-    // Hiển thị giá trị theo type
+    // Hiển thị giá trị theo type - THÊM STREAK
     static getValueDisplay(userData, type) {
         switch (type) {
             case 'level':
                 return `Level ${userData.lvl} (${userData.exp.toLocaleString()} EXP)`;
             case 'spirit':
                 return `Spirit Level ${userData.spiritLvl} (${userData.spiritExp.toLocaleString()} EXP)`;
+            case 'streak':
+                return `🔥 ${userData.currentStreak} ngày (Cao nhất: ${userData.longestStreak})`;
             case 'coin':
             default:
                 return `${userData.coin.toLocaleString()} coin`;
         }
     }
 
-    // Gửi response (FIXED - Quan trọng nhất)
+    // Gửi response (GIỮ NGUYÊN)
     static async sendResponse(interactionOrMessage, response, isSlash = false) {
         console.log('Sending response:', response);
 
         if (isSlash) {
-            // Kiểm tra xem interaction đã được acknowledged chưa
             if (interactionOrMessage.deferred || interactionOrMessage.replied) {
-                // Đã được acknowledged, sử dụng followUp
                 return await interactionOrMessage.followUp(response);
             } else {
-                // Chưa được acknowledged, sử dụng reply
                 return await interactionOrMessage.reply(response);
             }
         } else {
-            // Prefix command - sử dụng reply bình thường
             return await interactionOrMessage.reply(response);
         }
     }

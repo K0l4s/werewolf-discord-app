@@ -154,7 +154,7 @@ class UserController {
         const maxExp = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
         const newExp = Number(user.exp) + Number(exp);
 
-        console.log(newExp, " ", maxExp);
+        // console.log(newExp, " ", maxExp);
 
         // Xử lý level up nhiều lần nếu exp nhận được rất lớn
         let currentExp = newExp;
