@@ -404,7 +404,7 @@ class TopController {
             case 'spirit':
                 return `Spirit Level ${userData.spiritLvl} (${userData.spiritExp.toLocaleString()} EXP)`;
             case 'streak':
-                return `🔥 ${userData.currentStreak} ngày (Cao nhất: ${userData.longestStreak})`;
+                return `<a:streak:1430924354539098223> ${userData.currentStreak} ngày (Cao nhất: ${userData.longestStreak})`;
             case 'coin':
             default:
                 return `${userData.coin.toLocaleString()} coin`;
