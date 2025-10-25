@@ -29,6 +29,7 @@ const GiveawayHandlers = require('./giveAwayHandlers');
 const handleMessageCreate = async (client, msg) => {
     // try {
     // deleteSpam = await ServerController.deleteSpamMessages(msg);
+    
     if (msg.author.bot || !msg.guild) return;
     // Lấy prefix server từ DB
     let serverPrefixData = await Prefix.findOne({ guildId: msg.guild.id });
@@ -796,74 +797,7 @@ const handleMessageCreate = async (client, msg) => {
         let bet = args[0];
         MiniGameController.bauCua(msg.author.id, msg, bet)
     }
-    // else if (cmd === "baucua") {
-    //     let bet = args[0];
-
-    //     // Nếu người dùng nhập "all", đặt cược toàn bộ hoặc tối đa 300000
-    //     if (bet === "all") {
-    //         bet = Math.min(user.coin, 300000);
-    //     } else {
-    //         bet = parseInt(bet);
-
-    //         // Nếu không phải số hợp lệ hoặc <=0, đặt mặc định 20
-    //         if (isNaN(bet) || bet <= 0) bet = 20;
-
-    //         // Giới hạn tối đa 300000
-    //         if (bet > 300000) bet = 300000;
-    //     }
-    //     if (user.coin < bet) return msg.reply("🚫 Bạn không đủ coin để đặt cược!");
-
-    //     const choices = {
-    //         "🍐": "Bầu",
-    //         "🦀": "Cua",
-    //         "🐟": "Cá",
-    //         "🐓": "Gà",
-    //         "🦌": "Nai",
-    //         "🦁": "Hổ"
-    //     };
-
-    //     // gửi tin nhắn mời chọn
-    //     const msgGame = await msg.reply(
-    //         `🎲 Bạn cược **${bet} coin**. Chọn 1 con bằng reaction trong **30s**:\n🍐 Bầu | 🦀 Cua | 🐟 Cá | 🐓 Gà | 🦌 Nai | 🦁 Hổ`
-    //     );
-
-    //     // thêm reactions
-    //     for (const emoji of Object.keys(choices)) {
-    //         await msgGame.react(emoji);
-    //     }
-
-    //     // filter chỉ nhận reaction từ người gọi lệnh
-    //     const filter = (reaction, userReact) => {
-    //         return Object.keys(choices).includes(reaction.emoji.name) && userReact.id === msg.author.id;
-    //     };
-
-    //     try {
-    //         const collected = await msgGame.awaitReactions({ filter, max: 1, time: 50000, errors: ["time"] });
-    //         const reaction = collected.first();
-    //         const userChoice = choices[reaction.emoji.name];
-
-    //         // roll kết quả
-    //         const resultEmoji = Object.keys(choices)[Math.floor(Math.random() * Object.keys(choices).length)];
-    //         const resultName = choices[resultEmoji];
-
-    //         let win = -bet;
-    //         if (userChoice === resultName) win = bet * 2; // thắng x2
-
-    //         user.coin += win;
-    //         await user.save();
-
-    //         msg.reply(
-    //             `🎲 Bạn chọn: ${reaction.emoji.name} **${userChoice}**\n` +
-    //             `Kết quả: ${resultEmoji} **${resultName}**\n` +
-    //             `${win > 0 ? `🎉 Bạn thắng +${win} coin` : `😢 Bạn thua ${Math.abs(win)} coin`}\n` +
-    //             `💰 Coin hiện tại: **${user.coin}**`
-    //         );
-
-    //     } catch (err) {
-    //         msg.reply("⌛ Hết thời gian chọn! Trò chơi bị hủy.");
-    //     }
-    // }
-
+ 
 
     // ================= KÉO CO =================
     else if (cmd === "keoco") {
@@ -1086,78 +1020,5 @@ const handleMessageCreate = async (client, msg) => {
             if (playerHand.filter(Boolean).length < 3) drawMsg.edit("⏳ Bạn đã hết thời gian rút bài!");
         });
     }
-    // } 
-    // catch (error) {
-    //     console.error("⚠️ Lỗi interactionCreate:", error);
-
-    //     // Gửi báo cáo bug tới dev
-    //     const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
-    //     if (devUser) {
-    //         await devUser.send({
-    //             content: `🐞 **Báo cáo lỗi interaction**\n` +
-    //                 `**User:** ${interaction.user.tag} (${interaction.user.id})\n` +
-    //                 `**Interaction Type:** ${interaction.type}\n` +
-    //                 `**Error:**\n\`\`\`${error.stack}\`\`\``
-    //         });
-    //     }
-    // }
-
-
-
-    // if(message.author.id!="387162192346218496")
-    //     return;
-    // // Handle commands
-    // const args = message.content.slice(1).trim().split(/ +/);
-    // const command = args.shift().toLowerCase();
-    // console.log(`Received command: ${command} in channel: ${message.channel.id}`);
-    // // const game = GameService.getGameByChannel(message.channel.id);
-    // const user = await UserService.findUserById(message.author.id);
-    // if (!user)
-    //     await UserService.createNewUser(message.author.id);
-    // switch (command) {
-    //     case 'create':
-    //         return GameController.handleCreateRoom(message);
-    //     case 'join':
-    //     case 'cj':
-    //         return GameController.handleJoinCommand(message);
-    //     case 'new':
-    //         return GameController.handleCreateNewRoom(message);
-    //     case 'wallet':
-    //         return UserController.handleBalance(message);
-    //     case 'wgive':
-    //         {
-    //             const args = message.content.trim().split(/\s+/);
-    //             const balance = args[2];
-    //             const mentionUser = message.mentions.users.first();
-    //              if (!mentionUser) {
-    //                         embed.setTitle("❌Transfer Error!")
-    //                             .setDescription(`You must mention receiver first!`)
-    //                             .setColor('Red');
-    //                         return message.reply({ embeds: [embed] });
-    //                     }
-
-    //                     if (mentionUser.id == message.author.id) {
-    //                         embed.setTitle("❌Transfer Error!")
-    //                             .setDescription(`You can't send money to yourself!`)
-    //                             .setColor('Red');
-    //                         return message.reply({ embeds: [embed] });
-    //                     }
-    //             return UserController.giveMoneyTo(message,mentionUser, balance);
-    //         }
-    //     case 'start':
-    //         return GameController.handleStartGame(message);
-    //     case 'increse-exp':
-    //         {
-    //             if (message.author.id != "387162192346218496")
-    //                 return message.reply("You don't have permission to do this action!")
-    //             return UserController.addExperience("387162192346218496", 500, message)
-    //         }
-    //     case 'donate':
-    //         {
-    //             return message.reply({ content: "🔗 Momo: 0827626203 \n Name: Huỳnh Trung Kiên", ephemeral: true });
-    //         }
-    //     default:
-    //         return message.reply("⚠️ Lệnh không hợp lệ.");
-    // }
 }
 module.exports = { handleMessageCreate };

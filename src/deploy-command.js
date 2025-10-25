@@ -11,7 +11,7 @@ const commands = [
         .setName('join')
         .setDescription('Tham gia phòng mới!')
         .toJSON(),
-        new SlashCommandBuilder()
+    new SlashCommandBuilder()
         .setName('giveaway')
         .setDescription('Tạo giveaway!')
         .toJSON(),
@@ -134,6 +134,35 @@ const commands = [
                 .setDescription('Bet amout')
                 .setRequired(false)
         ),
+    new SlashCommandBuilder()
+        .setName('add-action')
+        .setDescription('Add a new custom action to the server')
+        .addStringOption(option =>
+            option.setName('action')
+                .setDescription('Action name (e.g., dance, wave)')
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('message')
+                .setDescription('Message template (use {user} and {target})')
+                .setRequired(true)
+        )
+        .addAttachmentOption(option =>
+            option.setName('image')
+                .setDescription('Upload an image for the action')
+                .setRequired(false)
+        )
+        .addStringOption(option =>
+            option.setName('image-url')
+                .setDescription('Image URL for the action')
+                .setRequired(false)
+        )
+        .addBooleanOption(option =>
+            option.setName('requires-target')
+                .setDescription('Whether this action requires a target user')
+                .setRequired(false)
+        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
     //         const topCommand = {
     //     name: 'top',
     //     description: 'Xem bảng xếp hạng',

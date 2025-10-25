@@ -15,6 +15,7 @@ const UserService = require('../services/userService');
 const { interactionToMessage } = require('../utils/fakeMessage');
 const { EmbedBuilder } = require('discord.js');
 const GiveawayHandlers = require('./giveAwayHandlers');
+const actionService = require('../services/actionService');
 
 module.exports = async (interaction, client) => {
     if (!interaction.isChatInputCommand()) return;
@@ -23,8 +24,79 @@ module.exports = async (interaction, client) => {
     let lang = await LanguageController.getLang(interaction.guildId);
 
     switch (commandName) {
+        case 'add-action': {
+            await interaction.deferReply({ ephemeral: true });
+
+            const actionName = interaction.options.getString('action');
+            const message = interaction.options.getString('message');
+            const imageAttachment = interaction.options.getAttachment('image');
+            const imageUrl = interaction.options.getString('image-url');
+            const requiresTarget = interaction.options.getBoolean('requires-target') ?? true;
+
+            // Validate that at least one image source is provided
+            if (!imageAttachment && !imageUrl) {
+                return await interaction.editReply('Please provide either an image upload or an image URL.');
+            }
+
+            // Validate that only one image source is provided
+            if (imageAttachment && imageUrl) {
+                return await interaction.editReply('Please provide only one image source (upload or URL), not both.');
+            }
+
+            try {
+                let actionData;
+
+                if (imageAttachment) {
+                    // Handle file upload from Discord
+                    if (!imageAttachment.contentType?.startsWith('image/')) {
+                        return await interaction.editReply('Please upload a valid image file (jpg, png, gif, webp).');
+                    }
+
+                    // Download the image from Discord CDN
+                    const response = await fetch(imageAttachment.url);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+
+                    actionData = {
+                        action: actionName,
+                        message: message,
+                        imageType: 'upload',
+                        imageData: {
+                            originalname: imageAttachment.name || 'discord_image.png',
+                            mimetype: imageAttachment.contentType,
+                            buffer: buffer,
+                            size: imageAttachment.size
+                        },
+                        requiresTarget: requiresTarget
+                    };
+                } else {
+                    // Handle URL
+                    actionData = {
+                        action: actionName,
+                        message: message,
+                        imageType: 'url',
+                        imageData: imageUrl,
+                        requiresTarget: requiresTarget
+                    };
+                }
+
+                const newAction = await actionService.addAction(
+                    interaction.guild.id,
+                    actionData,
+                    interaction.user.id
+                );
+
+                await interaction.editReply(`Action "${actionName}" has been added successfully!`);
+
+            } catch (error) {
+                console.error('Error adding action:', error);
+                await interaction.editReply(`Error: ${error.message}`);
+            } finally{
+                return
+            }
+        }
         case 'giveaway': {
-            
+
             return await GiveawayHandlers.showGiveawayModal(interaction)
         }
         case 'spirit': {
