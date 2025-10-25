@@ -18,7 +18,7 @@ const handleActionMessage = async (client, msg) => {
 
         // const actions = await Action
         if (!actions || actions.length === 0) return;
-        console.log(content)
+        // console.log(content)
         // const actionContent = content.substring(3).trim();
         const matchedAction = actions.find(action =>
             content.includes(action.action.toLowerCase())
