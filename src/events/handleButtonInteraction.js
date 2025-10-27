@@ -19,6 +19,7 @@ module.exports = async (interaction) => {
         console.log("view role");
         const embed = await GameController.handleGetRole(interaction.channel.id, interaction.user.id, lang);
         await interaction.reply(embed);
+        return;
     }
     else if (actionType === 'day_action_skip') {
         let currentGame = await GameService.getGameByChannel(interaction.channel.id);
@@ -33,10 +34,13 @@ module.exports = async (interaction) => {
 
             await GameController.endDayPhase(currentGame, interaction);
         }
+        return;
     }
     else if (actionType === 'night_action_skip') {
         let currentGame = await GameService.getGameByChannel(refId);
+        console.log(currentGame)
         const user = currentGame.player.find((p) => p.userId === interaction.user.id)
+        console.log(user)
         if (!user.isAlive || !user)
             return await interaction.reply({ content: "You're death or not in game!" }, ephemeral = true)
         await GameController.skip_Night_Action(currentGame, interaction.user.id, interaction);
@@ -53,6 +57,7 @@ module.exports = async (interaction) => {
                 return GameController.handleStartDayPhase(currentGame, interaction);
             }
         }
+        return;
     }
     else if (actionType === "onetwothree") {
         return await handle123Result(interaction)

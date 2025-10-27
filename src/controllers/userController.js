@@ -1,7 +1,7 @@
 const { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const UserService = require("../services/userService");
 const { DEFAULT_EXP_LVL1, STEP_EXP } = require("../config/constants");
-const { wolfCoin } = require("../utils/wolfCoin");
+const { wolfCoin, wolfToken } = require("../utils/wolfCoin");
 const SpiritController = require("./DauLaDaiLuc/spiritController");
 const InviteCode = require("../models/InviteCode");
 const User = require("../models/User");
@@ -11,11 +11,14 @@ class UserController {
         const user = await UserService.findUserById(message.author.id);
         const embed = new EmbedBuilder();
         const globalName = message.author.globalName || message.author.username;
-        const coin = user.coin.toLocaleString("en-US");
+        // const coin = user.coin.toLocaleString("en-US");
+        // const token = user.token.toLocaleString("en-US");
+        // const coinFormatted = coin.toLocaleString("en-US");
 
         embed.setTitle(`${globalName}'s Wallet`)
-            .setDescription(`<@${message.author.id}> have ${coin} ${"<:wolf_coin:1400508720160702617>"}`)
-            .setColor('Yellow')
+            .setDescription(`<@${message.author.id}> have:\n\n**Coin: ${wolfCoin(user.coin)}**\n**Token: ${wolfToken(user.token)}**`)
+            .setColor('Yellow');
+
         return message.reply({ embeds: [embed] });
     }
     static async fillInviteCode(userId, code, lang = "en") {

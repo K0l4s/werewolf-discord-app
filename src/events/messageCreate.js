@@ -33,13 +33,13 @@ const handleMessageCreate = async (client, msg) => {
     if (msg.author.bot || !msg.guild) return;
     // Lấy prefix server từ DB
     let serverPrefixData = await Prefix.findOne({ guildId: msg.guild.id });
-    let serverPrefix = serverPrefixData ? serverPrefixData.prefix : 'w';
+    let serverPrefix = serverPrefixData ? serverPrefixData.prefix : 'k';
     let prefixes = [];
 
     if (serverPrefix) {
         prefixes.push(serverPrefix.toLowerCase(), serverPrefix.toUpperCase());
     } else {
-        prefixes.push("w", "W");
+        prefixes.push("k", "K");
     }
 
     // Check message có bắt đầu bằng prefix nào không

@@ -116,7 +116,7 @@ class GameController {
             return message.reply("Please create/ join new game!")
         if (game.isStart)
             return message.reply("This game started. Please wait!")
-        if (game.player.length < 4 || game.player.length > 10) {
+        if (game.player.length < 3 || game.player.length > 10) {
             const embed = new EmbedBuilder();
             let playerList = game.player
                 .map((p, index) => `${index + 1}. <@${p.userId}> ${p.isAlive ? "🧑🏻" : "🧟"}`)
@@ -215,7 +215,7 @@ class GameController {
         const rows = chunkedOptions.map((options, index) => {
             return new ActionRowBuilder().addComponents(
                 new StringSelectMenuBuilder()
-                    .setCustomId(`night_action_${index}|${message.channel.id}`)
+                    .setCustomId(`night_action|${message.channel.id}`)
                     .setPlaceholder(`Chọn người chơi (${index + 1})`)
                     .addOptions(options)
             );

@@ -60,7 +60,7 @@ router.post("/discord/callback", async (req, res) => {
             discordToken: access_token,
             expiresAt
         });
-        console.log(token)
+        // console.log(token)
         // lưu token vào cookie
         // res.cookie("access_token", access_token, {
         //     httpOnly: true,
@@ -92,7 +92,7 @@ router.post("/infor", async (req, res) => {
         console.log("Token", token)
         // tìm token trong DB
         const tokenRow = await Token.findOne({ token });
-        console.log(tokenRow)
+        // console.log(tokenRow)
         if (!tokenRow) {
             return res.status(400).json({ error: "Token not found" });
         }

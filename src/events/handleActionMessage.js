@@ -1,3 +1,4 @@
+const { EmbedBuilder } = require("discord.js");
 const Action = require("../models/Action");
 const actionService = require("../services/actionService");
 const storageService = require("../services/storageService");
@@ -11,7 +12,7 @@ const handleActionMessage = async (client, msg) => {
     try {
         const actions = await Action.find({
             $or: [
-                { guildId:msg.guild.id },
+                { guildId: msg.guild.id },
                 { isSystemDefault: true }
             ]
         });
@@ -41,11 +42,22 @@ const handleActionMessage = async (client, msg) => {
             .replace(/\s+/g, ' ')
             .trim();
 
+        // await msg.reply({
+        //     content: finalMessage,
+        //     files: [matchedAction.imgUrl]
+        // });
+        const embed = new EmbedBuilder()
+            .setTitle("Action")
+            .setDescription(finalMessage)
+            .setImage(matchedAction.imgUrl)
+            .setColor('#0099ff')
+            .setFooter({
+                text: 'Use /add-action | First 10 actions free | 3 tokens each after'
+            })
         await msg.reply({
-            content: finalMessage,
-            files: [matchedAction.imgUrl]
+            embeds: [embed]
+            // files: [matchedAction.imgUrl] // Bỏ dòng này khi dùng embed
         });
-
 
     } catch (error) {
         console.error('Error handling action message:', error);

@@ -13,10 +13,12 @@ module.exports = async (interaction) => {
         const battleId = interaction.customId.replace('reject_battle_', '');
         return await BattleController.rejectBattle(battleId, interaction);
     }
+    console.log(interaction)
     //Xử lý cho ma sói
     const [actionType, refId] = interaction.customId.split('|');
 
     if (actionType === 'night_action') {
+        console.log("night")
         let currentGame = await GameService.getGameByChannel(refId);
         const user = currentGame.player.find((p) => p.userId === interaction.user.id)
         if (!user.isAlive || !user)
