@@ -10,7 +10,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const cors = require('cors');
 const cookieParser = require("cookie-parser");
-const { setupDailyStreakCheck } = require('./jobs/dailyStreakCheck');
+const { setupDailyStreakCheck, cleanDailyGiveaway, cleanGA } = require('./jobs/dailyStreakCheck');
 const StreakController = require('./controllers/streakController');
 const NotificationController = require('./controllers/notificationController');
 const handleMenu = require('./events/handleMenu');
@@ -66,16 +66,16 @@ app.use('/uploads', express.static(uploadsPath));
 
 // ✅ Route test (tuỳ chọn)
 app.get('/image/:filename', (req, res) => {
-  const filename = req.params.filename;
-  const filePath = path.join(uploadsPath, filename);
-  console.log('🧭 Đang gửi file:', filePath);
+    const filename = req.params.filename;
+    const filePath = path.join(uploadsPath, filename);
+    console.log('🧭 Đang gửi file:', filePath);
 
-  res.sendFile(filePath, (err) => {
-    if (err) {
-      console.error('❌ Không tìm thấy file:', err);
-      res.status(404).send('File không tồn tại!');
-    }
-  });
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            console.error('❌ Không tìm thấy file:', err);
+            res.status(404).send('File không tồn tại!');
+        }
+    });
 });
 
 // Route test (không bắt buộc)
@@ -99,7 +99,8 @@ async function startServer() {
         // Connect DB and cleanup
         connectDB();
         cleanupTempImages();
-
+        cleanDailyGiveaway();
+        cleanGA()
         // Start Express server
         app.listen(port, "0.0.0.0", () => {
             console.log(`🚀 Express server chạy trên http://0.0.0.0:${port}`);

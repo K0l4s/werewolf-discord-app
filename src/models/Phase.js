@@ -7,7 +7,7 @@ const phaseSchema = new mongoose.Schema({
     createdDate: { type: Date, required: true, default: Date.now },
     phase: {
         type: String,
-        enum: Object.values(PHASES), 
+        enum: Object.values(PHASES),
         required: true,
         default: PHASES.DAY
     },
@@ -18,10 +18,10 @@ const phaseSchema = new mongoose.Schema({
             type: String,
             enum: Object.values(ACTION_TYPE)
         },
-        targetId:String
+        targetId: String
     }],
     isEnd: { type: Boolean, required: true, default: false },
-
+    isProcessing: { type: Boolean, require: false, default: false },
     // Timestamps
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }

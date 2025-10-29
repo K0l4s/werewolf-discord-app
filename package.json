@@ -4,7 +4,8 @@
     "description": "Werewoft Discord Bot",
     "main": "index.js",
     "scripts": {
-        "start": "node src/index.js"
+        "build":"node src/deploy-command.js",
+        "start": "node src/deploy-command.js && node src/index.js"
     },
     "dependencies": {
         "@discordjs/rest": "^2.5.1",

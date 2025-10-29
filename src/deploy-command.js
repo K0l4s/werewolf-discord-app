@@ -3,10 +3,6 @@ require('dotenv').config(); // Load biến môi trường
 const { REST, Routes, SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 
 const commands = [
-    // new SlashCommandBuilder()
-    //     .setName('create')
-    //     .setDescription('Tạo phòng mới!')
-    //     .toJSON(),
     new SlashCommandBuilder()
         .setName('join')
         .setDescription('Tham gia phòng mới!')
@@ -163,33 +159,6 @@ const commands = [
                 .setRequired(false)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
-    //         const topCommand = {
-    //     name: 'top',
-    //     description: 'Xem bảng xếp hạng',
-    //     options: [
-    //         {
-    //             name: 'scope',
-    //             description: 'Phạm vi xếp hạng',
-    //             type: 3, // STRING
-    //             choices: [
-    //                 { name: 'Toàn cầu', value: 'global' },
-    //                 { name: 'Trong server', value: 'guild' }
-    //             ],
-    //             required: false
-    //         },
-    //         {
-    //             name: 'type',
-    //             description: 'Loại xếp hạng',
-    //             type: 3, // STRING
-    //             choices: [
-    //                 { name: 'Coin', value: 'coin' },
-    //                 { name: 'Level', value: 'level' },
-    //                 { name: 'Spirit Level', value: 'spirit' }
-    //             ],
-    //             required: false
-    //         }
-    //     ]
-    // };
     new SlashCommandBuilder()
         .setName('top')
         .setDescription('Xem bảng xếp hạng')
@@ -208,7 +177,8 @@ const commands = [
                 .addChoices(
                     { name: 'Coin', value: 'coin' },
                     { name: 'Level', value: 'level' },
-                    { name: 'Spirit Level', value: 'spirit' }
+                    { name: 'Spirit Level', value: 'spirit' },
+                    { name: 'Streak', value: 'streak' }
                 )
                 .setRequired(false)
         )
@@ -222,7 +192,6 @@ const commands = [
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.CLIENT_ID;
 
-console.log('Token:', token); // Debug
 
 const rest = new REST({ version: '10' }).setToken(token);
 

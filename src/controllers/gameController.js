@@ -1,4 +1,4 @@
-const { EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Embed, NewsChannel } = require("discord.js");
+const { EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Embed, NewsChannel, RoleFlagsBitField } = require("discord.js");
 const GameService = require("../services/gameService");
 const RoleService = require("../services/roleService");
 const { shufflePlayer, shuffleRole } = require("../utils/shuffle");
@@ -12,6 +12,7 @@ const { listeners } = require("../models/Phase");
 const { interactionToMessage } = require("../utils/fakeMessage");
 const UserController = require("./userController");
 const { t } = require('../i18n');
+const Phase = require("../models/Phase");
 
 class GameController {
     static async handleCreateRoom(message) {
@@ -404,7 +405,19 @@ class GameController {
 
 
     static async checkNightPhaseEnd(currentGame) {
-        const lastNightPhase = await PhaseService.getLastestNightPhaseByGameId(currentGame._id);
+        // const phase = await Phase.findOneAndUpdate(
+        //     { _id: phaseId, isEnded: false, isProcessing: false },
+        //     { $set: { isProcessing: true } },
+        //     { new: true }
+        // );
+        // await Phase.findOne()
+        // const lastNightPhase = await Phase.findOneAndUpdate({ gameId: currentGame._id, phase: PHASES.NIGHT, isEnd: false, isProcessing: false },
+        //     { $set: { isProcessing: true } },
+        //     { new: true }
+        // ).sort({ day: -1 }).exec();;
+        // if (!lastNightPhase) return false;
+        const lastNightPhase = await PhaseService.getLastestNightPhaseByGameId(currentGame._id)
+        if (!lastNightPhase || !lastNightPhase.action) return false;
         // const currentGame = await GameService.getGameByChannel(channelId);
         // console.log(currentGame);
         // const roleIds = currentGame.player.map(player => player.roleId);
@@ -432,6 +445,9 @@ class GameController {
 
         // console.log("Players done action:", playersDoneAction);
         // console.log("Players need action: ", playersHasSpecialRoles)
+        // await Phase.updateOne({ _id: phaseId }, { $set: { isEnded: true, isProcessing: false } });
+        // lastNightPhase.isProcessing = false;
+        await lastNightPhase.save()
         return playersDoneAction.length >= playersHasSpecialRoles.length;
 
     }
@@ -937,6 +953,10 @@ class GameController {
     }
     static async checkDayPhaseEnd(currentGame) {
         const lastDayPhase = await PhaseService.getLastestDayPhaseByGameId(currentGame._id);
+        // const lastDayPhase = await Phase.findOneAndUpdate({ gameId: currentGame._id, phase: PHASES.DAY, isEnd: false, isProcessing: false },
+        //     { $set: { isProcessing: true } },
+        //     { new: true }
+        // ).sort({ day: -1 }).exec();;
 
         if (!lastDayPhase || !lastDayPhase.action) return false;
 
@@ -957,7 +977,8 @@ class GameController {
 
         // console.log("Alive:", alivePlayers.map(p => p.userId));
         // console.log("Vote Player IDs:", votePlayerIds);
-
+        lastDayPhase.isProcessing = false;
+        await lastDayPhase.save()
         return votePlayerIds.length >= alivePlayers.length;
     }
 
