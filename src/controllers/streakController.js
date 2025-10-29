@@ -29,7 +29,7 @@ class StreakController {
                 case 'created':
                     embed = new EmbedBuilder()
                         .setColor(0x00FFFF)
-                        .setTitle(lang === 'vi' ? '✨ Chuỗi mới!' : '✨ New Streak!')
+                        .setTitle(lang === 'vi' ? '<a:rocket:1433022000112074862> Chuỗi mới!' : '<a:rocket:1433022000112074862> New Streak!')
                         .setDescription(`<@${userId}> ${lang === 'vi' ? 'vừa bắt đầu chuỗi!' : 'has started a new streak!'}`)
                         .addFields(
                             { name: lang === 'vi' ? '<a:fire2:1433091789044318332> Chuỗi hiện tại' : '<a:fire2:1433091789044318332> Current Streak', value: `**${result.streak.currentStreak}** ${lang === 'vi' ? 'ngày' : 'days'}`, inline: true },
@@ -53,7 +53,7 @@ class StreakController {
                 case 'recovered':
                     embed = new EmbedBuilder()
                         .setColor(0xFFA500)
-                        .setTitle(lang === 'vi' ? '🔄 Chuỗi đã được hồi phục!' : '🔄 Streak Recovered!')
+                        .setTitle(lang === 'vi' ? '<a:F_:1433016927231545414> Chuỗi đã được hồi phục!' : '<a:F_:1433016927231545414> Streak Recovered!')
                         .setDescription(`<@${userId}> ${lang === 'vi' ? 'đã sử dụng 1 lần hồi phục' : 'has used 1 recovery'}`)
                         .addFields(
                             { name: lang === 'vi' ? '<a:fire2:1433091789044318332> Chuỗi hiện tại' : '<a:fire2:1433091789044318332> Current Streak', value: `**${result.streak.currentStreak}** ${lang === 'vi' ? 'ngày' : 'days'}`, inline: true },

@@ -21,7 +21,7 @@ class TopController {
 
             if (!topData || topData.topUsers.length === 0) {
                 return this.sendResponse(interactionOrMessage, {
-                    content: '❌ Không có dữ liệu leaderboard!',
+                    content: '<a:F_:1433016927231545414> Không có dữ liệu leaderboard!',
                 }, isSlash);
             }
 
@@ -33,7 +33,7 @@ class TopController {
         } catch (error) {
             console.error('Error in handleTopCommand:', error);
             return this.sendResponse(interactionOrMessage, {
-                content: '❌ Đã có lỗi xảy ra khi lấy leaderboard!',
+                content: '<a:F_:1433016927231545414> Đã có lỗi xảy ra khi lấy leaderboard!',
             }, isSlash);
         }
     }
@@ -117,11 +117,11 @@ class TopController {
             }
         }
 
-        return { 
-            topUsers, 
-            userRank, 
-            userData, 
-            totalUsers: await UserStreak.countDocuments(query) 
+        return {
+            topUsers,
+            userRank,
+            userData,
+            totalUsers: await UserStreak.countDocuments(query)
         };
     }
 
@@ -145,7 +145,7 @@ class TopController {
 
             console.log(`Tìm thấy ${memberIds.length} members trong guild: ${guild.name}`);
 
-            return { 
+            return {
                 userId: { $in: memberIds },
                 guildId: guildId // Thêm điều kiện guildId
             };
@@ -165,7 +165,7 @@ class TopController {
             ...query,
             $or: [
                 { currentStreak: { $gt: userStreak.currentStreak } },
-                { 
+                {
                     currentStreak: userStreak.currentStreak,
                     longestStreak: { $gt: userStreak.longestStreak }
                 },
@@ -297,53 +297,67 @@ class TopController {
     }
 
     // Tạo embed leaderboard - CẬP NHẬT CHO STREAK
+    // Alternative: Chia thành 2 fields
     static async createLeaderboardEmbed(client, topData, scope, type, user) {
         const { topUsers, userRank, userData, totalUsers } = topData;
 
         const embed = new EmbedBuilder()
             .setColor(0x00AE86)
-            .setTitle(`🏆 LEADERBOARD - ${scope.toUpperCase()}`)
+            .setTitle(`<a:rwhitesmoke:1433076077642780705> LEADERBOARD <a:lwhitesmoke:1433024102636982284> - ${scope.toUpperCase()}`)
             .setTimestamp();
 
         const typeInfo = this.getTypeInfo(type);
         embed.setDescription(`**Top ${typeInfo.name}**\n*${typeInfo.description}*`);
 
-        // Fetch user info song song
-        const leaderboardLines = await Promise.all(
-            topUsers.map(async (uData, index) => {
+        // Chia top 10 thành 2 phần
+        const top5 = topUsers.slice(0, 5);
+        const next5 = topUsers.slice(5, 10);
+
+        // Top 1-5
+        const top5Lines = await Promise.all(
+            top5.map(async (uData, index) => {
                 const rank = index + 1;
                 const medal = this.getMedal(rank);
-
                 const fetchedUser = await client.users.fetch(uData.userId).catch(() => null);
-
-                const userDisplay = fetchedUser
-                    ? (fetchedUser.globalName
-                        ? `${fetchedUser.globalName} (${fetchedUser.username})`
-                        : fetchedUser.username)
-                    : `Unknown (${uData.userId})`;
-
+                const userDisplay = fetchedUser ? (fetchedUser.globalName || fetchedUser.username) : `User ${uData.userId.substring(0, 8)}`;
                 const value = this.getValueDisplay(uData, type);
-
                 return `${medal} **${userDisplay}** - ${value}`;
             })
         );
 
-        embed.addFields({
-            name: `Top 10 ${scope === 'global' ? 'Thế Giới' : 'Server'}`,
-            value: leaderboardLines.join("\n") || 'Không có dữ liệu'
-        });
+        // Top 6-10
+        const next5Lines = await Promise.all(
+            next5.map(async (uData, index) => {
+                const rank = index + 6;
+                const medal = this.getMedal(rank);
+                const fetchedUser = await client.users.fetch(uData.userId).catch(() => null);
+                const userDisplay = fetchedUser ? (fetchedUser.globalName || fetchedUser.username) : `User ${uData.userId.substring(0, 8)}`;
+                const value = this.getValueDisplay(uData, type);
+                return `${medal} **${userDisplay}** - ${value}`;
+            })
+        );
+
+        embed.addFields(
+            {
+                name: `<a:flyingpiglet:1433016976099508304> Top 1-5 ${scope === 'global' ? 'Thế Giới' : 'Server'}`,
+                value: top5Lines.join("\n") || 'Không có dữ liệu',
+                inline: false
+            },
+            {
+                name: `<a:pinkbook:1433016954985381898> Top 6-10 ${scope === 'global' ? 'Thế Giới' : 'Server'}`,
+                value: next5Lines.join("\n") || 'Không có dữ liệu',
+                inline: false
+            }
+        );
 
         // Rank của user nếu ngoài top 10
-        if (userRank > 10) {
+        if (userRank > 10 && userData) {
             const userValue = this.getValueDisplay(userData, type);
-
-            const displayName = user.globalName
-                ? `${user.globalName} (${user.username})`
-                : user.username;
+            const displayName = user.globalName || user.username;
 
             embed.addFields({
-                name: 'Rank của bạn',
-                value: `...\n**${userRank}.** ${displayName} - ${userValue}`,
+                name: '<a:redarrow:1433016977684693064> Rank của bạn',
+                value: `**${userRank}.** ${displayName} - ${userValue}`,
                 inline: false
             });
         } else if (userRank) {
