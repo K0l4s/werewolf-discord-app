@@ -6,26 +6,26 @@ const GA_TYPE = require('../models/Giveaway').GA_TYPE;
 class GiveawayController {
     static createGiveawayEmbed(giveaway, user) {
         const embed = new EmbedBuilder()
-            .setTitle(`🎉 ${giveaway.title}`)
+            .setTitle(`<a:annouce:1433017025491636356> ${giveaway.title}`)
             .setColor(0x00AE86)
             .setDescription(giveaway.description || 'Không có mô tả')
             .addFields(
-                { name: '👤 Host', value: `<@${giveaway.hostId}>`, inline: true },
-                { name: '🎁 Số người thắng', value: `${giveaway.winnerCount}`, inline: true },
-                { name: '⏰ Thời gian', value: this.formatDuration(giveaway.duration), inline: true }
+                { name: '<a:pixelbat:1433016993946275922> Host', value: `<@${giveaway.hostId}>`, inline: true },
+                { name: '<a:flyingpiglet:1433016976099508304> Số người thắng', value: `${giveaway.winnerCount}`, inline: true },
+                { name: '<a:alarm:1433097857740574840> Thời gian', value: this.formatDuration(giveaway.duration), inline: true }
             )
             .setTimestamp(giveaway.createdAt);
 
         // Thêm phần thưởng
         let rewardText = '';
         if (giveaway.rewards.currency) {
-            rewardText += `💰 **${giveaway.rewards.currency} coins**\n`;
+            rewardText += `<a:animatedarrowgreen:1433017001567059968> **${giveaway.rewards.currency} coins**\n`;
         }
         if (giveaway.rewards.items && giveaway.rewards.items.length > 0) {
             rewardText += `🎁 **Items** (chi tiết trong DB)\n`;
         }
         if (giveaway.rewards.otherItem) {
-            rewardText += `📦 **${giveaway.rewards.otherItem}**\n`;
+            rewardText += `<a:holodia:1433016936022802453> **${giveaway.rewards.otherItem}**\n`;
         }
 
         if (rewardText) {
@@ -34,20 +34,20 @@ class GiveawayController {
 
         // Thêm yêu cầu
         if (giveaway.requirementMessage) {
-            embed.addFields({ name: '📝 Yêu cầu', value: giveaway.requirementMessage });
+            embed.addFields({ name: '<a:paper:1433099319711629393> Yêu cầu', value: giveaway.requirementMessage });
         }
 
         // Thêm requirements
         let requirementText = '';
         if (giveaway.requirements.minLevel > 0) {
-            requirementText += `📊 Level tối thiểu: ${giveaway.requirements.minLevel}\n`;
+            requirementText += `<a:book3:1433020262990745600> Level tối thiểu: ${giveaway.requirements.minLevel}\n`;
         }
         if (giveaway.requirements.roleRequired && giveaway.requirements.roleRequired.length > 0) {
-            requirementText += `👥 Role: ${giveaway.requirements.roleRequired.map(roleId => `<@&${roleId}>`).join(', ')}`;
+            requirementText += `<a:orangeribbon:1433017050195824701> Role: ${giveaway.requirements.roleRequired.map(roleId => `<@&${roleId}>`).join(', ')}`;
         }
 
         if (requirementText) {
-            embed.addFields({ name: '⚙️ Điều kiện tham gia', value: requirementText });
+            embed.addFields({ name: '<a:purplecrystalheart:1433020260398665780> Điều kiện tham gia', value: requirementText });
         }
 
         return embed;
@@ -60,18 +60,18 @@ class GiveawayController {
             row.addComponents(
                 new ButtonBuilder()
                     .setCustomId(`ga_approve_${giveaway._id}`)
-                    .setLabel('✅ Duyệt')
+                    .setLabel('<a:verified:1433017684294893728> Duyệt')
                     .setStyle(ButtonStyle.Success),
                 new ButtonBuilder()
                     .setCustomId(`ga_reject_${giveaway._id}`)
-                    .setLabel('❌ Từ chối')
+                    .setLabel('<a:globalwarming:1433024007741112320> Từ chối')
                     .setStyle(ButtonStyle.Danger)
             );
         } else if (giveaway.status === GA_STATUS.ACTIVE) {
             row.addComponents(
                 new ButtonBuilder()
                     .setCustomId(`ga_join_${giveaway._id}`)
-                    .setLabel('🎯 Tham gia')
+                    .setLabel('<a:rocket:1433022000112074862> Tham gia')
                     .setStyle(ButtonStyle.Primary)
             );
 
@@ -79,7 +79,7 @@ class GiveawayController {
                 row.addComponents(
                     new ButtonBuilder()
                         .setCustomId(`ga_end_${giveaway._id}`)
-                        .setLabel('⏹️ Kết thúc')
+                        .setLabel('<a:alarm:1433097857740574840> Kết thúc')
                         .setStyle(ButtonStyle.Danger)
                 );
             }
@@ -89,7 +89,7 @@ class GiveawayController {
                 row.addComponents(
                     new ButtonBuilder()
                         .setCustomId(`ga_claim_${giveaway._id}`)
-                        .setLabel('✅ Xác nhận phần thưởng')
+                        .setLabel('<a:redtick:1433017893154459698> Xác nhận phần thưởng')
                         .setStyle(ButtonStyle.Success)
                 );
             }
@@ -100,24 +100,24 @@ class GiveawayController {
 
     static createApprovalEmbed(giveaway) {
         const embed = new EmbedBuilder()
-            .setTitle('🔄 Giveaway Chờ Duyệt')
+            .setTitle('<a:loading:1433098442392993973> Giveaway Chờ Duyệt')
             .setColor(0xFFA500)
-            .setDescription(`**${giveaway.title}**\n\n${giveaway.description || 'Không có mô tả'}`)
+            .setDescription(`**<a:annouce:1433017025491636356> ${giveaway.title}**\n\n${giveaway.description || 'Không có mô tả'}`)
             .addFields(
-                { name: '👤 Người tạo', value: `<@${giveaway.hostId}>`, inline: true },
-                { name: '🎁 Số người thắng', value: `${giveaway.winnerCount}`, inline: true },
-                { name: '⏰ Thời gian', value: this.formatDuration(giveaway.duration), inline: true }
+                { name: '<a:pixelbat:1433016993946275922> Người tạo', value: `<@${giveaway.hostId}>`, inline: true },
+                { name: '<a:arrowwhite:1433016988988608582> Số người thắng', value: `${giveaway.winnerCount}`, inline: true },
+                { name: '<a:alarm:1433097857740574840> Thời gian', value: this.formatDuration(giveaway.duration), inline: true }
             )
             .setTimestamp();
         let rewardText = '';
         if (giveaway.rewards.currency) {
-            rewardText += `💰 **${wolfCoin(giveaway.rewards.currency)}**\n`;
+            rewardText += `<a:animatedarrowgreen:1433017001567059968> **${wolfCoin(giveaway.rewards.currency)}**\n`;
         }
         if (giveaway.rewards.items && giveaway.rewards.items.length > 0) {
             rewardText += `🎁 **Items** (chi tiết trong DB)\n`;
         }
         if (giveaway.rewards.otherItem) {
-            rewardText += `📦 **${giveaway.rewards.otherValue.toLocaleString()} ${giveaway.rewards.otherItem}**\n`;
+            rewardText += `<a:holodia:1433016936022802453> **${giveaway.rewards.otherValue.toLocaleString()} ${giveaway.rewards.otherItem}**\n`;
         }
 
         if (rewardText) {
@@ -128,36 +128,36 @@ class GiveawayController {
 
     static createResultEmbed(giveaway, winners) {
         const embed = new EmbedBuilder()
-            .setTitle(`🎊 Kết thúc Giveaway: ${giveaway.title}`)
+            .setTitle(`<a:annouce:1433017025491636356> Kết thúc Giveaway: ${giveaway.title}`)
             .setColor(0x9B59B6)
-            .setDescription(`Giveaway đã kết thúc! Chúc mừng những người thắng cuộc!`)
+            .setDescription(`<a:confetti:1433017019141197895> Giveaway đã kết thúc! Chúc mừng những người thắng cuộc!`)
             .addFields(
-                { name: '👤 Host', value: `<@${giveaway.hostId}>`, inline: true },
-                { name: '🎁 Số người thắng', value: `${winners.length}`, inline: true }
+                { name: '<a:pixelbat:1433016993946275922> Host', value: `<@${giveaway.hostId}>`, inline: true },
+                { name: '<a:arrowwhite:1433016988988608582> Số người thắng', value: `${winners.length}`, inline: true }
             );
 
         if (winners.length > 0) {
             // Winners là mảng các string ID
             const winnerMentions = winners.map(winnerId => `<@${winnerId}>`).join(', ');
-            embed.addFields({ name: '🏆 Người thắng', value: winnerMentions });
+            embed.addFields({ name: '<a:flyingpiglet:1433016976099508304> Người thắng', value: winnerMentions });
         } else {
-            embed.addFields({ name: '🏆 Người thắng', value: 'Không có người tham gia hợp lệ' });
+            embed.addFields({ name: '<a:flyingpiglet:1433016976099508304> Người thắng', value: 'Không có người tham gia hợp lệ' });
         }
 
         // Hiển thị phần thưởng
         let rewardText = '';
         if (giveaway.rewards.currency && giveaway.rewards.currency > 0) {
-            rewardText += `💰 **${wolfCoin(giveaway.rewards.currency)} **\n`;
+            rewardText += `<a:animatedarrowgreen:1433017001567059968> **${wolfCoin(giveaway.rewards.currency)} **\n`;
         }
         if (giveaway.rewards.otherItem) {
-            rewardText += `📦 **${giveaway.rewards.otherValue.toLocaleString()} ${giveaway.rewards.otherItem}**`;
+            rewardText += `<a:holodia:1433016936022802453> **${giveaway.rewards.otherValue.toLocaleString()} ${giveaway.rewards.otherItem}**`;
             // if (giveaway.rewards.otherValue && giveaway.rewards.otherValue > 0) {
             //     rewardText += ` (Số lượng: ${giveaway.rewards.otherValue.toLocaleString()})`;
             // }
         }
 
         if (rewardText) {
-            embed.addFields({ name: '🎁 Phần thưởng', value: rewardText });
+            embed.addFields({ name: '<a:rwhitesmoke:1433076077642780705> Phần thưởng <a:lwhitesmoke:1433024102636982284>', value: rewardText });
         }
 
         // Thêm timestamp
@@ -181,7 +181,7 @@ class GiveawayController {
 
     static createErrorEmbed(message) {
         return new EmbedBuilder()
-            .setTitle('❌ Lỗi')
+            .setTitle('<a:globalwarming:1433024007741112320> Lỗi')
             .setColor(0xFF0000)
             .setDescription(message)
             .setTimestamp();
@@ -189,7 +189,7 @@ class GiveawayController {
 
     static createSuccessEmbed(message) {
         return new EmbedBuilder()
-            .setTitle('✅ Thành công')
+            .setTitle('<a:redtick:1433017893154459698> Thành công')
             .setColor(0x00FF00)
             .setDescription(message)
             .setTimestamp();

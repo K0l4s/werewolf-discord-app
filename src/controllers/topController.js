@@ -117,11 +117,11 @@ class TopController {
             }
         }
 
-        return {
-            topUsers,
-            userRank,
-            userData,
-            totalUsers: await UserStreak.countDocuments(query)
+        return { 
+            topUsers, 
+            userRank, 
+            userData, 
+            totalUsers: await UserStreak.countDocuments(query) 
         };
     }
 
@@ -145,7 +145,7 @@ class TopController {
 
             console.log(`Tìm thấy ${memberIds.length} members trong guild: ${guild.name}`);
 
-            return {
+            return { 
                 userId: { $in: memberIds },
                 guildId: guildId // Thêm điều kiện guildId
             };
@@ -165,7 +165,7 @@ class TopController {
             ...query,
             $or: [
                 { currentStreak: { $gt: userStreak.currentStreak } },
-                {
+                { 
                     currentStreak: userStreak.currentStreak,
                     longestStreak: { $gt: userStreak.longestStreak }
                 },
@@ -327,24 +327,12 @@ class TopController {
                 return `${medal} **${userDisplay}** - ${value}`;
             })
         );
-        // Chia thành nhiều field nếu quá dài
-        const leaderboardText = leaderboardLines.join("\n") || 'Không có dữ liệu';
-        const chunks = [];
-        for (let i = 0; i < leaderboardText.length; i += 1024) {
-            chunks.push(leaderboardText.slice(i, i + 1024));
-        }
 
-        // Thêm field đầu tiên
         embed.addFields({
             name: `Top 10 ${scope === 'global' ? 'Thế Giới' : 'Server'}`,
-            value: chunks[0]
+            value: leaderboardLines.join("\n") || 'Không có dữ liệu'
         });
-        for (let i = 1; i < chunks.length; i++) {
-            embed.addFields({
-                name: '\u200B', // tên trống (zero-width space)
-                value: chunks[i]
-            });
-        }
+
         // Rank của user nếu ngoài top 10
         if (userRank > 10) {
             const userValue = this.getValueDisplay(userData, type);
@@ -402,7 +390,7 @@ class TopController {
     static getMedal(rank) {
         switch (rank) {
             case 1: return '<a:yellowarr:1433016945589882891><a:crownyellow:1433016964665708574>';
-            case 2: return '<a:arrowblue:1433017028460941393><a:crownblue>:1433017016398123058>';
+            case 2: return '<a:arroworange:1433016960458948629><a:crownorange:1433016951072100473>:1433017016398123058>';
             case 3: return '<a:arrowpink:1433016973519880265><a:pinkcrown:1433017014166880328>';
             default: return `**<a:arrowpurple:1433017007103676446>${rank}.**`;
         }
