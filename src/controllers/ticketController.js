@@ -13,40 +13,51 @@ class TicketController {
         if (!guild) throw new Error(`❌ Không tìm thấy guild ${guildId}`);
 
         let categoryId = settings?.ticket?.categoryId;
+
         let categoryExists = false;
 
         if (categoryId) {
             const category = guild.channels.cache.get(categoryId) || await guild.channels.fetch(categoryId).catch(() => null);
             if (category && category.type === 4) { // GUILD_CATEGORY
                 categoryExists = true;
-            } else {
-                categoryExists = false;
             }
         }
 
-        // Nếu chưa có category thì tạo
-        if (!categoryId || !categoryExists) {
+        // Nếu không có category hoặc category cũ không tồn tại thì tạo mới
+        if (!settings || !settings.ticket || !categoryExists) {
             const category = await guild.channels.create({
                 name: '🎟️ Tickets',
                 type: 4, // GUILD_CATEGORY
                 reason: 'Tự động tạo category cho hệ thống ticket',
             });
-            console.log(`✅ Đã tạo mới ticket category (${category.name})`);
-            categoryId = category.id;
-        }
 
-        if (!settings) {
-            settings = new Notification({
-                guildId,
-                ticket: {
+            if (!settings) {
+                // Nếu chưa có setting, tạo mới hoàn toàn
+                settings = await Notification.create({
+                    guildId,
+                    ticket: {
+                        message: 'Welcome to ticket system 👋',
+                        categoryId: category.id,
+                        roleIds: [],
+                        userIds: [],
+                    },
+                });
+            } else if (!settings.ticket) {
+                // Nếu ticket object chưa tồn tại
+                settings.ticket = {
                     message: 'Welcome to ticket system 👋',
-                    categoryId,
+                    categoryId: category.id,
                     roleIds: [],
                     userIds: [],
-                },
-            });
-        } else {
-            settings.ticket.categoryId = categoryId;
+                };
+                await settings.save();
+            } else {
+                // Nếu ticket object đã có, chỉ update categoryId thôi
+                settings.ticket.categoryId = category.id;
+                await settings.save();
+            }
+
+            console.log(`✅ Đã tạo mới ticket category (${category.name}) và cập nhật vào DB`);
         }
 
         await settings.save();
@@ -227,7 +238,8 @@ class TicketController {
 
         // Lấy setting
         let settings = await Notification.findOne({ guildId });
-        // Nếu chưa có category thì tạo mới
+
+        // Kiểm tra category
         let categoryId = settings?.ticket?.categoryId;
         let categoryExists = false;
 
@@ -235,21 +247,20 @@ class TicketController {
             const category = guild.channels.cache.get(categoryId) || await guild.channels.fetch(categoryId).catch(() => null);
             if (category && category.type === 4) { // GUILD_CATEGORY
                 categoryExists = true;
-            } else {
-                categoryExists = false;
             }
         }
 
-        if (!settings || !settings.ticket || !settings.ticket.categoryId || !categoryExists) {
+        // Nếu không có category hoặc category cũ không tồn tại thì tạo mới
+        if (!settings || !settings.ticket || !categoryExists) {
             const category = await guild.channels.create({
                 name: '🎟️ Tickets',
                 type: 4, // GUILD_CATEGORY
                 reason: 'Tự động tạo category cho hệ thống ticket',
             });
 
-            settings = await Notification.findOneAndUpdate(
-                { guildId },
-                {
+            if (!settings) {
+                // Nếu chưa có setting, tạo mới hoàn toàn
+                settings = await Notification.create({
                     guildId,
                     ticket: {
                         message: 'Welcome to ticket system 👋',
@@ -257,11 +268,23 @@ class TicketController {
                         roleIds: [],
                         userIds: [],
                     },
-                },
-                { new: true, upsert: true }
-            );
+                });
+            } else if (!settings.ticket) {
+                // Nếu ticket object chưa tồn tại
+                settings.ticket = {
+                    message: 'Welcome to ticket system 👋',
+                    categoryId: category.id,
+                    roleIds: [],
+                    userIds: [],
+                };
+                await settings.save();
+            } else {
+                // Nếu ticket object đã có, chỉ update categoryId thôi
+                settings.ticket.categoryId = category.id;
+                await settings.save();
+            }
 
-            console.log(`✅ Đã tạo mới ticket category (${category.name}) và lưu vào DB`);
+            console.log(`✅ Đã tạo mới ticket category (${category.name}) và cập nhật vào DB`);
         }
 
         // Tạo tên kênh
@@ -311,15 +334,28 @@ class TicketController {
                     .setEmoji('<a:storage:1433807724365221898>')
             );;
 
+        const embed = new EmbedBuilder()
+            .setColor('Green')
+            .setTitle('🎟️ Ticket đã được tạo!')
+            .setDescription(`Vui lòng mô tả vấn đề của bạn tại đây 👇`)
+            .setFooter({ text: `Yêu cầu bởi ${user.globalName || user.username}`, iconURL: user.displayAvatarURL({ dynamic: true }) });
+
+        // Thêm mentions nếu có
+        const allMentions = [
+            ...settings.ticket.roleIds.map(id => `<@&${id}>`),
+            ...settings.ticket.userIds.map(id => `<@${id}>`)
+        ];
+
+        if (allMentions.length > 0) {
+            embed.addFields({
+                name: '📢 Được thông báo',
+                value: allMentions.join(' ')
+            });
+        }
+
         await newChannel.send({
             content: `<@${userId}>`,
-            embeds: [
-                new EmbedBuilder()
-                    .setColor('Green')
-                    .setTitle('🎟️ Ticket đã được tạo!')
-                    .setDescription(`Vui lòng mô tả vấn đề của bạn tại đây 👇`)
-                    .setFooter({ text: `Yêu cầu bởi ${user.globalName || user.username}`, iconURL: user.displayAvatarURL({ dynamic: true }) })
-            ],
+            embeds: [embed],
             components: [row]
         });
 
