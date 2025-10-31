@@ -18,6 +18,7 @@ const handleMenu = require('./events/handleMenu');
 const { handleActionMessage } = require('./events/handleActionMessage');
 app.use(cookieParser());
 const path = require('path');
+const schedulePendingTicketDeletions = require('./jobs/schedulePendingTicketDeletions');
 // Discord client setup
 const client = new Client({
     intents: [
@@ -83,6 +84,7 @@ async function startServer() {
             });
         });
         setupDailyStreakCheck();
+        schedulePendingTicketDeletions(client)
 
         // client.on('messageCreate', (msg) => GiveawayHandlers.handleMessageCreate(client, msg));
         // client.on('interactionCreate', (interaction) => GiveawayHandlers.handleButtonInteraction(interaction));
