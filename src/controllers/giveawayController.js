@@ -60,18 +60,20 @@ class GiveawayController {
             row.addComponents(
                 new ButtonBuilder()
                     .setCustomId(`ga_approve_${giveaway._id}`)
-                    .setLabel('✔️ Duyệt')
+                    .setLabel('Duyệt')
+                    .setEmoji('<a:redtick:1433017893154459698>')
                     .setStyle(ButtonStyle.Success),
                 new ButtonBuilder()
                     .setCustomId(`ga_reject_${giveaway._id}`)
-                    .setLabel('❌ Từ chối')
+                    .setLabel('Từ chối')
+                    .setEmoji('<a:deny:1433805273595904070>')
                     .setStyle(ButtonStyle.Danger)
             );
         } else if (giveaway.status === GA_STATUS.ACTIVE) {
             row.addComponents(
                 new ButtonBuilder()
                     .setCustomId(`ga_join_${giveaway._id}`)
-                    .setLabel('🚀 Tham gia')
+                    .setLabel('<a:rocket:1433022000112074862> Tham gia')
                     .setStyle(ButtonStyle.Primary)
             );
 
@@ -79,7 +81,8 @@ class GiveawayController {
                 row.addComponents(
                     new ButtonBuilder()
                         .setCustomId(`ga_end_${giveaway._id}`)
-                        .setLabel('⏳ Kết thúc')
+                        .setLabel('Kết thúc')
+                        .setEmoji('<a:holodia:1433016936022802453>')
                         .setStyle(ButtonStyle.Danger)
                 );
             }
@@ -89,7 +92,8 @@ class GiveawayController {
                 row.addComponents(
                     new ButtonBuilder()
                         .setCustomId(`ga_claim_${giveaway._id}`)
-                        .setLabel('✅ Xác nhận phần thưởng')
+                        .setLabel('Xác nhận phần thưởng')
+                        .setEmoji('<a:redtick:1433017893154459698>')
                         .setStyle(ButtonStyle.Success)
                 );
             }

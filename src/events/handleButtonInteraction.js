@@ -1,24 +1,63 @@
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { client } = require("..");
 const GameController = require("../controllers/gameController");
 const LanguageController = require("../controllers/languageController");
 const { handle123Result } = require("../controllers/miniGameController");
+const TicketController = require("../controllers/ticketController");
 const GameService = require("../services/gameService");
 const toggleComponents = require("../utils/toggleComponents");
 
-module.exports = async (interaction) => {
+module.exports = async (interaction, client) => {
     const { customId, message } = interaction;
     const [actionType, refId] = customId.split('|');
+    const args = customId.split('|')
     let lang = await LanguageController.getLang(message.guild.id)
 
-    // try {
-    // 🚫 Disable toàn bộ
-    // await message.edit({
-    //     components: toggleComponents(message.components, true)
-    // });
+    if (actionType === 'ticket') {
 
-    if (actionType === 'view_role') {
+        await interaction.deferReply({ ephemeral: true });
+        console.log('Xử lý ticket')
+        const act = args[1]
+        if (!act) {
+            return interaction.editReply("Not found action");
+        }
+        // const channelId =
+        let reply = "";
+        if (act == "close") {
+            reply = await TicketController.deleteTicket(interaction.channel.id, interaction.guild.id, interaction.user.id, client)
+            if (interaction.isButton() && reply?.includes("Ticket")) {
+                try {
+                    await interaction.message.edit({ components: [] });
+                } catch (err) {
+                    console.error("Không thể xóa button:", err);
+                }
+            }
+        }
+        else if (act == "storage") {
+            reply = await TicketController.storageTicket(interaction.channel.id, interaction.guild.id, interaction.user.id, client)
+
+            if (interaction.isButton() && reply?.includes("Ticket")) {
+                try {
+                    const row = new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setCustomId(`ticket|close|${interaction.channel.id}`)
+                                .setLabel('Đóng Ticket')
+                                .setStyle(ButtonStyle.Danger)
+                                .setEmoji('<a:trash:1433806006915432538>'))
+                    await interaction.message.edit({ components: [row] });
+                } catch (err) {
+                    console.error("Không thể xóa button:", err);
+                }
+            }
+        }
+
+        return interaction.editReply(reply || "Ticket processed.");
+    }
+    else if (actionType === 'view_role') {
         console.log("view role");
         const embed = await GameController.handleGetRole(interaction.channel.id, interaction.user.id, lang);
-        await interaction.reply(embed);
+        await interaction.editReply(embed);
         return;
     }
     else if (actionType === 'day_action_skip') {

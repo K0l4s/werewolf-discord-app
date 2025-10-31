@@ -14,7 +14,7 @@ const { setupDailyStreakCheck, cleanDailyGiveaway, cleanGA } = require('./jobs/d
 const StreakController = require('./controllers/streakController');
 const NotificationController = require('./controllers/notificationController');
 const handleMenu = require('./events/handleMenu');
-const GiveawayHandlers = require('./events/giveAwayHandlers');
+// const GiveawayHandlers = require('./events/giveAwayHandlers');
 const { handleActionMessage } = require('./events/handleActionMessage');
 app.use(cookieParser());
 const path = require('path');
@@ -53,45 +53,6 @@ app.set('discordClient', client);
 app.use('/', routes);
 
 
-// ✅ In ra __dirname để xem Express đang ở đâu
-console.log('📂 __dirname:', __dirname);
-
-// ✅ Kiểm tra thư mục uploads có tồn tại không
-const uploadsPath = path.join(__dirname, 'uploads');
-console.log('📂 uploadsPath:', uploadsPath);
-// console.log('📄 files in uploads:', fs.existsSync(uploadsPath) ? fs.readdirSync(uploadsPath) : '❌ Không tìm thấy thư mục uploads');
-
-// ✅ Public folder
-app.use('/uploads', express.static(uploadsPath));
-
-// ✅ Route test (tuỳ chọn)
-app.get('/image/:filename', (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.join(uploadsPath, filename);
-    console.log('🧭 Đang gửi file:', filePath);
-
-    res.sendFile(filePath, (err) => {
-        if (err) {
-            console.error('❌ Không tìm thấy file:', err);
-            res.status(404).send('File không tồn tại!');
-        }
-    });
-});
-
-// Route test (không bắt buộc)
-app.get('/image/:filename', (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.join(__dirname, 'uploads', filename);
-    console.log('📁 Đang gửi file:', filePath);
-
-    res.sendFile(filePath, (err) => {
-        if (err) {
-            console.error('❌ Không tìm thấy file:', err);
-            res.status(404).send('File không tồn tại!');
-        }
-    });
-});
-
 
 app.use(cookieParser());
 async function startServer() {
@@ -115,7 +76,7 @@ async function startServer() {
                 status: "online",
                 activities: [
                     {
-                        name: "using w instead splash command if bug!!!",
+                        name: "using k instead splash command if bug!!!",
                         type: ActivityType.Playing
                     }
                 ]
@@ -123,7 +84,7 @@ async function startServer() {
         });
         setupDailyStreakCheck();
 
-        client.on('messageCreate', (msg) => GiveawayHandlers.handleMessageCreate(client, msg));
+        // client.on('messageCreate', (msg) => GiveawayHandlers.handleMessageCreate(client, msg));
         // client.on('interactionCreate', (interaction) => GiveawayHandlers.handleButtonInteraction(interaction));
         client.on('guildMemberAdd', async (member) => {
             console.log("add");
@@ -225,7 +186,7 @@ async function startServer() {
                 } else if (interaction.isStringSelectMenu() || interaction.isSelectMenu()) {
                     return await require('./events/handleInteractionSelectCreate')(interaction);
                 } else if (interaction.isButton()) {
-                    return await require('./events/handleButtonInteraction')(interaction);
+                    return await require('./events/handleButtonInteraction')(interaction,client);
                 }
             } catch (error) {
                 console.error("⚠️ Lỗi interactionCreate:", error);

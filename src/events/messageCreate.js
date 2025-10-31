@@ -24,12 +24,13 @@ const { calculateLuckyBuff } = require('../utils/calculateLuckyBuff');
 const Notification = require('../models/Notification');
 const TopController = require('../controllers/topController');
 const ServerController = require('../controllers/serverController');
-const GiveawayHandlers = require('./giveAwayHandlers');
+// const GiveawayHandlers = require('./giveAwayHandlers');
+const TicketController = require('../controllers/ticketController');
 // Thêm vào phần imports
 const handleMessageCreate = async (client, msg) => {
     // try {
     // deleteSpam = await ServerController.deleteSpamMessages(msg);
-    
+
     if (msg.author.bot || !msg.guild) return;
     // Lấy prefix server từ DB
     let serverPrefixData = await Prefix.findOne({ guildId: msg.guild.id });
@@ -90,6 +91,56 @@ const handleMessageCreate = async (client, msg) => {
         // return await handleGiveawayCommand(msg, args, serverPrefix, lang);
 
     }
+    if (cmd === "ticket") {
+        const replyText = await TicketController.createNewTicket(msg.guild.id, msg.author.id, client);
+        return await msg.reply(replyText);
+    }
+    else if (cmd === "tick_add" || cmd === "tick_del") {
+        const guildId = msg.guild.id;
+        const client = msg.client;
+
+        const mentionedUsers = msg.mentions.users.map(u => u.id);
+        const mentionedRoles = msg.mentions.roles.map(r => r.id);
+
+        if (mentionedUsers.length === 0 && mentionedRoles.length === 0) {
+            return msg.reply("⚠️ Vui lòng tag ít nhất một user hoặc role!");
+        }
+
+        try {
+            let results = [];
+
+            if (cmd === "tick_add") {
+                if (mentionedUsers.length > 0) {
+                    const res = await TicketController.addUsers(mentionedUsers, guildId, client);
+                    results.push(`👤 Thêm ${res.added.length} user(s)`);
+                }
+                if (mentionedRoles.length > 0) {
+                    const res = await TicketController.addRoles(mentionedRoles, guildId, client);
+                    results.push(`🎭 Thêm ${res.added.length} role(s)`);
+                }
+            }
+            else if (cmd === "tick_del") {
+                if (mentionedUsers.length > 0) {
+                    const res = await TicketController.removeUsers(mentionedUsers, guildId, client);
+                    results.push(`👤 Xóa ${res.removed.length} user(s)`);
+                }
+                if (mentionedRoles.length > 0) {
+                    const res = await TicketController.removeRoles(mentionedRoles, guildId, client);
+                    results.push(`🎭 Xóa ${res.removed.length} role(s)`);
+                }
+            }
+
+            if (results.length === 0) {
+                await msg.reply("ℹ️ Không có thay đổi nào được thực hiện.");
+            } else {
+                await msg.reply(`✅ ${results.join("\n")}`);
+            }
+        } catch (err) {
+            console.error("❌ Lỗi khi cập nhật ticket system:", err);
+            await msg.reply("❌ Đã xảy ra lỗi khi cập nhật ticket system.");
+        }
+    }
+
     if (cmd === "top") {
         return await TopController.handleTopCommand(msg, args, false, client);
     }
@@ -797,7 +848,7 @@ const handleMessageCreate = async (client, msg) => {
         let bet = args[0];
         MiniGameController.bauCua(msg.author.id, msg, bet)
     }
- 
+
 
     // ================= KÉO CO =================
     else if (cmd === "keoco") {

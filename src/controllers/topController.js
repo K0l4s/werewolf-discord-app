@@ -356,7 +356,7 @@ class TopController {
             const displayName = user.globalName || user.username;
 
             embed.addFields({
-                name: '<a:redarrow:1433016977684693064> Rank của bạn',
+                name: '<a:lwing2:1433015622882689125> Rank của bạn <a:rwing2:1433015620290609182>',
                 value: `**${userRank}.** ${displayName} - ${userValue}`,
                 inline: false
             });
@@ -404,7 +404,7 @@ class TopController {
     static getMedal(rank) {
         switch (rank) {
             case 1: return '<a:yellowarr:1433016945589882891><a:crownyellow:1433016964665708574>';
-            case 2: return '<a:arroworange:1433016960458948629><a:crownorange:1433016951072100473>:1433017016398123058>';
+            case 2: return '<a:arroworange:1433016960458948629><a:crownorange:1433016951072100473>';
             case 3: return '<a:arrowpink:1433016973519880265><a:pinkcrown:1433017014166880328>';
             default: return `**<a:arrowpurple:1433017007103676446>${rank}.**`;
         }

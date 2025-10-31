@@ -18,13 +18,22 @@ const notificationSchema = new mongoose.Schema({
     ],
     gaChannelId: { type: String },
     gaReqChannelId: { type: String },
-    gaResChannelId: {type:String},
-    gaCreateChannelId:{type:String},
+    gaResChannelId: { type: String },
+    gaCreateChannelId: { type: String },
     isChannelEnabled: { type: Boolean, default: false },
     isEmbedEnabled: { type: Boolean, default: true },
     isStreakEnabled: { type: Boolean, default: true },
     isLinkDisable: { type: Boolean, default: false },
     isInviteDisable: { type: Boolean, default: false },
-    isSpamMessageDisable: { type: Boolean, default: false }
+    isSpamMessageDisable: { type: Boolean, default: false },
+    ticket: {
+        type: {
+            message: { type: String, required: true },
+            categoryId: { type: String, required: true },
+            roleIds: { type: [String], required: false, default: [] }, // danh sách role có quyền
+            userIds: { type: [String], required: false, default: [] }, // danh sách user có quyền
+        },
+        required: false,
+    },
 })
-module.exports = mongoose.model('Notification', notificationSchema);
+module.exports = mongoose.model('Notification', notificationSchema); 
