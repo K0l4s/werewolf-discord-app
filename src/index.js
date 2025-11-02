@@ -279,7 +279,7 @@ async function startServer() {
         }
         // Xử lý interactions
         client.on('interactionCreate', async (interaction) => {
-            await handleMenu.handleMenuInteraction(interaction);
+            await handleMenu.handleMenuInteraction(interaction,client);
         });
         client.on(Events.GuildCreate, async (guild) => {
             try {

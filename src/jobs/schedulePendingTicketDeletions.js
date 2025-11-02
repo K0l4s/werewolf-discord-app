@@ -8,7 +8,7 @@ async function schedulePendingTicketDeletions(client) {
     const now = new Date();
 
     // Giả sử ticket có deleteAt + 6h mới xóa
-    const tickets = await Ticket.find({ deleteAt: { $exists: true } });
+    const tickets = await Ticket.find({ deleteAt: { $exists: true },status:'closed' });
 
     for (const ticket of tickets) {
         const channelId = ticket.channelId;

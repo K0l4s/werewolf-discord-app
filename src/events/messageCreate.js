@@ -91,55 +91,6 @@ const handleMessageCreate = async (client, msg) => {
         // return await handleGiveawayCommand(msg, args, serverPrefix, lang);
 
     }
-    if (cmd === "ticket") {
-        const replyText = await TicketController.createNewTicket(msg.guild.id, msg.author.id, client);
-        return await msg.reply(replyText);
-    }
-    else if (cmd === "tick_add" || cmd === "tick_del") {
-        const guildId = msg.guild.id;
-        const client = msg.client;
-
-        const mentionedUsers = msg.mentions.users.map(u => u.id);
-        const mentionedRoles = msg.mentions.roles.map(r => r.id);
-
-        if (mentionedUsers.length === 0 && mentionedRoles.length === 0) {
-            return msg.reply("⚠️ Vui lòng tag ít nhất một user hoặc role!");
-        }
-
-        try {
-            let results = [];
-
-            if (cmd === "tick_add") {
-                if (mentionedUsers.length > 0) {
-                    const res = await TicketController.addUsers(mentionedUsers, guildId, client);
-                    results.push(`👤 Thêm ${res.added.length} user(s)`);
-                }
-                if (mentionedRoles.length > 0) {
-                    const res = await TicketController.addRoles(mentionedRoles, guildId, client);
-                    results.push(`🎭 Thêm ${res.added.length} role(s)`);
-                }
-            }
-            else if (cmd === "tick_del") {
-                if (mentionedUsers.length > 0) {
-                    const res = await TicketController.removeUsers(mentionedUsers, guildId, client);
-                    results.push(`👤 Xóa ${res.removed.length} user(s)`);
-                }
-                if (mentionedRoles.length > 0) {
-                    const res = await TicketController.removeRoles(mentionedRoles, guildId, client);
-                    results.push(`🎭 Xóa ${res.removed.length} role(s)`);
-                }
-            }
-
-            if (results.length === 0) {
-                await msg.reply("ℹ️ Không có thay đổi nào được thực hiện.");
-            } else {
-                await msg.reply(`✅ ${results.join("\n")}`);
-            }
-        } catch (err) {
-            console.error("❌ Lỗi khi cập nhật ticket system:", err);
-            await msg.reply("❌ Đã xảy ra lỗi khi cập nhật ticket system.");
-        }
-    }
 
     if (cmd === "top") {
         return await TopController.handleTopCommand(msg, args, false, client);
@@ -166,6 +117,141 @@ const handleMessageCreate = async (client, msg) => {
                     console.error("Không thể gửi DM tới developer:", err);
                 });
             }
+    }
+    if (cmd === "ticket") { 
+        const cateType = args[0] || 'general'
+        const result = await TicketController.createTicket(client,cateType,msg.author.id,msg.guild.id)
+        return msg.reply(result.message)
+    }
+    if (cmd === 'ticket_tool') {
+        if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
+            return msg.reply(`❌ ${t('e.permission', lang)}`);
+        }
+        return msg.reply(TicketController.sendTool(msg.guild.id))
+    }
+
+    if (cmd === "ticket_setting") {
+        const act = args[0]
+        const cateType = args[1]
+
+        if (!act || !cateType)
+            return msg.reply("❌ Thiếu tham số. Sử dụng: `kticket_setting <required/notify/delete_required/delete_notify> <cateType> <mentions>`")
+
+        // Kiểm tra quyền
+        if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
+            return msg.reply(`❌ ${t('e.permission', lang)}`);
+        }
+
+        if (act === 'required') {
+            // Lấy tất cả mention role
+            const mentionedRoles = msg.mentions.roles.map(role => role.id);
+
+            if (mentionedRoles.length === 0) {
+                return msg.reply("❌ Vui lòng mention ít nhất một role để thêm vào required roles");
+            }
+
+            // Gọi hàm gắn mention role vào required
+            const result = await TicketController.addRolesRequired(client, msg.guild.id, cateType, mentionedRoles);
+
+            if (result.success) {
+                return msg.reply(`✅ Đã thêm ${mentionedRoles.length} role vào required roles cho category "${cateType}"`);
+            } else {
+                return msg.reply(`❌ Lỗi: ${result.message}`);
+            }
+        }
+        else if (act === 'notify') {
+            // Lấy tất cả mention user và role
+            const mentionedUsers = msg.mentions.users.map(user => user.id);
+            const mentionedRoles = msg.mentions.roles.map(role => role.id);
+
+            if (mentionedUsers.length === 0 && mentionedRoles.length === 0) {
+                return msg.reply("❌ Vui lòng mention ít nhất một user hoặc role để thêm vào notify");
+            }
+
+            // Gọi hàm gắn role và user
+            const result = await TicketController.addRolesAndUsersToCategory(
+                client,
+                msg.guild.id,
+                cateType,
+                mentionedUsers,
+                mentionedRoles
+            );
+
+            if (result.success) {
+                let response = `✅ Đã cập nhật notify cho category "${cateType}"\n`;
+                if (mentionedUsers.length > 0) response += `👥 Users: ${mentionedUsers.length}\n`;
+                if (mentionedRoles.length > 0) response += `🎭 Roles: ${mentionedRoles.length}`;
+                return msg.reply(response);
+            } else {
+                return msg.reply(`❌ Lỗi: ${result.message}`);
+            }
+        }
+        else if (act === 'delete_required') {
+            // Lấy tất cả mention role
+            const mentionedRoles = msg.mentions.roles.map(role => role.id);
+
+            if (mentionedRoles.length === 0) {
+                return msg.reply("❌ Vui lòng mention ít nhất một role để xóa khỏi required roles");
+            }
+
+            // Gọi hàm xóa role khỏi required
+            const result = await TicketController.removeRolesRequired(client, msg.guild.id, cateType, mentionedRoles);
+
+            if (result.success) {
+                return msg.reply(`✅ Đã xóa ${mentionedRoles.length} role khỏi required roles cho category "${cateType}"`);
+            } else {
+                return msg.reply(`❌ Lỗi: ${result.message}`);
+            }
+        }
+        else if (act === 'delete_notify') {
+            // Lấy tất cả mention user và role
+            const mentionedUsers = msg.mentions.users.map(user => user.id);
+            const mentionedRoles = msg.mentions.roles.map(role => role.id);
+
+            if (mentionedUsers.length === 0 && mentionedRoles.length === 0) {
+                return msg.reply("❌ Vui lòng mention ít nhất một user hoặc role để xóa khỏi notify");
+            }
+
+            // Gọi hàm xóa role và user
+            const result = await TicketController.removeRolesAndUsersFromCategory(
+                client,
+                msg.guild.id,
+                cateType,
+                mentionedUsers,
+                mentionedRoles
+            );
+
+            if (result.success) {
+                let response = `✅ Đã xóa notify cho category "${cateType}"\n`;
+                if (mentionedUsers.length > 0) response += `👥 Users: ${mentionedUsers.length}\n`;
+                if (mentionedRoles.length > 0) response += `🎭 Roles: ${mentionedRoles.length}`;
+                return msg.reply(response);
+            } else {
+                return msg.reply(`❌ Lỗi: ${result.message}`);
+            }
+        }
+        else {
+            return msg.reply("❌ Hành động không hợp lệ. Sử dụng: `required`, `notify`, `delete_required` hoặc `delete_notify`");
+        }
+    }
+    if (cmd === "ticket_status") {
+        // Kiểm tra quyền
+        if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
+            return msg.reply(`❌ ${t('e.permission', lang)}`);
+        }
+
+        try {
+            const result = await TicketController.getTicketStatus(client, msg.guild.id);
+
+            if (result.success) {
+                return msg.reply({ embeds: [result.embed] });
+            } else {
+                return msg.reply(`❌ Lỗi: ${result.message}`);
+            }
+        } catch (error) {
+            console.error('Lỗi khi lấy ticket status:', error);
+            return msg.reply('❌ Có lỗi xảy ra khi lấy thông tin ticket status');
+        }
     }
     if (cmd === 'unlockpet') {
         // try {

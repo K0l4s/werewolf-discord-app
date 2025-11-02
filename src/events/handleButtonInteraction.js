@@ -1,4 +1,4 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require("discord.js");
 const { client } = require("..");
 const GameController = require("../controllers/gameController");
 const LanguageController = require("../controllers/languageController");
@@ -12,6 +12,70 @@ module.exports = async (interaction, client) => {
     const [actionType, refId] = customId.split('|');
     const args = customId.split('|')
     let lang = await LanguageController.getLang(message.guild.id)
+    if (actionType === 'ticket_setup') {
+
+        const act = args[1];
+        if (!act) return interaction.editReply({ content: "❌ Not found action" });
+
+        if (act === 'general') {
+            await interaction.deferReply({ ephemeral: true });
+
+            const result = await TicketController.createCategory(
+                client,
+                interaction.guild.id,
+                '🎟️ General Ticket',
+                'general',
+                'Welcome to general ticket!'
+            );
+
+            if (result.success) {
+                await interaction.editReply({ content: `✅ ${result.message}` });
+            } else {
+                await interaction.editReply({ content: `❌ ${result.message}` });
+            }
+        }
+        else if (act === 'custom') {
+            // Tạo modal
+            const modal = new ModalBuilder()
+                .setCustomId('ticket_custom_modal')
+                .setTitle('Create Custom Ticket');
+
+            // Input tên category
+            const nameInput = new TextInputBuilder()
+                .setCustomId('custom_name')
+                .setLabel("Tên Category")
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder("Nhập tên category")
+                .setRequired(true);
+
+            // Input message/description
+            const messageInput = new TextInputBuilder()
+                .setCustomId('custom_message')
+                .setLabel("Message")
+                .setStyle(TextInputStyle.Paragraph)
+                .setPlaceholder("Nhập message hiển thị")
+                .setRequired(true);
+
+            // Input cateType
+            const typeInput = new TextInputBuilder()
+                .setCustomId('custom_cateType')
+                .setLabel("CateType")
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder("Ví dụ: vip, general, etc")
+                .setRequired(true);
+
+            // Thêm vào rows (modal chỉ nhận tối đa 5 row)
+            const row1 = new ActionRowBuilder().addComponents(nameInput);
+            const row2 = new ActionRowBuilder().addComponents(messageInput);
+            const row3 = new ActionRowBuilder().addComponents(typeInput);
+
+            modal.addComponents(row1, row2, row3);
+
+            // Hiển thị modal
+            await interaction.showModal(modal);
+        }
+    }
+
 
     if (actionType === 'ticket') {
 

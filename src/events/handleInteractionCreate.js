@@ -22,8 +22,9 @@ module.exports = async (interaction, client) => {
 
     const { commandName } = interaction;
     let lang = await LanguageController.getLang(interaction.guildId);
-
+    console.log(commandName)
     switch (commandName) {
+        
         case 'add-action': {
             await interaction.deferReply({ ephemeral: true });
 
@@ -91,7 +92,7 @@ module.exports = async (interaction, client) => {
             } catch (error) {
                 console.error('Error adding action:', error);
                 await interaction.editReply(`Error: ${error.message}`);
-            } finally{
+            } finally {
                 return
             }
         }

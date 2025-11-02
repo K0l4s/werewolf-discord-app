@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionsBitField } = require("discord.js");
 const Notification = require("../models/Notification");
 const SpiritRingController = require("../controllers/DauLaDaiLuc/spiritRingController");
 const ShopController = require("../controllers/shopController");
@@ -7,13 +7,35 @@ const GiveawayService = require("../services/giveawayService");
 const GiveawayController = require("../controllers/giveawayController");
 const cron = require('node-cron');
 const Giveaway = require("../models/Giveaway");
+const TicketController = require("../controllers/ticketController");
 
 class handleMenu {
-    static async handleMenuInteraction(interaction) {
+    static async handleMenuInteraction(interaction, client) {
         // Xử lý Modal Submits
         if (interaction.isModalSubmit()) {
             // Modal setup notification
-            if (interaction.customId.startsWith('setupModal')) {
+            if (interaction.customId.startsWith('ticket_custom_modal')) {
+                console.log("All")
+                const name = interaction.fields.getTextInputValue('custom_name');
+                const message = interaction.fields.getTextInputValue('custom_message');
+                const cateType = interaction.fields.getTextInputValue('custom_cateType');
+
+                // Gọi createCategory giống General
+                const result = await TicketController.createCategory(
+                    client,
+                    interaction.guild.id,
+                    name,       // tên category
+                    cateType,   // cateType
+                    message     // description
+                );
+
+                if (result.success) {
+                    await interaction.reply({ content: `✅ ${result.message}`, ephemeral: true });
+                } else {
+                    await interaction.reply({ content: `❌ ${result.message}`, ephemeral: true });
+                }
+            }
+            else if (interaction.customId.startsWith('setupModal')) {
                 const [cusId, selectedType, channelId] = interaction.customId.split('|');
                 if (cusId === 'setupModal') {
                     await interaction.deferReply({ ephemeral: true });
@@ -381,13 +403,13 @@ class handleMenu {
 
         try {
             console.log("⚙️ Bắt đầu lên lịch auto end...");
-            this.scheduleAutoEnd(giveaway,interaction.guild);
+            this.scheduleAutoEnd(giveaway, interaction.guild);
         } catch (err) {
             console.error("❌ Lỗi khi schedule auto end:", err);
         }
     }
 
-    static scheduleAutoEnd(giveaway,guild) {
+    static scheduleAutoEnd(giveaway, guild) {
         console.log("🔥 scheduleAutoEnd được gọi!");
         console.log("Dữ liệu nhận:", giveaway);
 
@@ -408,7 +430,7 @@ class handleMenu {
         const cron = require('node-cron');
         cron.schedule(cronExpr, async () => {
             console.log(`⏰ [Giveaway] Đang tự kết thúc giveaway ${giveaway._id}`);
-            await this.autoEnd(giveaway._id,guild);
+            await this.autoEnd(giveaway._id, guild);
         }, {
             scheduled: true,
             timezone: "Asia/Ho_Chi_Minh"
@@ -417,7 +439,7 @@ class handleMenu {
     /**
      * 🚫 Kết thúc giveaway
      */
-    static async autoEnd(giveawayId,guild) {
+    static async autoEnd(giveawayId, guild) {
         const ga = await Giveaway.findById(giveawayId);
         if (!ga) return console.log(`❌ [Giveaway] Không tìm thấy giveaway ID ${giveawayId}`);
         if (['cancelled', 'ended', 'rejected'].includes(ga.status)) return;
@@ -492,6 +514,9 @@ class handleMenu {
             const giveaway = result.data;
             let replyMessage = '✅ Đã tham gia giveaway thành công!';
 
+
+            const updatedEmbed = GiveawayController.createGiveawayEmbed(giveaway);
+            await interaction.message.edit({ embeds: [updatedEmbed] });
             // Nếu có quest, hướng dẫn user
             if (giveaway.requirementMessage) {
                 const config = await GiveawayService.getGuildConfig(interaction.guild.id);
@@ -524,7 +549,7 @@ class handleMenu {
         }
 
         const isHost = giveaway.hostId === interaction.user.id;
-        const isAdmin = interaction.member.permissions.has('ADMINISTRATOR');
+        const isAdmin = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
 
         if (!isHost && !isAdmin) {
             return await interaction.reply({

@@ -26,14 +26,18 @@ const notificationSchema = new mongoose.Schema({
     isLinkDisable: { type: Boolean, default: false },
     isInviteDisable: { type: Boolean, default: false },
     isSpamMessageDisable: { type: Boolean, default: false },
-    ticket: {
-        type: {
-            message: { type: String, required: true },
-            categoryId: { type: String, required: true },
-            roleIds: { type: [String], required: false, default: [] }, // danh sách role có quyền
-            userIds: { type: [String], required: false, default: [] }, // danh sách user có quyền
-        },
-        required: false,
+
+    ticketCate: {
+        type: [{
+            cateName: {type:String, required: true,default: "🎟️ General"},
+            description: { type: String, required: true, default: "Welcome to ticket" },
+            cateType: { type: String, default: "general" },
+            cateId: { type: String, required: true },
+            roleIds: { type: [String], required: false, default: [] },
+            userIds: { type: [String], required: false, default: [] },
+            requiredRoleIds: { type: [{ type: String }], required: false, default: [] }
+        }]
+        , required: false,
     },
 })
-module.exports = mongoose.model('Notification', notificationSchema); 
+module.exports = mongoose.model('Notification', notificationSchema);  

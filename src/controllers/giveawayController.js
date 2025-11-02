@@ -5,6 +5,7 @@ const GA_TYPE = require('../models/Giveaway').GA_TYPE;
 
 class GiveawayController {
     static createGiveawayEmbed(giveaway, user) {
+        const participantCount = giveaway.participants ? giveaway.participants.length : 0;
         const embed = new EmbedBuilder()
             .setTitle(`<a:annouce:1433017025491636356> ${giveaway.title}`)
             .setColor(0x00AE86)
@@ -12,7 +13,8 @@ class GiveawayController {
             .addFields(
                 { name: '<a:pixelbat:1433016993946275922> Host', value: `<@${giveaway.hostId}>`, inline: true },
                 { name: '<a:flyingpiglet:1433016976099508304> Số người thắng', value: `${giveaway.winnerCount}`, inline: true },
-                { name: '<a:alarm:1433097857740574840> Thời gian', value: this.formatDuration(giveaway.duration), inline: true }
+                { name: '<a:alarm:1433097857740574840> Thời gian', value: this.formatDuration(giveaway.duration), inline: true },
+                { name: '<a:holodia:1433016936022802453>  Số người tham gia', value: `${participantCount}`, inline: true }
             )
             .setTimestamp(giveaway.createdAt);
 
@@ -73,7 +75,8 @@ class GiveawayController {
             row.addComponents(
                 new ButtonBuilder()
                     .setCustomId(`ga_join_${giveaway._id}`)
-                    .setLabel('<a:rocket:1433022000112074862> Tham gia')
+                    .setEmoji('<a:rocket:1433022000112074862>')
+                    .setLabel('Tham gia')
                     .setStyle(ButtonStyle.Primary)
             );
 

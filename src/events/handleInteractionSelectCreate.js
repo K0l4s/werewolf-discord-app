@@ -93,7 +93,7 @@ module.exports = async (interaction) => {
         // }
         // await interaction.message.edit({components:[]})
         const choice = interaction.values[0]
-        return await MiniGameController.bauCuaFinal(bet,userId,choice,interaction)
+        return await MiniGameController.bauCuaFinal(bet, userId, choice, interaction)
     }
     return null;
 
