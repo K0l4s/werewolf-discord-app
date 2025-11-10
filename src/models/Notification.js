@@ -6,14 +6,17 @@ const notificationSchema = new mongoose.Schema({
     guildId: { type: String, require: true, unique: true },
     channels: [
         {
-            channelId: String,
+            channelId: { type: String, required: true },
             channelType: {
                 type: String,
                 enum: ["welcome", "goodbye", "booster"]
             },
-            title: String,
-            description: String,
-            imageUrl: String,
+            // title: String,
+            // description: String,
+            message: { type: String, required: false },
+            isEmbed: { type: Boolean, default: false },
+            embed: { type: mongoose.Schema.Types.ObjectId, ref: "EmbedTemplate", required: false },
+            imageUrl: { type: String, required: false },
         }
     ],
     gaChannelId: { type: String },
@@ -29,7 +32,7 @@ const notificationSchema = new mongoose.Schema({
 
     ticketCate: {
         type: [{
-            cateName: {type:String, required: true,default: "🎟️ General"},
+            cateName: { type: String, required: true, default: "🎟️ General" },
             description: { type: String, required: true, default: "Welcome to ticket" },
             cateType: { type: String, default: "general" },
             cateId: { type: String, required: true },

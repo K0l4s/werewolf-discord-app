@@ -6,6 +6,7 @@ const GA_TYPE = require('../models/Giveaway').GA_TYPE;
 class GiveawayController {
     static createGiveawayEmbed(giveaway, user) {
         const participantCount = giveaway.participants ? giveaway.participants.length : 0;
+        const endTime = giveaway.approvedAt.getTime() + (giveaway.duration * 1000);
         const embed = new EmbedBuilder()
             .setTitle(`<a:annouce:1433017025491636356> ${giveaway.title}`)
             .setColor(0x00AE86)
@@ -14,6 +15,8 @@ class GiveawayController {
                 { name: '<a:pixelbat:1433016993946275922> Host', value: `<@${giveaway.hostId}>`, inline: true },
                 { name: '<a:flyingpiglet:1433016976099508304> Số người thắng', value: `${giveaway.winnerCount}`, inline: true },
                 { name: '<a:alarm:1433097857740574840> Thời gian', value: this.formatDuration(giveaway.duration), inline: true },
+                // countdown dựa vào endTime
+                { name: '<a:loading:1433098442392993973> Kết thúc vào', value: `<t:${Math.floor(endTime / 1000)}:R>`, inline: true },
                 { name: '<a:holodia:1433016936022802453>  Số người tham gia', value: `${participantCount}`, inline: true }
             )
             .setTimestamp(giveaway.createdAt);

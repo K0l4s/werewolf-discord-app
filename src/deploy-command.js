@@ -53,78 +53,133 @@ const commands = [
         .setName('about')
         .setDescription('Show help command!')
         .toJSON(),
-    new SlashCommandBuilder()
-        .setName('awake')
-        .setDescription('Awake your spirit!')
-        .toJSON(),
-    new SlashCommandBuilder()
-        .setName('battle')
-        .setDescription('Awake your spirit!')
-        .addUserOption(option =>
-            option.setName('user')
-                .setDescription('Người bị khiêu chiến')
-                .setRequired(true)
-        )
-        .toJSON(),
+    // new SlashCommandBuilder()
+    //     .setName('awake')
+    //     .setDescription('Awake your spirit!')
+    //     .toJSON(),
+    // new SlashCommandBuilder()
+    //     .setName('battle')
+    //     .setDescription('Awake your spirit!')
+    //     .addUserOption(option =>
+    //         option.setName('user')
+    //             .setDescription('Người bị khiêu chiến')
+    //             .setRequired(true)
+    //     )
+    //     .toJSON(),
     new SlashCommandBuilder()
         .setName("set")
-        .setDescription("Cấu hình server")
+        .setDescription("Server configuration")
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageGuild)
         .addSubcommand(sub =>
             sub
                 .setName("prefix")
-                .setDescription("Đặt prefix cho server")
+                .setDescription("Set new prefix for the server")
                 .addStringOption(opt =>
                     opt.setName("value")
-                        .setDescription("Prefix mới")
+                        .setDescription("New prefix")
                         .setRequired(true)
                 )
         ).addSubcommand(sub =>
             sub
-                .setName("lang")
-                .setDescription("Đặt language cho server")
+                .setName("language")
+                .setDescription("Set new language for the server")
                 .addStringOption(opt =>
                     opt.setName("value")
-                        .setDescription("Language mới")
-                        .setRequired(true)
-                )
-        )
-        .addSubcommand(sub =>
-            sub
-                .setName("notification")
-                .setDescription("Đặt lời thông báo cho server")
-                .addChannelOption(option =>
-                    option
-                        .setName("channel")
-                        .setDescription("Chọn kênh thông báo")
-                        .setRequired(true)
-                        .addChannelTypes(
-                            ChannelType.GuildText,   // chỉ cho chọn kênh text
-                            ChannelType.GuildAnnouncement // hoặc kênh announcement
+                        .setDescription("New language")
+                        .addChoices(
+                            { name: 'English', value: 'en' },
+                            { name: 'Tiếng Việt', value: 'vi' }
                         )
-                )
-        )
-        // chỉ admin hoặc manage guild mới dùng được
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageGuild),
-    new SlashCommandBuilder()
-        .setName("spirit")
-        .setDescription("Spirit interation")
-        .addSubcommand(sub =>
-            sub
-                .setName("list")
-                .setDescription("Show all spirit list")
-                .addStringOption(opt =>
-                    opt.setName("pagenumber")
-                        .setDescription("Page Number")
                         .setRequired(true)
                 )
-        ).addSubcommand(sub =>
+        )
+        .addSubcommand(sub =>
             sub
-                .setName("information")
-                .setDescription("Show your spirit informations")
-        ),
+                .setName("voice")
+                .setDescription("On/Off voice announce")
+                .addStringOption(opt =>
+                    opt.setName("value")
+                        .setDescription("New voice")
+                        .addChoices(
+                            { name: 'On', value: 'on' },
+                            { name: 'Off', value: 'off' }
+                        )
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand(sub =>
+            sub
+                .setName("streak")
+                .setDescription("Turn on/off streak feature")
+                .addStringOption(opt =>
+                    opt.setName("value")
+                        .setDescription("New streak setting")
+                        .addChoices(
+                            { name: 'On', value: 'on' },
+                            { name: 'Off', value: 'off' }
+                        )
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand(sub =>
+            sub
+                .setName("embed")
+                .setDescription("Set embed voice announce On/Off")
+                .addStringOption(opt =>
+                    opt.setName("value")
+                        .setDescription("New embed setting")
+                        .addChoices(
+                            { name: 'True', value: 'true' },
+                            { name: 'False', value: 'false' }
+                        )
+                        .setRequired(true)
+                )
+        )
+    // .addSubcommand(sub =>
+    //     sub
+    //         .setName("notification")
+    //         .setDescription("Đặt lời thông báo cho server")
+    //         .addChannelOption(option =>
+    //             option
+    //                 .setName("channel")
+    //                 .setDescription("Chọn kênh thông báo")
+    //                 .setRequired(true)
+    //                 .addChannelTypes(
+    //                     ChannelType.GuildText,   // chỉ cho chọn kênh text
+    //                     ChannelType.GuildAnnouncement // hoặc kênh announcement
+    //                 )
+    //         )
+    // )
+    // chỉ admin hoặc manage guild mới dùng được
+    // new SlashCommandBuilder()
+    //     .setName("spirit")
+    //     .setDescription("Spirit interation")
+    //     .addSubcommand(sub =>
+    //         sub
+    //             .setName("list")
+    //             .setDescription("Show all spirit list")
+    //             .addStringOption(opt =>
+    //                 opt.setName("pagenumber")
+    //                     .setDescription("Page Number")
+    //                     .setRequired(true)
+    //             )
+    //     ).addSubcommand(sub =>
+    //         sub
+    //             .setName("information")
+    //             .setDescription("Show your spirit informations")
+    //     ),
+    ,
     new SlashCommandBuilder()
         .setName("baucua")
         .setDescription("Vietnamese's Tranditional Games")
+        .addNumberOption(option =>
+            option.setName('amount')
+                .setDescription('Bet amout')
+                .setRequired(false)
+        ),
+    new SlashCommandBuilder()
+        .setName("onetwothree")
+        .setDescription("Rock Paper Scissors Game")
         .addNumberOption(option =>
             option.setName('amount')
                 .setDescription('Bet amout')
@@ -186,6 +241,10 @@ const commands = [
     new SlashCommandBuilder()
         .setName('daily')
         .setDescription('Nhận thưởng hằng ngày')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('profile')
+        .setDescription('Xem thông tin cá nhân')
         .toJSON(),
 ];
 

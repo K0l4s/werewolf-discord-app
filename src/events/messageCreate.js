@@ -26,6 +26,8 @@ const TopController = require('../controllers/topController');
 const ServerController = require('../controllers/serverController');
 // const GiveawayHandlers = require('./giveAwayHandlers');
 const TicketController = require('../controllers/ticketController');
+const MineController = require('../controllers/mineController');
+const CommonController = require('../controllers/commonController');
 // Thêm vào phần imports
 const handleMessageCreate = async (client, msg) => {
     // try {
@@ -86,6 +88,13 @@ const handleMessageCreate = async (client, msg) => {
         const embed = await UserController.fillInviteCode(msg.author.id, code)
         return msg.reply(embed)
     }
+    if (cmd === "mine") {
+        let areaIndex = parseInt(args[0])
+        if (!areaIndex)
+            areaIndex = 1
+        const result = await MineController.mine(msg.author.id, areaIndex)
+        return msg.reply(result.message)
+    }
     if (cmd === "gaveaway" || cmd === "gaw") {
         // console.log(`Giveaway command by ${userId} in guild ${guildId}: ${subCommand}`);
         // return await handleGiveawayCommand(msg, args, serverPrefix, lang);
@@ -118,9 +127,9 @@ const handleMessageCreate = async (client, msg) => {
                 });
             }
     }
-    if (cmd === "ticket") { 
+    if (cmd === "ticket") {
         const cateType = args[0] || 'general'
-        const result = await TicketController.createTicket(client,cateType,msg.author.id,msg.guild.id)
+        const result = await TicketController.createTicket(client, cateType, msg.author.id, msg.guild.id)
         return msg.reply(result.message)
     }
     if (cmd === 'ticket_tool') {
@@ -342,200 +351,138 @@ const handleMessageCreate = async (client, msg) => {
     if (cmd === "set") {
         if (!args[0])
             return msg.reply(t('e.miss_cmd', lang))
+        if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
+            return msg.reply(`❌ ${t('e.permission', lang)}`);
+        }
         if (args[0] === "prefix") {
             if (!args[1]) return msg.reply(`⚠️ ${t('w.newPrefix', lang)}`);
-            if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
-                return msg.reply(`❌ ${t('e.permission', lang)}`);
-            }
             const newPrefix = args[1];
-            await Prefix.findOneAndUpdate(
-                { guildId: msg.guild.id },
-                { prefix: newPrefix },
-                { upsert: true }
-            );
-            msg.reply(`✅ ${t('s.prefix_succ', lang)} \`${newPrefix}\``);
+            const embed = await CommonController.setPrefix(msg.guild.id, newPrefix, lang);
+            return msg.reply(embed);
         }
         if (args[0] === "lang" || args[0] == "l") {
-
             if (!args[1]) return msg.reply(`⚠️ ${t('s.miss_cmd', lang)}`);
-            if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
-                return msg.reply(`❌ ${t('e.permission', lang)}`);
-            }
             const newLang = args[1];
-            await LanguageController.setLanguage(newLang, msg.guild.id);
-            const embed = new EmbedBuilder()
-            let lang = "Rồi tao đổi sang  **Tiếng Việt** :flag_vn:(Nếu như mày không biết 😏) ngay đây";
-            if (newLang == "en")
-                lang = "Hold on, I changed the language to **English :england:** (as if you didn’t know 😏)"
-            msg.reply(`✅ ${lang}`);
-
+            const embed = await CommonController.setLanguage(msg.guild.id, newLang);
+            return msg.reply(embed);
         }
         if (args[0] === "streak" || args[0] == "s") {
             if (!args[1]) return msg.reply(`⚠️ ${t('e.miss_cmd', lang)}`);
-            if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
-                return msg.reply(`❌ ${t('e.permission', lang)}`);
-            }
             const newS = args[1];
-            //chuyển sang true/ false
-            const isEnabled = newS === "on";
-            // await VoiceChannelController.setVoiceChannel(isEnabled, msg.guild.id);
-            const serverSetting = await Notification.findOne({ guildId: msg.guild.id });
-            if (serverSetting) {
-                serverSetting.isStreakEnabled = isEnabled;
-                await serverSetting.save();
-            } else {
-                const newSetting = new Notification({
-                    guildId: msg.guild.id,
-                    isStreakEnabled: isEnabled
-                });
-                await newSetting.save();
-            }
-            msg.reply(`✅ ${t('s.streak_succ', lang)} \`${newS}\` ${t('s.streak_succ2', lang)}`);
+            const embed = await CommonController.setStreak(msg.guild.id, newS, lang);
+            return msg.reply(embed);
         }
         if (args[0] === "voice" || args[0] == "v") {
             if (!args[1]) return msg.reply(`⚠️ ${t('e.miss_cmd', lang)}`);
-            if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
-                return msg.reply(`❌ ${t('e.permission', lang)}`);
-            }
             const newVC = args[1];
-            //chuyển sang true/ false
-            const isEnabled = newVC === "true";
-            // await VoiceChannelController.setVoiceChannel(isEnabled, msg.guild.id);
-            const serverSetting = await Notification.findOne({ guildId: msg.guild.id });
-            if (serverSetting) {
-                serverSetting.isChannelEnabled = isEnabled;
-                await serverSetting.save();
-            } else {
-                const newSetting = new Notification({
-                    guildId: msg.guild.id,
-                    isChannelEnabled: isEnabled
-                });
-                await newSetting.save();
-            }
-
-            msg.reply(`✅ ${t('s.vc_succ', lang)} \`${newVC}\` ${t('s.vc_succ2', lang)}`);
+            const embed = await CommonController.setVoiceAnnouce(msg.guild.id, newVC, lang);
+            return msg.reply(embed);
         }
         if (args[0] === "embed" || args[0] == "e") {
             if (!args[1]) return msg.reply(`⚠️ ${t('e.miss_cmd', lang)}`);
-            if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
-                return msg.reply(`❌ ${t('e.permission', lang)}`);
-            }
             const newE = args[1];
-            //chuyển sang true/ false
-            const isEnabled = newE === "true";
-            // await VoiceChannelController.setVoiceChannel(isEnabled, msg.guild.id);
-            const serverSetting = await Notification.findOne({ guildId: msg.guild.id });
-            if (serverSetting) {
-                serverSetting.isEmbedEnabled = isEnabled;
-                await serverSetting.save();
-            } else {
-                const newSetting = new Notification({
-                    guildId: msg.guild.id,
-                    isEmbedEnabled: isEnabled
-                });
-                await newSetting.save();
-            }
-            msg.reply(`✅ ${t('s.embed_succ', lang)} \`${newE}\` ${t('s.embed_succ2', lang)}`);
+            const embed = await CommonController.setEmbedAnounce(msg.guild.id, newE, lang);
+            return msg.reply(embed);
         }
     }
-    else if (cmd === "awake") {
-        const userId = msg.author.id;
-        // console.log("Đang tiến hành thức tỉnh võ hồn cho user:", userId);
+    // else if (cmd === "awake") {
+    //     const userId = msg.author.id;
+    //     // console.log("Đang tiến hành thức tỉnh võ hồn cho user:", userId);
 
-        try {
-            // Debug: kiểm tra số spirit hiện có
-            // const currentCount = await sSpiritMaster.countDocuments({ userId });
-            // console.log("Số spirit hiện tại:", currentCount);
+    //     try {
+    //         // Debug: kiểm tra số spirit hiện có
+    //         // const currentCount = await sSpiritMaster.countDocuments({ userId });
+    //         // console.log("Số spirit hiện tại:", currentCount);
 
-            const embed = await SpiritController.awakenRandomSpirit(userId);
-            // console.log("Kết quả trả về:", typeof embed, embed);
+    //         const embed = await SpiritController.awakenRandomSpirit(userId);
+    //         // console.log("Kết quả trả về:", typeof embed, embed);
 
-            if (typeof embed === 'string') {
-                msg.reply(embed);
-            } else if (embed && embed.data) {
-                msg.reply({ embeds: [embed] });
-            } else {
-                // console.error("Embed không hợp lệ:", embed);
-                msg.reply(`❌ ${t('e.embed', lang)}`);
-            }
-        } catch (error) {
-            // console.error("Lỗi khi thức tỉnh:", error);
-            msg.reply(`❌ ${t('e.d', lang)}`);
-        }
-    }
-    else if (cmd === 'battle') {
-        return await BattleController.handleBattleCommand(msg, args);
-    }
-    else if (cmd === "spirit" || cmd === "spi") {
-        const args = msg.content.split(' ');
-        console.log(args)
-        if (args.length <= 0)
-            return await msg.reply({ content: t('s.miss_cmd', lang) })
-        if (args[1] === "sell") {
-            if (!args[2] && !args[3])
-                return await msg.reply({ content: t('s.miss_cmd', lang) })
+    //         if (typeof embed === 'string') {
+    //             msg.reply(embed);
+    //         } else if (embed && embed.data) {
+    //             msg.reply({ embeds: [embed] });
+    //         } else {
+    //             // console.error("Embed không hợp lệ:", embed);
+    //             msg.reply(`❌ ${t('e.embed', lang)}`);
+    //         }
+    //     } catch (error) {
+    //         // console.error("Lỗi khi thức tỉnh:", error);
+    //         msg.reply(`❌ ${t('e.d', lang)}`);
+    //     }
+    // }
+    // else if (cmd === 'battle') {
+    //     return await BattleController.handleBattleCommand(msg, args);
+    // }
+    // else if (cmd === "spirit" || cmd === "spi") {
+    //     const args = msg.content.split(' ');
+    //     console.log(args)
+    //     if (args.length <= 0)
+    //         return await msg.reply({ content: t('s.miss_cmd', lang) })
+    //     if (args[1] === "sell") {
+    //         if (!args[2] && !args[3])
+    //             return await msg.reply({ content: t('s.miss_cmd', lang) })
 
-            const amout = parseInt(args[2])
-            const yearsLimit = parseInt(args[3])
-            const result = await SpiritRingController.sellRings(msg.author.id, amout, yearsLimit)
-            return msg.reply(result);
-        }
-        if (args[1] === "list" || args[1] === "l") {
-            try {
-                // Lấy số trang từ message (ví dụ: "spirit 2")
+    //         const amout = parseInt(args[2])
+    //         const yearsLimit = parseInt(args[3])
+    //         const result = await SpiritRingController.sellRings(msg.author.id, amout, yearsLimit)
+    //         return msg.reply(result);
+    //     }
+    //     if (args[1] === "list" || args[1] === "l") {
+    //         try {
+    //             // Lấy số trang từ message (ví dụ: "spirit 2")
 
-                const page = args.length > 2 ? parseInt(args[2]) || 1 : 1;
+    //             const page = args.length > 2 ? parseInt(args[2]) || 1 : 1;
 
-                const embed = await SpiritController.showAllSpirits(page);
-                return msg.reply({ embeds: [embed] });
-            } catch (error) {
-                console.error('Lỗi khi hiển thị Vũ Hồn:', error);
+    //             const embed = await SpiritController.showAllSpirits(page);
+    //             return msg.reply({ embeds: [embed] });
+    //         } catch (error) {
+    //             console.error('Lỗi khi hiển thị Vũ Hồn:', error);
 
-                const errorEmbed = new EmbedBuilder()
-                    .setTitle('❌ Error')
-                    .setDescription(t('e.d', lang))
-                    .setColor(0xFF0000);
+    //             const errorEmbed = new EmbedBuilder()
+    //                 .setTitle('❌ Error')
+    //                 .setDescription(t('e.d', lang))
+    //                 .setColor(0xFF0000);
 
-                return await msg.reply({ embeds: [errorEmbed] });
-            }
-        } else if (args[1] === "information" || args[1] === "i")
-            try {
-                const result = await SpiritController.getSpiritInfo(msg.author.id);
-                msg.reply(result);
-            } catch (error) {
-                // Fallback về simple info nếu bị lỗi
-                const result = t('e.d', lang)
-                msg.reply(result);
-            }
-        else if (args[1] === "attach" || args[1] === "a") {
-            console.log(args)
-            const spiritRef = args[2];
-            const ringRef = args[3]
-            if (!spiritRef)
-                return await msg.reply({ content: `${t('s.miss_cmd', lang)}: spiritRef` })
-            if (!ringRef)
-                return await msg.reply({ content: `${t('s.miss_cmd', lang)}: ringId` })
-            const embed = await SpiritController.attachRing(msg.author.id, spiritRef, ringRef)
-            return await msg.reply(embed)
-        }
-        else if (args[1] === "retirer" || args[1] === "re") {
-            console.log(args)
-            const spiritRef = args[2];
-            const ringRef = args[3]
-            if (!spiritRef)
-                return await msg.reply({ content: `${t('s.miss_cmd', lang)}: spiritRef` })
-            if (!ringRef)
-                return await msg.reply({ content: `${t('s.miss_cmd', lang)}: ringId` })
-            const embed = await SpiritController.removeRing(msg.author.id, spiritRef, ringRef)
-            return await msg.reply(embed)
-        }
-        else if (args[1] === "ring" || args[1] == "r") {
-            const userId = msg.author.id;
-            const { embeds, components } = await SpiritRingController.getSpiritRingsEmbed(userId);
+    //             return await msg.reply({ embeds: [errorEmbed] });
+    //         }
+    //     } else if (args[1] === "information" || args[1] === "i")
+    //         try {
+    //             const result = await SpiritController.getSpiritInfo(msg.author.id);
+    //             msg.reply(result);
+    //         } catch (error) {
+    //             // Fallback về simple info nếu bị lỗi
+    //             const result = t('e.d', lang)
+    //             msg.reply(result);
+    //         }
+    //     else if (args[1] === "attach" || args[1] === "a") {
+    //         console.log(args)
+    //         const spiritRef = args[2];
+    //         const ringRef = args[3]
+    //         if (!spiritRef)
+    //             return await msg.reply({ content: `${t('s.miss_cmd', lang)}: spiritRef` })
+    //         if (!ringRef)
+    //             return await msg.reply({ content: `${t('s.miss_cmd', lang)}: ringId` })
+    //         const embed = await SpiritController.attachRing(msg.author.id, spiritRef, ringRef)
+    //         return await msg.reply(embed)
+    //     }
+    //     else if (args[1] === "retirer" || args[1] === "re") {
+    //         console.log(args)
+    //         const spiritRef = args[2];
+    //         const ringRef = args[3]
+    //         if (!spiritRef)
+    //             return await msg.reply({ content: `${t('s.miss_cmd', lang)}: spiritRef` })
+    //         if (!ringRef)
+    //             return await msg.reply({ content: `${t('s.miss_cmd', lang)}: ringId` })
+    //         const embed = await SpiritController.removeRing(msg.author.id, spiritRef, ringRef)
+    //         return await msg.reply(embed)
+    //     }
+    //     else if (args[1] === "ring" || args[1] == "r") {
+    //         const userId = msg.author.id;
+    //         const { embeds, components } = await SpiritRingController.getSpiritRingsEmbed(userId);
 
-            await msg.reply({ embeds, components });
-        }
-    }
+    //         await msg.reply({ embeds, components });
+    //     }
+    // }
     else if (cmd === "profile" || cmd === "p") {
         const userId = msg.author.id;
         const avatarUrl = msg.author.displayAvatarURL()
@@ -563,41 +510,44 @@ const handleMessageCreate = async (client, msg) => {
             return msg.reply({ embeds: [errorEmbed] });
         }
     }
-    else if (cmd === "hunt") {
-        try {
-            const embed = await HuntSpiritController.huntSpirits(msg.author.id);
+    // else if (cmd === "hunt") {
+    //     try {
+    //         const embed = await HuntSpiritController.huntSpirits(msg.author.id);
 
-            // check quyền trước khi gửi
-            const perms = msg.channel.permissionsFor(msg.client.user);
-            if (!perms.has("SendMessages")) {
-                console.log("❌ Bot không có quyền SendMessages trong channel này");
-                return;
-            }
-            if (!perms.has("EmbedLinks")) {
-                console.log("⚠️ Bot không có quyền EmbedLinks, sẽ gửi plain text");
-                await msg.channel.send("Bạn vừa hunt spirit thành công!");
-            } else {
-                await msg.reply(embed);
-            }
+    //         // check quyền trước khi gửi
+    //         const perms = msg.channel.permissionsFor(msg.client.user);
+    //         if (!perms.has("SendMessages")) {
+    //             console.log("❌ Bot không có quyền SendMessages trong channel này");
+    //             return;
+    //         }
+    //         if (!perms.has("EmbedLinks")) {
+    //             console.log("⚠️ Bot không có quyền EmbedLinks, sẽ gửi plain text");
+    //             await msg.channel.send("Bạn vừa hunt spirit thành công!");
+    //         } else {
+    //             await msg.reply(embed);
+    //         }
 
-            const currentUser = await UserService.findUserById(msg.author.id);
-            const user = await UserService.findUserById(msg.author.id); // cái này mày quên khai báo `user`
+    //         const currentUser = await UserService.findUserById(msg.author.id);
+    //         const user = await UserService.findUserById(msg.author.id); // cái này mày quên khai báo `user`
 
-            if (currentUser.spiritLvl > user.spiritLvl) {
-                const lvlUpEmbed = new EmbedBuilder()
-                    .setTitle("Spirit Level Up!")
-                    .setDescription(`Congratulations, <@${msg.author.id}> reached **level ${currentUser.spiritLvl}**!`)
-                    .setThumbnail("https://i.ibb.co/YBQPxrNy/Lam-Ngan-Thao.png");
+    //         if (currentUser.spiritLvl > user.spiritLvl) {
+    //             const lvlUpEmbed = new EmbedBuilder()
+    //                 .setTitle("Spirit Level Up!")
+    //                 .setDescription(`Congratulations, <@${msg.author.id}> reached **level ${currentUser.spiritLvl}**!`)
+    //                 .setThumbnail("https://i.ibb.co/YBQPxrNy/Lam-Ngan-Thao.png");
 
-                await msg.channel.send({ embeds: [lvlUpEmbed] });
-            }
-        } catch (err) {
-            console.error("❌ Lỗi khi xử lý lệnh hunt:", err);
-        }
-    }
+    //             await msg.channel.send({ embeds: [lvlUpEmbed] });
+    //         }
+    //     } catch (err) {
+    //         console.error("❌ Lỗi khi xử lý lệnh hunt:", err);
+    //     }
+    // }
 
     else if (cmd === "join" || cmd === "j") {
-        await GameController.handleJoinCommand(msg);
+        // await GameController.handleJoinCommand(msg);
+        // return;
+        const result = await GameController.handleJoinCommand(msg.channel.id, msg.author.id, lang);
+        await msg.reply(result);
         return;
     }
     else if (cmd === "new" || cmd === "n") {
@@ -622,23 +572,35 @@ const handleMessageCreate = async (client, msg) => {
         return;
     }
     else if (cmd === "give" || cmd === "g") {
+        console.log("Processing give command");
+        const embed = new EmbedBuilder();
         const args = msg.content.trim().split(/\s+/);
         const balance = args[2];
         const mentionUser = msg.mentions.users.first();
         if (!mentionUser) {
-            embed.setTitle("❌Transfer Error!")
+            embed.setTitle("<a:deny:1433805273595904070> Transfer Error!")
                 .setDescription(`You must mention receiver first!`)
                 .setColor('Red');
             return msg.reply({ embeds: [embed] });
         }
 
         if (mentionUser.id == msg.author.id) {
-            embed.setTitle("❌Transfer Error!")
+            embed.setTitle("<a:deny:1433805273595904070> Transfer Error!")
                 .setDescription(`You can't send money to yourself!`)
                 .setColor('Red');
             return msg.reply({ embeds: [embed] });
         }
-        return UserController.giveMoneyTo(msg, mentionUser, balance);
+        const result = await UserController.giveMoneyTo(msg.author.id, mentionUser, balance);
+        const data = await msg.reply(result)
+        setTimeout(async () => {
+            await data.edit({ components: [] });
+            // data.delete().catch(err => console.log("Failed to delete message:", err));
+        },
+            // 1 phút
+            60000
+        ); // Xóa message sau 5 giây
+        return;
+
     }
     else if (cmd === "buy") {
         const userId = msg.author.id;
@@ -702,20 +664,20 @@ const handleMessageCreate = async (client, msg) => {
                     { name: "wstart / ws", desc: "Bắt đầu game" },
                 ]
             },
-            soulland: {
-                name: "Soul Land",
-                description: "Các lệnh Đấu La Đại Lục",
-                emoji: "🌌",
-                color: "#9370DB",
-                commands: [
-                    { name: "/awake", desc: "Thức tỉnh Vũ Hồn" },
-                    { name: "/spirit list <page>", desc: "Xem danh sách Vũ Hồn" },
-                    { name: "/spirit information", desc: "Xem chi tiết Vũ Hồn" },
-                    { name: "wspirit attach <spiritRef> <ringId>", desc: "Khảm Hồn Hoàn" },
-                    { name: "whunt", desc: "Săn Hồn Thú (có thể nhận Hồn Hoàn)" },
-                    { name: "wbattle <@user> hoặc /battle <@user>", desc: "Khiêu chiến người khác" },
-                ]
-            },
+            // soulland: {
+            //     name: "Soul Land",
+            //     description: "Các lệnh Đấu La Đại Lục",
+            //     emoji: "🌌",
+            //     color: "#9370DB",
+            //     commands: [
+            //         { name: "/awake", desc: "Thức tỉnh Vũ Hồn" },
+            //         { name: "/spirit list <page>", desc: "Xem danh sách Vũ Hồn" },
+            //         { name: "/spirit information", desc: "Xem chi tiết Vũ Hồn" },
+            //         { name: "wspirit attach <spiritRef> <ringId>", desc: "Khảm Hồn Hoàn" },
+            //         { name: "whunt", desc: "Săn Hồn Thú (có thể nhận Hồn Hoàn)" },
+            //         { name: "wbattle <@user> hoặc /battle <@user>", desc: "Khiêu chiến người khác" },
+            //     ]
+            // },
             economy: {
                 name: "Kinh tế",
                 description: "Các lệnh liên quan đến tiền tệ",
@@ -835,104 +797,13 @@ const handleMessageCreate = async (client, msg) => {
 
     }
     else if (cmd === "daily") {
-        const cooldown = 1000 * 60 * 60 * 24;
-        const reward = {
-            coin: 100 + Math.floor(Math.random() * 50),
-            exp: 50 + Math.floor(Math.random() * 30),
-            bonus: Math.random() < 0.2
-        };
-
-        let userData = user;
-
-        // Check cooldown
-        if (userData.lastDaily && Date.now() - userData.lastDaily.getTime() < cooldown) {
-            const timeLeft = cooldown - (Date.now() - userData.lastDaily.getTime());
-            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-
-            const cooldownEmbed = new EmbedBuilder()
-                .setColor('#FF5555')
-                .setTitle('⏰ Đã nhận Daily rồi!')
-                .setDescription(`Bạn cần chờ thêm **${hours}h ${minutes}m** nữa để nhận daily tiếp theo.`)
-                .addFields(
-                    { name: '⏰ Lần cuối nhận', value: `<t:${Math.floor(userData.lastDaily.getTime() / 1000)}:R>`, inline: true },
-                    { name: '🕒 Còn lại', value: `${hours}h ${minutes}m`, inline: true }
-                )
-                .setFooter({ text: 'Daily reset mỗi 24 giờ' });
-
-            return msg.reply({ embeds: [cooldownEmbed] });
-        }
-
-        // Tính toán reward
-        let totalCoin = reward.coin;
-        let totalExp = reward.exp;
-        let bonusText = '';
-
-        if (reward.bonus) {
-            const bonusCoin = Math.floor(totalCoin * 0.5);
-            const bonusExp = Math.floor(totalExp * 0.5);
-            totalCoin += bonusCoin;
-            totalExp += bonusExp;
-            bonusText = `🎁 **Bonus:** +${bonusCoin} coin +${bonusExp} exp`;
-        }
-
-        // Cập nhật dữ liệu
-        userData.coin += totalCoin;
-        userData.exp += totalExp;
-
-        // Check level up
-        let levelUpText = '';
-        let levelsGained = 0;
-        const originalLevel = userData.lvl;
-
-        while (userData.exp >= userData.lvl * 100) {
-            const expNeeded = userData.lvl * DEFAULT_EXP_LVL1;
-            userData.exp -= expNeeded;
-            userData.lvl += 1;
-            levelsGained++;
-        }
-
-        if (levelsGained > 0) {
-            if (levelsGained === 1) {
-                levelUpText = `🚀 **Level Up!** Level ${originalLevel} → **${userData.lvl}**`;
-            } else {
-                levelUpText = `🚀 **Level Up!** +${levelsGained} levels (${originalLevel} → **${userData.lvl}**)`;
-            }
-        }
-        const expToLevel = Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
-
-        userData.lastDaily = new Date();
-        await userData.save();
-
-        // Tạo embed thành công
-        const successEmbed = new EmbedBuilder()
-            .setColor('#55FF55')
-            .setTitle('🎉 Daily Reward')
-            .setDescription('Bạn đã nhận daily thành công!')
-            .addFields(
-                { name: '💰 Coin nhận được', value: `**${wolfCoin(totalCoin)}** coin`, inline: true },
-                { name: '⭐ EXP nhận được', value: `**${totalExp.toLocaleString("en-US")}** exp`, inline: true },
-                { name: '📊 Level hiện tại', value: `**${userData.lvl.toLocaleString("en-US")}**`, inline: true },
-                { name: '🎯 EXP hiện tại', value: `**${userData.exp.toLocaleString("en-US")}/${expToLevel.toLocaleString("en-US")}**`, inline: true },
-                { name: '🏦 Tổng coin', value: `**${wolfCoin(userData.coin)}**`, inline: true }
-            )
-            .setFooter({ text: `Daily tiếp theo:${new Date(Date.now() + cooldown).toLocaleTimeString()} ngày ${new Date(Date.now() + cooldown).toLocaleDateString()}` });
-
-        // Thêm bonus field nếu có
-        if (bonusText) {
-            successEmbed.addFields({ name: '🎁 May mắn', value: bonusText, inline: false });
-        }
-
-        // Thêm level up field nếu có
-        if (levelUpText) {
-            successEmbed.addFields({ name: '✨ Thành tựu', value: levelUpText, inline: false });
-        }
-
-        return msg.reply({ embeds: [successEmbed] });
+        const result = await CommonController.dailyReward(msg.author.id);
+        return msg.reply(result);
     }
     else if (cmd === "baucua") {
         let bet = args[0];
-        MiniGameController.bauCua(msg.author.id, msg, bet)
+        const result = await MiniGameController.bauCua(msg.author.id, bet);
+        return msg.reply(result);
     }
 
 
@@ -1041,35 +912,15 @@ const handleMessageCreate = async (client, msg) => {
 
 
     else if (cmd === "donate") {
-        const donateEmbed = new EmbedBuilder()
-            .setColor("#ff4081")
-            .setTitle("💖 Ủng Hộ / Donate")
-            .setDescription("Nếu bạn muốn ủng hộ để duy trì và phát triển bot, bạn có thể chuyển khoản qua thông tin dưới đây:")
-            .addFields(
-                { name: "📱 Momo QR", value: "Quét mã QR bên dưới để thanh toán nhanh chóng." },
-                { name: "🏦 Thông tin chuyển khoản", value: "💳 **Ngân hàng:** MB Bank\n👤 **Chủ TK:** HUỲNH TRUNG KIÊN\n🔢 **Số TK:** 8888827626203" }
-            )
-            .setImage("https://i.ibb.co/5hyjcdXc/d843e510-f7ed-4b6d-ac8a-1f87aae068db.jpg") // thay link QR Momo thật vào đây
-            .setFooter({ text: "Cảm ơn bạn rất nhiều ❤️" });
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setLabel("Momo App")
-                .setStyle(ButtonStyle.Link)
-                .setURL("https://me.momo.vn/werewolf"), // link nhận tiền momo
-            new ButtonBuilder()
-                .setLabel("Liên hệ Admin")
-                .setStyle(ButtonStyle.Link)
-                .setURL("https://discord.gg/kDkydXrtua") // link server hoặc contact
-        );
-
-        await msg.reply({ embeds: [donateEmbed], components: [row] });
+        const result = await CommonController.donate();
+        return msg.reply(result);
     }
     // ================= KÉO BÚA BAO =================
-    else if (cmd === "keobuabao") {
+    else if (cmd === "keobuabao" || cmd === "kbb") {
         let bet = args[0];
-
-        return await MiniGameController.oneTwoThree(msg.author.id, msg, bet)
+        const result = await MiniGameController.oneTwoThree(msg.author.id, bet);
+        return msg.reply(result);
+        // return await MiniGameController.oneTwoThree(msg.author.id, msg, bet)
     }
     else if (cmd === "baicao") {
         let bet = args[0];

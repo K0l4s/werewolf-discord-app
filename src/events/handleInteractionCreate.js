@@ -16,15 +16,16 @@ const { interactionToMessage } = require('../utils/fakeMessage');
 const { EmbedBuilder } = require('discord.js');
 const GiveawayHandlers = require('./giveAwayHandlers');
 const actionService = require('../services/actionService');
+const CommonController = require('../controllers/commonController');
 
 module.exports = async (interaction, client) => {
     if (!interaction.isChatInputCommand()) return;
 
     const { commandName } = interaction;
-    let lang = await LanguageController.getLang(interaction.guildId);
     console.log(commandName)
+    let lang = await LanguageController.getLang(interaction.guild.id);
+
     switch (commandName) {
-        
         case 'add-action': {
             await interaction.deferReply({ ephemeral: true });
 
@@ -100,36 +101,36 @@ module.exports = async (interaction, client) => {
 
             return await GiveawayHandlers.showGiveawayModal(interaction)
         }
-        case 'spirit': {
-            await interaction.deferReply();
-            if (interaction.options.getSubcommand() === "list") {
-                try {
-                    const page = interaction.options.getString("pagenumber");
-                    const embed = await SpiritController.showAllSpirits(page);
-                    return await interaction.editReply({ embeds: [embed] });
-                } catch (error) {
-                    console.error('Lỗi khi hiển thị Vũ Hồn:', error);
-                    const errorEmbed = new EmbedBuilder()
-                        .setTitle('❌ Lỗi')
-                        .setDescription('Đã xảy ra lỗi khi tải danh sách Vũ Hồn!')
-                        .setColor(0xFF0000);
-                    return await interaction.editReply({ embeds: [errorEmbed] });
-                }
-            } else if (interaction.options.getSubcommand() === "information") {
-                try {
-                    const result = await SpiritController.getSpiritInfo(interaction.user.id);
-                    return await interaction.editReply(result);
-                } catch (error) {
-                    const result = "Lỗi lấy dữ liệu";
-                    return await interaction.editReply({ content: result });
-                }
-            } else if (interaction.options.getSubcommand() === "ring") {
-                const userId = interaction.user.id;
-                const { embeds, components } = await SpiritRingController.getSpiritRingsEmbed(userId);
-                return await interaction.editReply({ embeds, components });
-            }
-            break;
-        }
+        // case 'spirit': {
+        //     await interaction.deferReply();
+        //     if (interaction.options.getSubcommand() === "list") {
+        //         try {
+        //             const page = interaction.options.getString("pagenumber");
+        //             const embed = await SpiritController.showAllSpirits(page);
+        //             return await interaction.editReply({ embeds: [embed] });
+        //         } catch (error) {
+        //             console.error('Lỗi khi hiển thị Vũ Hồn:', error);
+        //             const errorEmbed = new EmbedBuilder()
+        //                 .setTitle('❌ Lỗi')
+        //                 .setDescription('Đã xảy ra lỗi khi tải danh sách Vũ Hồn!')
+        //                 .setColor(0xFF0000);
+        //             return await interaction.editReply({ embeds: [errorEmbed] });
+        //         }
+        //     } else if (interaction.options.getSubcommand() === "information") {
+        //         try {
+        //             const result = await SpiritController.getSpiritInfo(interaction.user.id);
+        //             return await interaction.editReply(result);
+        //         } catch (error) {
+        //             const result = "Lỗi lấy dữ liệu";
+        //             return await interaction.editReply({ content: result });
+        //         }
+        //     } else if (interaction.options.getSubcommand() === "ring") {
+        //         const userId = interaction.user.id;
+        //         const { embeds, components } = await SpiritRingController.getSpiritRingsEmbed(userId);
+        //         return await interaction.editReply({ embeds, components });
+        //     }
+        //     break;
+        // }
 
         case 'top': {
             await interaction.deferReply({ ephemeral: false });
@@ -137,59 +138,103 @@ module.exports = async (interaction, client) => {
         }
 
         case 'set': {
-            // await interaction.deferReply();
+
+            await interaction.deferReply();
             if (interaction.options.getSubcommand() === "prefix") {
-                const newPrefix = interaction.options.getString("value");
-                await Prefix.findOneAndUpdate(
-                    { guildId: interaction.guild.id },
-                    { prefix: newPrefix },
-                    { upsert: true }
+                const embed = await CommonController.setPrefix(
+                    interaction.guild.id,
+                    interaction.options.getString("value"),
+                    lang
                 );
-                await interaction.editReply(`✅ Prefix server đã đổi thành: \`${newPrefix}\``);
+                await interaction.editReply(embed);
                 return;
-            } else if (interaction.options.getSubcommand() === "notification") {
-                const channel = interaction.options.getChannel("channel");
-                const channelId = channel.id;
-                await SettingController.setNoti(interaction, channelId);
+            } else if (interaction.options.getSubcommand() === "language") {
+                const newLang = interaction.options.getString("value");
+                console.log(lang);
+                const embed = await CommonController.setLanguage(
+                    interaction.guild.id,
+                    newLang,
+                );
+                await interaction.editReply(embed);
                 return;
             }
+            else if (interaction.options.getSubcommand() === "streak") {
+                const newS = interaction.options.getString("value");
+                const embed = await CommonController.setStreak(
+                    interaction.guild.id,
+                    newS,
+                    lang
+                );
+                await interaction.editReply(embed);
+                return;
+            }
+            else if (interaction.options.getSubcommand() === "voice") {
+                const newVC = interaction.options.getString("value");
+                const embed = await CommonController.setVoiceAnnouce(
+                    interaction.guild.id,
+                    newVC,
+                    lang
+                );
+                await interaction.editReply(embed);
+                return;
+            }
+            else if (interaction.options.getSubcommand() === "embed") {
+                const newE = interaction.options.getString("value");
+                const embed = await CommonController.setEmbedAnounce(
+                    interaction.guild.id,
+                    newE,
+                    lang
+                );
+                await interaction.editReply(embed);
+                return;
+            }
+
+            // else if (interaction.options.getSubcommand() === "notification") {
+            //     const channel = interaction.options.getChannel("channel");
+            //     const channelId = channel.id;
+            //     await SettingController.setNoti(interaction, channelId);
+            //     return;
+            // }
+
             break;
         }
 
-        case 'awake': {
-            await interaction.deferReply();
-            const userId = interaction.user.id;
-            console.log("Đang tiến hành thức tỉnh võ hồn cho user:", userId);
+        // case 'awake': {
+        //     await interaction.deferReply();
+        //     const userId = interaction.user.id;
+        //     console.log("Đang tiến hành thức tỉnh võ hồn cho user:", userId);
 
-            try {
-                const currentCount = await SpiritMaster.countDocuments({ userId });
-                console.log("Số spirit hiện tại:", currentCount);
+        //     try {
+        //         const currentCount = await SpiritMaster.countDocuments({ userId });
+        //         console.log("Số spirit hiện tại:", currentCount);
 
-                const embed = await SpiritController.awakenRandomSpirit(userId);
+        //         const embed = await SpiritController.awakenRandomSpirit(userId);
 
-                if (typeof embed === 'string') {
-                    return await interaction.editReply(embed);
-                } else if (embed && embed.data) {
-                    return await interaction.editReply({ embeds: [embed] });
-                } else {
-                    console.error("Embed không hợp lệ:", embed);
-                    return await interaction.editReply("❌ Đã xảy ra lỗi khi tạo embed!");
-                }
-            } catch (error) {
-                console.error("Lỗi khi thức tỉnh:", error);
-                return await interaction.editReply("❌ Đã xảy ra lỗi khi thức tỉnh vũ hồn!");
-            }
-        }
+        //         if (typeof embed === 'string') {
+        //             return await interaction.editReply(embed);
+        //         } else if (embed && embed.data) {
+        //             return await interaction.editReply({ embeds: [embed] });
+        //         } else {
+        //             console.error("Embed không hợp lệ:", embed);
+        //             return await interaction.editReply("❌ Đã xảy ra lỗi khi tạo embed!");
+        //         }
+        //     } catch (error) {
+        //         console.error("Lỗi khi thức tỉnh:", error);
+        //         return await interaction.editReply("❌ Đã xảy ra lỗi khi thức tỉnh vũ hồn!");
+        //     }
+        // }
 
-        case 'battle': {
-            await interaction.deferReply();
-            await BattleController.handleBattleCommand(interaction);
-            return;
-        }
+        // case 'battle': {
+        //     await interaction.deferReply();
+        //     await BattleController.handleBattleCommand(interaction);
+        //     return;
+        // }
 
         case 'join': {
             await interaction.deferReply();
-            await GameController.handleJoinCommand(interactionToMessage(interaction), lang);
+            const result = await GameController.handleJoinCommand(interaction.channel.id, interaction.user.id, lang);
+            await interaction.editReply(result);
+            // await GameController.handleJoinCommand(interactionToMessage(interaction), lang);
             return;
         }
 
@@ -208,7 +253,7 @@ module.exports = async (interaction, client) => {
             const embed = new EmbedBuilder();
 
             if (!mentionUser) {
-                embed.setTitle("❌ Transfer Error!")
+                embed.setTitle("<a:deny:1433805273595904070> Transfer Error!")
                     .setDescription(`You must mention receiver first!`)
                     .setColor('Red');
                 await interaction.editReply({ embeds: [embed] });
@@ -216,27 +261,45 @@ module.exports = async (interaction, client) => {
             }
 
             if (mentionUser.id === interaction.user.id) {
-                embed.setTitle("❌ Transfer Error!")
+                embed.setTitle("<a:deny:1433805273595904070> Transfer Error!")
                     .setDescription(`You can't send money to yourself!`)
                     .setColor('Red');
                 await interaction.editReply({ embeds: [embed] });
                 return;
             }
 
-            await UserController.giveMoneyTo(
-                interactionToMessage(interaction),
+            // await UserController.giveMoneyTo(
+            //     interactionToMessage(interaction),
+            //     mentionUser,
+            //     balance
+            // );
+            // return;
+            const result = await UserController.giveMoneyTo(
+                interaction.user.id,
                 mentionUser,
                 balance
             );
+            await interaction.editReply(result)
+            setTimeout(async () => {
+                await interaction.editReply({ components: [] });
+            }, 60000);
             return;
         }
 
         case 'baucua': {
             await interaction.deferReply();
             const balance = interaction.options.getNumber('amount');
-            return await MiniGameController.bauCua(interaction.user.id, interactionToMessage(interaction), balance);
+            const result = await MiniGameController.bauCua(interaction.user.id, balance);
+            await interaction.editReply(result);
+            return;
         }
-
+        case 'onetwothree': {
+            await interaction.deferReply();
+            const balance = interaction.options.getNumber('amount');
+            const result = await MiniGameController.oneTwoThree(interaction.user.id, balance, lang);
+            await interaction.editReply(result);
+            return;
+        }
         case 'help': {
             await interaction.deferReply();
             const commandGroups = {
@@ -251,20 +314,20 @@ module.exports = async (interaction, client) => {
                         { name: "wstart / ws", desc: "Bắt đầu game" },
                     ]
                 },
-                soulland: {
-                    name: "Soul Land",
-                    description: "Các lệnh Đấu La Đại Lục",
-                    emoji: "🌌",
-                    color: "#9370DB",
-                    commands: [
-                        { name: "/awake", desc: "Thức tỉnh Vũ Hồn" },
-                        { name: "/spirit list <page>", desc: "Xem danh sách Vũ Hồn" },
-                        { name: "/spirit information", desc: "Xem chi tiết Vũ Hồn" },
-                        { name: "wspirit attach <spiritRef> <ringId>", desc: "Khảm Hồn Hoàn" },
-                        { name: "whunt", desc: "Săn Hồn Thú (có thể nhận Hồn Hoàn)" },
-                        { name: "wbattle <@user> hoặc /battle <@user>", desc: "Khiêu chiến người khác" },
-                    ]
-                },
+                // soulland: {
+                //     name: "Soul Land",
+                //     description: "Các lệnh Đấu La Đại Lục",
+                //     emoji: "🌌",
+                //     color: "#9370DB",
+                //     commands: [
+                //         { name: "/awake", desc: "Thức tỉnh Vũ Hồn" },
+                //         { name: "/spirit list <page>", desc: "Xem danh sách Vũ Hồn" },
+                //         { name: "/spirit information", desc: "Xem chi tiết Vũ Hồn" },
+                //         { name: "wspirit attach <spiritRef> <ringId>", desc: "Khảm Hồn Hoàn" },
+                //         { name: "whunt", desc: "Săn Hồn Thú (có thể nhận Hồn Hoàn)" },
+                //         { name: "wbattle <@user> hoặc /battle <@user>", desc: "Khiêu chiến người khác" },
+                //     ]
+                // },
                 economy: {
                     name: "Kinh tế",
                     description: "Các lệnh liên quan đến tiền tệ",
@@ -382,98 +445,19 @@ module.exports = async (interaction, client) => {
 
         case 'daily': {
             await interaction.deferReply();
-            let userData = await UserService.findUserById(interaction.user.id);
-            if (!userData) {
-                userData = await UserController.createUser(interaction.user.id);
-            }
+            const result = await CommonController.dailyReward(interaction.user.id);
+            return await interaction.editReply(result);
 
-            const cooldown = 1000 * 60 * 60 * 24;
-            const reward = {
-                coin: 100 + Math.floor(Math.random() * 50),
-                exp: 50 + Math.floor(Math.random() * 30),
-                bonus: Math.random() < 0.2
-            };
-
-            if (userData.lastDaily && Date.now() - userData.lastDaily.getTime() < cooldown) {
-                const timeLeft = cooldown - (Date.now() - userData.lastDaily.getTime());
-                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-
-                const cooldownEmbed = new EmbedBuilder()
-                    .setColor('#FF5555')
-                    .setTitle('⏰ Đã nhận Daily rồi!')
-                    .setDescription(`Bạn cần chờ thêm **${hours}h ${minutes}m** nữa để nhận daily tiếp theo.`)
-                    .addFields(
-                        { name: '⏰ Lần cuối nhận', value: `<t:${Math.floor(userData.lastDaily.getTime() / 1000)}:R>`, inline: true },
-                        { name: '🕒 Còn lại', value: `${hours}h ${minutes}m`, inline: true }
-                    )
-                    .setFooter({ text: 'Daily reset mỗi 24 giờ' });
-
-                return await interaction.editReply({ embeds: [cooldownEmbed] });
-            }
-
-            let totalCoin = reward.coin;
-            let totalExp = reward.exp;
-            let bonusText = '';
-
-            if (reward.bonus) {
-                const bonusCoin = Math.floor(totalCoin * 0.5);
-                const bonusExp = Math.floor(totalExp * 0.5);
-                totalCoin += bonusCoin;
-                totalExp += bonusExp;
-                bonusText = `🎁 **Bonus:** +${bonusCoin} coin +${bonusExp} exp`;
-            }
-
-            userData.coin += totalCoin;
-            userData.exp += totalExp;
-
-            let levelUpText = '';
-            let levelsGained = 0;
-            const originalLevel = userData.lvl;
-
-            while (userData.exp >= userData.lvl * 100) {
-                const expNeeded = userData.lvl * 100;
-                userData.exp -= expNeeded;
-                userData.lvl += 1;
-                levelsGained++;
-            }
-
-            if (levelsGained > 0) {
-                if (levelsGained === 1) {
-                    levelUpText = `🚀 **Level Up!** Level ${originalLevel} → **${userData.lvl}**`;
-                } else {
-                    levelUpText = `🚀 **Level Up!** +${levelsGained} levels (${originalLevel} → **${userData.lvl}**)`;
-                }
-            }
-
-            const expToLevel = Number(userData.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
-            userData.lastDaily = new Date();
-            await userData.save();
-
-            const successEmbed = new EmbedBuilder()
-                .setColor('#55FF55')
-                .setTitle('🎉 Daily Reward')
-                .setDescription('Bạn đã nhận daily thành công!')
-                .addFields(
-                    { name: '💰 Coin nhận được', value: `**${totalCoin}** coin`, inline: true },
-                    { name: '⭐ EXP nhận được', value: `**${totalExp}** exp`, inline: true },
-                    { name: '📊 Level hiện tại', value: `**${userData.lvl}**`, inline: true },
-                    { name: '🎯 EXP hiện tại', value: `**${userData.exp}/${expToLevel}**`, inline: true },
-                    { name: '🏦 Tổng coin', value: `**${userData.coin.toLocaleString()}** coin`, inline: true }
-                )
-                .setFooter({ text: `Daily tiếp theo: ${new Date(Date.now() + cooldown).toLocaleTimeString()}` });
-
-            if (bonusText) {
-                successEmbed.addFields({ name: '🎁 May mắn', value: bonusText, inline: false });
-            }
-
-            if (levelUpText) {
-                successEmbed.addFields({ name: '✨ Thành tựu', value: levelUpText, inline: false });
-            }
-
-            return await interaction.editReply({ embeds: [successEmbed] });
         }
-
+        case 'profile': {
+            await interaction.deferReply();
+            const userId = interaction.user.id;
+            const avatarUrl = interaction.user.displayAvatarURL()
+            const username = interaction.user.globalName || interaction.user.username
+            const embed = await UserController.createProfileEmbed(userId, avatarUrl, username)
+            // Gửi embed
+            return await interaction.editReply({ embeds: [embed] });
+        }
         case 'about': {
             await interaction.deferReply();
             const embed = new EmbedBuilder()
@@ -517,7 +501,8 @@ module.exports = async (interaction, client) => {
 
         case 'donate': {
             await interaction.deferReply();
-            await interaction.editReply({ content: "🔗 Momo: 0827626203 \n Name: Huỳnh Trung Kiên" });
+            const donateMessage = await CommonController.donate();
+            await interaction.editReply(donateMessage);
             return;
         }
 

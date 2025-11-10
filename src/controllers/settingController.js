@@ -35,11 +35,11 @@ class SettingController {
             // if (type === 'welcome') {
             try {
                 let imgTitle = channelConfig.title
-                .replace(/{user}/g, member.user.tag)
-                .replace(/{user.id}/g, member.user.id)
-                .replace(/{user.mention}/g, member.user.tag)
-                .replace(/{guild}/g, member.guild.name)
-                .replace(/{memberCount}/g, member.guild.memberCount);
+                    .replace(/{user}/g, member.user.tag)
+                    .replace(/{user.id}/g, member.user.id)
+                    .replace(/{user.mention}/g, member.user.tag)
+                    .replace(/{guild}/g, member.guild.name)
+                    .replace(/{memberCount}/g, member.guild.memberCount);
                 imagePath = await createImage(member, imgTitle, description);
             } catch (error) {
                 console.error('Lỗi khi tạo ảnh chào mừng:', error);
@@ -88,7 +88,7 @@ class SettingController {
             console.error('Lỗi khi gửi thông báo:', error);
         }
     }
-    static async setNoti(interaction, channelId) {
+    static async setNoti(channelId) {
         // Trước tiên, hiển thị một menu chọn loại thông báo
         const selectMenu = new ActionRowBuilder()
             .addComponents(
@@ -114,12 +114,6 @@ class SettingController {
                             value: 'booster',
                             emoji: '✨'
                         },
-                        {
-                            label: 'Giveaway',
-                            description: 'Thông báo khi có giveaway mới',
-                            value: 'giveaway',
-                            emoji: '🎉'
-                        }
                     ])
             );
 
@@ -129,83 +123,51 @@ class SettingController {
             ephemeral: true
         });
 
-        // Thu thập phản hồi từ select menu
-        const filter = i => i.customId === 'selectNotificationType' && i.user.id === interaction.user.id;
-        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
 
-        collector.on('collect', async i => {
-            const selectedType = i.values[0];
+        // const filter = i => i.customId === 'selectNotificationType' && i.user.id === interaction.user.id;
+        // const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
 
-            // Sau khi chọn loại thông báo, hiển thị modal để nhập thông tin
-            const modal = new ModalBuilder()
-                .setCustomId(`setupModal|${selectedType}|${channelId}`)
-                .setTitle(`Thiết lập Thông báo ${selectedType}`);
+        // collector.on('collect', async i => {
+        //     const selectedType = i.values[0];
 
-            const titleInput = new TextInputBuilder()
-                .setCustomId('titleInput')
-                .setLabel('Tiêu đề thông báo')
-                .setStyle(TextInputStyle.Short)
-                .setRequired(false)
-                .setPlaceholder('Ví dụ: Chào mừng {user} đến với {guild}!');
+        //     // Sau khi chọn loại thông báo, hiển thị modal để nhập thông tin
+        //     const modal = new ModalBuilder()
+        //         .setCustomId(`setupModal|${selectedType}|${channelId}`)
+        //         .setTitle(`Thiết lập Thông báo ${selectedType}`);
 
-            const descriptionInput = new TextInputBuilder()
-                .setCustomId('descriptionInput')
-                .setLabel('Mô tả thông báo')
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(false)
-                .setPlaceholder('Ví dụ: Xin chào {user.mention}! Chào mừng bạn đến với {guild}.');
+        //     const titleInput = new TextInputBuilder()
+        //         .setCustomId('titleInput')
+        //         .setLabel('Tiêu đề thông báo')
+        //         .setStyle(TextInputStyle.Short)
+        //         .setRequired(false)
+        //         .setPlaceholder('Ví dụ: Chào mừng {user} đến với {guild}!');
 
-            const imageInput = new TextInputBuilder()
-                .setCustomId('imageInput')
-                .setLabel('URL hình ảnh (tùy chọn)')
-                .setStyle(TextInputStyle.Short)
-                .setRequired(false)
-                .setPlaceholder('https://example.com/image.png');
+        //     const descriptionInput = new TextInputBuilder()
+        //         .setCustomId('descriptionInput')
+        //         .setLabel('Mô tả thông báo')
+        //         .setStyle(TextInputStyle.Paragraph)
+        //         .setRequired(false)
+        //         .setPlaceholder('Ví dụ: Xin chào {user.mention}! Chào mừng bạn đến với {guild}.');
 
-            // Thêm các trường vào modal
-            const firstActionRow = new ActionRowBuilder().addComponents(titleInput);
-            const secondActionRow = new ActionRowBuilder().addComponents(descriptionInput);
-            const thirdActionRow = new ActionRowBuilder().addComponents(imageInput);
+        //     const imageInput = new TextInputBuilder()
+        //         .setCustomId('imageInput')
+        //         .setLabel('URL hình ảnh (tùy chọn)')
+        //         .setStyle(TextInputStyle.Short)
+        //         .setRequired(false)
+        //         .setPlaceholder('https://example.com/image.png');
 
-            modal.addComponents(firstActionRow, secondActionRow, thirdActionRow);
+        //     // Thêm các trường vào modal
+        //     const firstActionRow = new ActionRowBuilder().addComponents(titleInput);
+        //     const secondActionRow = new ActionRowBuilder().addComponents(descriptionInput);
+        //     const thirdActionRow = new ActionRowBuilder().addComponents(imageInput);
 
-            // Hiển thị modal
-            await i.showModal(modal);
+        //     modal.addComponents(firstActionRow, secondActionRow, thirdActionRow);
 
-            // Đợi modal submit
-            //     try {
-            //         const modalInteraction = await i.awaitModalSubmit({
-            //             filter: m => m.customId === `setupModal_${selectedType}` && m.user.id === i.user.id,
-            //             time: 120000
-            //         });
+        //     // Hiển thị modal
+        //     await i.showModal(modal);
 
-            //         // Xử lý dữ liệu từ modal
-            //         const title = modalInteraction.fields.getTextInputValue('titleInput');
-            //         const description = modalInteraction.fields.getTextInputValue('descriptionInput');
-            //         const imageUrl = modalInteraction.fields.getTextInputValue('imageInput');
 
-            //         // Ở đây bạn cần thêm logic để lấy kênh đã chọn từ select menu
-            //         // (có thể sử dụng một collector khác hoặc lưu trữ tạm thời)
-
-            //         await modalInteraction.reply({
-            //             content: `Đã thiết lập thông báo ${selectedType} thành công!`,
-            //             ephemeral: true
-            //         });
-
-            //     } catch (error) {
-            //         console.error('Lỗi khi xử lý modal:', error);
-            //     }
-            // });
-
-            // collector.on('end', collected => {
-            //     if (collected.size === 0) {
-            //         interaction.followUp({
-            //             content: 'Đã hết thời gian chọn loại thông báo.',
-            //             ephemeral: true
-            //         });
-            //     }
-            // });
-        })
+        // })
     }
 }
 

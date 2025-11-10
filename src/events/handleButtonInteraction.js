@@ -6,8 +6,10 @@ const { handle123Result } = require("../controllers/miniGameController");
 const TicketController = require("../controllers/ticketController");
 const GameService = require("../services/gameService");
 const toggleComponents = require("../utils/toggleComponents");
+const UserController = require("../controllers/userController");
 
 module.exports = async (interaction, client) => {
+
     const { customId, message } = interaction;
     const [actionType, refId] = customId.split('|');
     const args = customId.split('|')
@@ -25,6 +27,7 @@ module.exports = async (interaction, client) => {
                 interaction.guild.id,
                 '🎟️ General Ticket',
                 'general',
+                interaction.user.id,
                 'Welcome to general ticket!'
             );
 
@@ -33,6 +36,25 @@ module.exports = async (interaction, client) => {
             } else {
                 await interaction.editReply({ content: `❌ ${result.message}` });
             }
+        }
+        else if (act === 'delete') {
+            const modal = new ModalBuilder()
+                .setCustomId('ticket_delete_modal')
+                .setTitle('Delete Ticket Category');
+            const cateType = new TextInputBuilder()
+                .setCustomId('cateType')
+                .setLabel('Ticket Type')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('Nhập loại ticket cần xóa. Vd: bug, general,...')
+                .setRequired(true);
+
+            // Thêm vào rows (modal chỉ nhận tối đa 5 row)
+            const row1 = new ActionRowBuilder().addComponents(cateType);
+
+            modal.addComponents(row1);
+
+            // Hiển thị modal
+            await interaction.showModal(modal);
         }
         else if (act === 'custom') {
             // Tạo modal
@@ -75,9 +97,45 @@ module.exports = async (interaction, client) => {
             await interaction.showModal(modal);
         }
     }
+    else if (actionType === 'transfer') {
+        const act = args[1];
+        const fromUserId = args[2];
+        const toUserId = args[3];
+        const amount = args[4];
+        await interaction.deferReply({ ephemeral: true });
+        if (act === 'confirm') {
+            const result = await UserController.confirmTransferFunds(interaction.guild.id, fromUserId, toUserId, amount);
+            if(result.success){
+                // xóa button của message gốc
+                try {
+                    await interaction.message.edit({ components: [] });
+                } catch (err) {
+                    console.error("Không thể xóa button:", err);
+                }
+                return interaction.editReply(result.data);
+            } else {
+                return interaction.editReply({ content: `❌ Error: ${result.error}` });
+            }
 
+        }
+        else if (act === 'cancel') {
+            const result = await UserController.cancelTransferFunds(interaction.guild.id, fromUserId, toUserId, amount);
+            if(result.success){
+                // xóa button của message gốc
+                try {
+                    await interaction.message.edit({ components: [] });
+                } catch (err) {
+                    console.error("Không thể xóa button:", err);
+                }
+                return interaction.editReply(result.data);
+            }
+            else {
+                return interaction.editReply({ content: `❌ Error: ${result.error}` });
+            }
+        }
+    }
 
-    if (actionType === 'ticket') {
+    else if (actionType === 'ticket') {
 
         await interaction.deferReply({ ephemeral: true });
         console.log('Xử lý ticket')
@@ -163,7 +221,7 @@ module.exports = async (interaction, client) => {
         return;
     }
     else if (actionType === "onetwothree") {
-        return await handle123Result(interaction)
+        return await handle123Result(interaction,lang)
     }
     // } catch (err) {
     //     console.error("❌ Lỗi handleButtonInteraction:", err);

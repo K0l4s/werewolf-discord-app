@@ -53,7 +53,7 @@ class StreakController {
                 case 'recovered':
                     embed = new EmbedBuilder()
                         .setColor(0xFFA500)
-                        .setTitle(lang === 'vi' ? '<a:F_:1433016927231545414> Chuỗi đã được hồi phục!' : '<a:F_:1433016927231545414> Streak Recovered!')
+                        .setTitle(lang === 'vi' ? '<a:pressf:1433016927231545414> Chuỗi đã được hồi phục!' : '<a:pressf:1433016927231545414> Streak Recovered!')
                         .setDescription(`<@${userId}> ${lang === 'vi' ? 'đã sử dụng 1 lần hồi phục' : 'has used 1 recovery'}`)
                         .addFields(
                             { name: lang === 'vi' ? '<a:fire2:1433091789044318332> Chuỗi hiện tại' : '<a:fire2:1433091789044318332> Current Streak', value: `**${result.streak.currentStreak}** ${lang === 'vi' ? 'ngày' : 'days'}`, inline: true },

@@ -4,6 +4,7 @@ const { wolfCoin } = require("../utils/wolfCoin");
 const { weightedRandom } = require("../utils/weightRnd");
 const UserController = require("./userController");
 const { calculateLuckyBuff } = require("../utils/calculateLuckyBuff");
+const { t } = require("../i18n");
 
 class MiniGameController {
     static identifyMoney(bet) {
@@ -20,34 +21,28 @@ class MiniGameController {
         }
         return bet;
     }
-    static async oneTwoThree(userId, msg, money) {
+    static async oneTwoThree(userId, money, lang) {
         const user = await UserService.findUserById(userId);
         const bet = this.identifyMoney(money, user);
         if (user.coin < bet) {
-            return msg.reply("🚫 Bạn không đủ coin để đặt cược!");
+            return t("oneTwoThree.not_enough", lang);
         }
-
-        const choice = {
-            "scissors": "✂️",
-            "hammer": "🔨",
-            "paper": "📄"
-        };
 
         const scissorsButton = new ButtonBuilder()
             .setCustomId(`onetwothree|scissors|${bet}|${userId}`)
-            .setEmoji("✂️")
+            .setEmoji("<a:scissor:1437444788612890684>")
             .setLabel("Scissors")
             .setStyle(1);
 
         const hammerButton = new ButtonBuilder()
             .setCustomId(`onetwothree|hammer|${bet}|${userId}`)
-            .setEmoji("🔨")
+            .setEmoji("<a:hammer:1437444063635706037>")
             .setLabel("Hammer")
             .setStyle(1);
 
         const paperButton = new ButtonBuilder()
             .setCustomId(`onetwothree|paper|${bet}|${userId}`)
-            .setEmoji("📄")
+            .setEmoji("<a:paper:1433099319711629393>")
             .setLabel("Paper")
             .setStyle(1);
 
@@ -57,106 +52,168 @@ class MiniGameController {
             paperButton
         );
 
-        await msg.reply({
-            content: `Bạn đã cược **${bet}** coin!\nHãy chọn:`,
-            components: [row]
-        });
-    }
-
-    static async handle123Result(interaction) {
-        await interaction.deferUpdate()
-        const loadingEmoji = "<a:load:1410394844324429886>";
-        const choiceEmojis = {
-            scissors: "✂️",
-            hammer: "🔨",
-            paper: "📄",
-        };
-        const [_, playerChoice, bet, userId] = interaction.customId.split("|");
-
-        // Gửi loading trước
-        await interaction.editReply({
-            content: `👉 Bạn chọn: ${choiceEmojis[playerChoice]}\n🤖 Bot đang chọn ${loadingEmoji}`,
-            components: [],
-        });
-
-        const betAmount = parseInt(bet);
-
-        if (interaction.user.id !== userId) {
-            return interaction.reply({ content: "🚫 Đây không phải trò chơi của bạn!", ephemeral: true });
-        }
-
-
-
-        // lấy buff (0–100)
-        const buff = await calculateLuckyBuff(userId, interaction.guildId);
-
-
-
-        // xác định botChoice theo trọng số
-        let winChoice, loseChoice, drawChoice;
-
-        if (playerChoice === "scissors") {
-            winChoice = "paper";
-            loseChoice = "hammer";
-            drawChoice = "scissors";
-        } else if (playerChoice === "hammer") {
-            winChoice = "scissors";
-            loseChoice = "paper";
-            drawChoice = "hammer";
-        } else {
-            winChoice = "hammer";
-            loseChoice = "scissors";
-            drawChoice = "paper";
-        }
-
-        // tính trọng số
-        const winWeight = 1 + buff / 100; // buff càng cao → càng dễ thắng
-        const loseWeight = 1;
-        const drawWeight = 1;
-
-        const totalWeight = winWeight + loseWeight + drawWeight;
-        const rand = Math.random() * totalWeight;
-
-        let botChoice;
-        if (rand < winWeight) botChoice = winChoice;
-        else if (rand < winWeight + loseWeight) botChoice = loseChoice;
-        else botChoice = drawChoice;
-
-        // xử lý kết quả
-        let result;
-        let coinChange = 0;
-
-        if (playerChoice === botChoice) {
-            result = "🤝 Hòa!";
-        } else if (
-            (playerChoice === "scissors" && botChoice === "paper") ||
-            (playerChoice === "hammer" && botChoice === "scissors") ||
-            (playerChoice === "paper" && botChoice === "hammer")
-        ) {
-            result = `🎉 Bạn thắng! **+${wolfCoin(betAmount)}**`;
-            coinChange = betAmount;
-        } else {
-            result = `💀 Bạn thua! **-${wolfCoin(betAmount)}**`;
-            coinChange = -betAmount;
-        }
-
-        const user = await UserService.findUserById(userId);
-        user.coin += coinChange;
-        if (user.coin < 0) user.coin = 0;
-        await user.save();
-
-        await interaction.editReply({
-            content: `👉 Bạn chọn: ${choiceEmojis[playerChoice]}\n🤖 Bot chọn: ${choiceEmojis[botChoice]}\n\n${result}`,
-        });
+        // await msg.reply({
+        //     content: `Bạn đã cược **${bet}** coin!\nHãy chọn:`,
+        //     components: [row]
+        // });
+        const embed = new EmbedBuilder()
+            .setTitle(t("oneTwoThree.title", lang))
+            .setDescription(`🎲 ${t("oneTwoThree.description", lang)}${wolfCoin(bet)} ${t("oneTwoThree.choose", lang)}`)
+            .setImage("https://i.pinimg.com/originals/6b/ed/1f/6bed1f3f4f8f4e3f4f4e4f4f4e4f4f4f.gif");
+        return { embeds: [embed], components: [row] };
     }
 
 
+    static async handle123Result(interaction, lang) {
+        try {
+            await interaction.deferUpdate();
+
+            const loadingEmoji = "<a:load:1410394844324429886>";
+            const choiceEmojis = {
+                scissors: "<a:scissor:1437444788612890684>",
+                hammer: "<a:hammer:1437444063635706037>",
+                paper: "<a:paper:1433099319711629393>",
+            };
+
+            const parts = interaction.customId.split("|");
+            const [_, playerChoice, bet, userId] = parts;
+
+            // validate owner
+            if (interaction.user.id !== userId) {
+                return interaction.reply({ content: t("oneTwoThree.not_your_game", lang), ephemeral: true });
+            }
+
+            // Validate choice
+            if (!["scissors", "hammer", "paper"].includes(playerChoice)) {
+                console.warn("Invalid playerChoice:", playerChoice);
+                return interaction.editReply({ content: "⚠️ Lựa chọn không hợp lệ.", components: [] });
+            }
+
+            // show loading embed first (optional)
+            await interaction.editReply({
+                content: `${t("oneTwoThree.your_choice", lang)} ${choiceEmojis[playerChoice]}\n${t("oneTwoThree.bot_choice", lang)} ${loadingEmoji}`,
+                components: [],
+            });
+
+            const betAmount = parseInt(bet, 10) || 0;
+            if (betAmount <= 0) {
+                return interaction.editReply({ content: "⚠️ Số tiền cược không hợp lệ.", components: [] });
+            }
+
+            // lấy buff, đảm bảo là số
+            let buff = await calculateLuckyBuff(userId, interaction.guildId);
+            if (isNaN(buff)) buff = 0;
+            buff = Math.max(0, Math.min(buff, 100)); // giới hạn 0–100
+
+            // mapping thắng/thua/hòa
+            let winChoice, loseChoice, drawChoice;
+            switch (playerChoice) {
+                case "scissors":
+                    winChoice = "paper";   // kéo thắng giấy
+                    loseChoice = "hammer"; // kéo thua búa
+                    drawChoice = "scissors";
+                    break;
+                case "hammer":
+                    winChoice = "scissors"; // búa thắng kéo
+                    loseChoice = "paper";   // búa thua giấy
+                    drawChoice = "hammer";
+                    break;
+                case "paper":
+                    winChoice = "hammer";   // giấy thắng búa
+                    loseChoice = "scissors";// giấy thua kéo
+                    drawChoice = "paper";
+                    break;
+                default:
+                    drawChoice = playerChoice;
+                    winChoice = loseChoice = drawChoice;
+                    break;
+            }
+
+            // Tính trọng số
+            const winWeight = 1 + buff / 100; // buff càng cao càng dễ thắng
+            const loseWeight = 1;
+            const drawWeight = 1;
+
+            // Random theo trọng số thật
+            const total = winWeight + loseWeight + drawWeight;
+            const rand = Math.random() * total;
+            let botChoice;
+
+            if (rand < winWeight) botChoice = winChoice;
+            else if (rand < winWeight + loseWeight) botChoice = loseChoice;
+            else botChoice = drawChoice;
+
+            // DEBUG log (chỉ log server-side, không gửi Discord)
+            // console.log(`[RPS] Player=${playerChoice}, Bot=${botChoice}, buff=${buff}, rand=${rand.toFixed(3)}, weights=(${winWeight.toFixed(2)}, ${loseWeight}, ${drawWeight})`);
 
 
-    static async bauCua(userId, msg, money) {
+            // xử lý kết quả
+            let resultText;
+            let coinChange = 0;
+
+            if (playerChoice === botChoice) {
+                // Hòa — explicit
+                resultText = `🤝 ${t("oneTwoThree.tie", lang)}`;
+                coinChange = 0;
+            } else if (
+                (playerChoice === "scissors" && botChoice === "paper") ||
+                (playerChoice === "hammer" && botChoice === "scissors") ||
+                (playerChoice === "paper" && botChoice === "hammer")
+            ) {
+                resultText = `🎉 ${t("oneTwoThree.win", lang)} **+${wolfCoin(betAmount)}**`;
+                coinChange = betAmount;
+            } else {
+                resultText = `💀 ${t("oneTwoThree.lose", lang)} **-${wolfCoin(betAmount)}**`;
+                coinChange = -betAmount;
+            }
+
+            // Lấy user & cập nhật coin
+            const user = await UserService.findUserById(userId);
+            if (!user) {
+                return interaction.editReply({ content: "⚠️ Không tìm thấy người dùng.", components: [] });
+            }
+
+            user.coin = (user.coin || 0) + coinChange;
+            if (user.coin < 0) user.coin = 0;
+            await user.save();
+
+            // Tạo embed đẹp
+            const embed = new EmbedBuilder()
+                .setTitle(t("oneTwoThree.result_title", lang) || "OneTwoThree - Kết quả")
+                .addFields(
+                    { name: t("oneTwoThree.your_choice", lang) || "Your choice", value: `${choiceEmojis[playerChoice]} \`${playerChoice}\``, inline: true },
+                    { name: t("oneTwoThree.bot_choice", lang) || "Bot choice", value: `${choiceEmojis[botChoice]} \`${botChoice}\``, inline: true },
+                    { name: t("oneTwoThree.result", lang) || "Result", value: resultText, inline: false },
+                )
+                .setFooter({ text: `${t("oneTwoThree.new_balance", lang) || "Balance"}: ${user.coin.toLocaleString("en-US")}` })
+                .setTimestamp();
+
+            // Color theo kết quả
+            if (coinChange > 0) embed.setColor(0x57F287); // green
+            else if (coinChange < 0) embed.setColor(0xED4245); // red
+            else embed.setColor(0x95A5A6); // gray
+
+            await interaction.editReply({
+                content: null,
+                embeds: [embed],
+                components: [],
+            });
+
+        } catch (err) {
+            console.error("handle123Result error:", err);
+            try {
+                await interaction.editReply({ content: "⚠️ Đã có lỗi xảy ra. Thử lại sau.", components: [] });
+            } catch (e) { /* ignore */ }
+        }
+    }
+
+
+
+
+    static async bauCua(userId, money) {
         const bet = parseInt(this.identifyMoney(money))
         const user = await UserService.findUserById(userId)
-        if (user.coin < bet) return msg.reply("🚫 Bạn không đủ coin để đặt cược!");
+        if (user.coin < bet) return "🚫 Bạn không đủ coin để đặt cược!";
 
         const list = [
             {
@@ -206,7 +263,7 @@ class MiniGameController {
         embed.setTitle("Minigames | Bầu cua")
             .setDescription(`🎲 You bet **${wolfCoin(bet)}**\n Select random button below and you'll become a **Tycoon**!`)
             .setImage("https://i.pinimg.com/736x/b0/55/7e/b0557ea48b720f61455d10f5dce24eb8.jpg")
-        await msg.reply({ embeds: [embed], components: [rows] })
+        return { embeds: [embed], components: [rows] }
     }
     static async bauCuaFinal(bet, userId, userChoice, interaction) {
         try {

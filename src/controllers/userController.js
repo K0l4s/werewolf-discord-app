@@ -145,12 +145,14 @@ class UserController {
     }
     // Hàm tạo progress bar
     static createProgressBar(percentage, length) {
-        const filledSquares = Math.floor((percentage / 100) * length);
+        const safePercent = Math.max(0, Math.min(percentage, 100)); // clamp từ 0 → 100
+        const filledSquares = Math.floor((safePercent / 100) * length);
         const emptySquares = length - filledSquares;
 
         const bar = '█'.repeat(filledSquares) + '░'.repeat(emptySquares);
         return `[${bar}]`;
     }
+
 
     static async addExperience(userId, exp, interaction) {
         const user = await UserService.findUserById(userId);
@@ -247,19 +249,19 @@ class UserController {
 
 
 
-    static async giveMoneyTo(message, mentionUser, balance) {
+    static async giveMoneyTo(userId, mentionUser, balance) {
         const embed = new EmbedBuilder();
-        const userId = message.isInteraction ? message.user.id : message.author.id;
-
+        // const userId = message.isInteraction ? message.user.id : message.author.id;
+        console.log("Give money to function called");
         const amount = Number(balance);
         console.log(amount)
         if (isNaN(amount) || amount <= 0) {
-            embed.setTitle("❌ Transfer Error!")
+            embed.setTitle("<a:deny:1433805273595904070> Transfer Error!")
                 .setDescription(`Invalid amount!`)
                 .setColor('Red');
-            return message.reply({ embeds: [embed], ephemeral: message.isInteraction });
+            return { embeds: [embed] };
         }
-        console.log(mentionUser.id, " ", userId)
+
         const userUser = await UserService.findUserById(userId);
         let targetUser = await UserService.findUserById(mentionUser.id);
         if (!targetUser || targetUser === undefined) {
@@ -267,85 +269,85 @@ class UserController {
         }
 
         if (userUser.coin < amount) {
-            embed.setTitle("❌ Transfer Error!")
+            embed.setTitle("<a:deny:1433805273595904070> Transfer Error!")
                 .setDescription(`<@${userId}>, you don't have enough wolf coin. \nYour coin is ${userUser.coin.toLocaleString("en-US")} <:wolf_coin:1400508720160702617>`)
                 .setColor('Red');
-            return message.reply({ embeds: [embed], ephemeral: message.isInteraction });
+            return { embeds: [embed] };
         }
 
         // Embed xác nhận
         const confirmEmbed = new EmbedBuilder()
-            .setTitle("🔄 Confirm Transfer")
+            .setTitle("<a:annouce:1433017025491636356> Confirm Transfer")
             .setDescription(`<@${userId}>, do you want to send ${amount.toLocaleString("en-US")} <:wolf_coin:1400508720160702617> to <@${mentionUser.id}>?`)
+            .addFields(
+                { name: "<a:phoenix:1433016920780836986> Sender", value: `<@${userId}>`, inline: true },
+                { name: "<a:flyingpiglet:1433016976099508304> Receiver", value: `<@${mentionUser.id}>`, inline: true },
+                { name: "Amount", value: `${amount.toLocaleString("en-US")} <:wolf_coin:1400508720160702617>`, inline: true },
+                // xóa sau 60s, tự động đếm ngược bằng <t:TIMESTAMP:R> (ví dụ: <t:1633024800:R>
+                { name: "<a:lwing2:1433015622882689125> Countdown <a:rwing2:1433015620290609182>", value: `<t:${Math.floor(Date.now() / 1000) + 60}:R>`, inline: false }
+            )
             .setColor("Yellow");
 
         // Nút bấm
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setCustomId('confirm_transfer')
-                .setLabel('✅ Confirm')
+                .setCustomId('transfer|confirm|' + userId + '|' + mentionUser.id + '|' + amount)
+                .setLabel('Confirm')
+                .setEmoji('<a:verified:1433017684294893728>')
                 .setStyle(ButtonStyle.Success),
             new ButtonBuilder()
-                .setCustomId('cancel_transfer')
-                .setLabel('❌ Cancel')
+                .setCustomId('transfer|cancel|' + userId + '|' + mentionUser.id + '|' + amount)
+                .setLabel('Cancel')
+                .setEmoji('<a:globalwarming:1433024007741112320>')
                 .setStyle(ButtonStyle.Danger)
         );
-
-        const confirmMessage = await message.reply({
+        console.log(mentionUser.id, " ", userId)
+        return {
             embeds: [confirmEmbed],
             components: [row],
-            fetchReply: true // luôn fetch để collector hoạt động
-        });
-
-        // Collector cho nút
-        const collector = confirmMessage.createMessageComponentCollector({
-            filter: i => i.user.id === userId,
-            time: 15000,
-            max: 1
-        });
-
-        collector.on("collect", async (btnInteraction) => {
-            if (btnInteraction.customId === "confirm_transfer") {
-                userUser.coin -= amount;
-                console.log(targetUser)
-                // if(!targetUser) {
-                //     targetUser = await UserService.createNewUser(mentionUser.id);
-                // }
-                // console.log(targetUser)
-                // if(!targetUser.coin) {
-                //     targetUser.coin = 0;
-                // }
-                targetUser.coin = Number(targetUser.coin) + Number(amount);
-                await userUser.save();
-                await targetUser.save();
-
-                const successEmbed = new EmbedBuilder()
-                    .setTitle("✅ Transfer Success!")
-                    .setDescription(`<@${userId}> transferred ${amount.toLocaleString("en-US")} <:wolf_coin:1400508720160702617> to <@${mentionUser.id}>`)
-                    .setColor("Green");
-
-                await btnInteraction.update({ embeds: [successEmbed], components: [] });
-            } else {
-                const cancelEmbed = new EmbedBuilder()
-                    .setTitle("❌ Transfer Cancelled")
-                    .setDescription(`Transfer has been cancelled by <@${userId}>.`)
-                    .setColor("Red");
-
-                await btnInteraction.update({ embeds: [cancelEmbed], components: [] });
-            }
-        });
-
-        collector.on("end", async (collected) => {
-            if (collected.size === 0) {
-                const timeoutEmbed = new EmbedBuilder()
-                    .setTitle("⌛ Transfer Timed Out")
-                    .setDescription(`<@${userId}>, you didn't confirm in time.`)
-                    .setColor("Red");
-                await confirmMessage.edit({ embeds: [timeoutEmbed], components: [] });
-            }
-        });
+        };
     }
-
+    static async cancelTransferFunds(guildId, fromUserId, toUserId, amount) {
+        try {
+            const embed = new EmbedBuilder();
+            embed.setTitle("<a:deny:1433805273595904070> Transfer Cancelled")
+                .setDescription(`Transfer has been cancelled by <@${fromUserId}>.`)
+                .setColor("Red");
+            return {
+                success: true,
+                data: { embeds: [embed], components: [] },
+            };
+        } catch (err) {
+            return {
+                success: false,
+                error: err.message,
+            };
+        }
+    }
+    static async confirmTransferFunds(guildId, fromUserId, toUserId, amount) {
+        // const embed = new EmbedBuilder();
+        try {
+            const userUser = await UserService.findUserById(fromUserId);
+            let targetUser = await UserService.findUserById(toUserId);
+            if (!targetUser || targetUser === undefined) {
+                targetUser = await UserService.createNewUser(toUserId);
+            }
+            userUser.coin -= Number(amount);
+            targetUser.coin = Number(targetUser.coin) + Number(amount);
+            await userUser.save();
+            await targetUser.save();
+            const successEmbed = new EmbedBuilder()
+                .setTitle("<a:verified:1433017684294893728> Transfer Success!")
+                .setDescription(`<@${fromUserId}> transferred ${Number(amount).toLocaleString("en-US")} <:wolf_coin:1400508720160702617> to <@${toUserId}>`)
+                .setColor("Green");
+            return { success: true, data: { embeds: [successEmbed], components: [] } };
+        } catch (err) {
+            return {
+                success: false,
+                error: err.message,
+            };
+        }
+    }
 }
 
 module.exports = UserController;

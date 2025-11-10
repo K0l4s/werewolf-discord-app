@@ -35,7 +35,7 @@ const giveawaySchema = new mongoose.Schema({
       itemId: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
       quantity: { type: Number, default: 1 }
     }],
-    currency: { type: Number, required:false },
+    currency: { type: Number, required: false },
     otherItem: { type: String, required: false },
     otherValue: { type: Number, required: false } // Giá trị ước tính
   },

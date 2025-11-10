@@ -15,24 +15,23 @@ const { t } = require('../i18n');
 const Phase = require("../models/Phase");
 
 class GameController {
-    static async handleCreateRoom(message) {
-        let game = await GameService.getGameByChannel(message.channel.id);
+    static async handleCreateRoom(channelId) {
+        let game = await GameService.getGameByChannel(channelId);
         if (!game) {
-            game = await GameService.initNewGame(message.channel.id);
+            game = await GameService.initNewGame(channelId);
         }
         // console.log(game.isStart)
         return game;
     }
-    static async handleJoinCommand(message, lang = "en") {
+    static async handleJoinCommand(channelId,userId, lang = "en") {
         const embed = new EmbedBuilder();
-        const game = await this.handleCreateRoom(message);
+        const game = await this.handleCreateRoom(channelId);
         if (game.isStart) {
             embed.setTitle(t('game.start_title', lang))
                 .setDescription(t('game.wait', lang))
-            return message.reply({ embeds: [embed] })
-            // return message.reply("The game is started! Please wait or use **/new** to create new game!")
+            return { embeds: [embed] }
         }
-        const player = game.player.find(p => p.userId === message.author.id);
+        const player = game.player.find(p => p.userId === userId);
         if (player) {
             let playerList = game.player
                 .map((p, index) => `${index + 1}. <@${p.userId}> ${p.isAlive ? "🧑🏻" : "🧟"}`)
@@ -44,11 +43,10 @@ class GameController {
                     `${t('game.total', lang)} ${game.player.length}\n\n` +
                     `${playerList}`
                 );
-            return message.reply({ embeds: [embed] })
-            // return message.reply("Bạn đã tham gia game rồi!")
+            return { embeds: [embed] }
         }
         const newPlayer = {
-            userId: message.author.id,
+            userId: userId,
             isAlive: true,
             roleId: null,
         }
@@ -65,7 +63,7 @@ class GameController {
                 `${t('game.total', lang)}: ${game.player.length}\n\n` +
                 `${playerList}`
             );
-        return message.reply({ embeds: [embed] })
+        return { embeds: [embed] }
     }
     static async handleCreateNewRoom(channelId, lang = "en") {
         let game = await GameService.getGameByChannel(channelId);

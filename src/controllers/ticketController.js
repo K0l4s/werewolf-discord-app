@@ -4,6 +4,7 @@ const Notification = require("../models/Notification");
 const cron = require('node-cron');
 
 const Ticket = require("../models/Ticket");
+const UserService = require("../services/userService");
 
 class TicketController {
     static async storageTicket(channelId, guildId, userId, client, lang = "en") {
@@ -27,7 +28,7 @@ class TicketController {
                 (settings?.ticket?.userIds?.includes(userId));
 
             if (!hasPermission) return "You don't have permission";
-            
+
             await channel.permissionOverwrites.delete(ticket.hostId).catch(console.error);
             ticket.status = 'storage'
             await ticket.save()
@@ -138,9 +139,9 @@ class TicketController {
             const exitsTicket = await Ticket.findOne({
                 guildId,
                 hostId,
-                status:'open'
+                status: 'open'
             })
-            if(exitsTicket)
+            if (exitsTicket)
                 throw new Error("Bạn có ticket chưa xử lý xong, vui lòng đóng ticket trước!")
             // 🔹 Lấy config notification trong DB
             const config = await Notification.findOne({ guildId });
@@ -292,13 +293,16 @@ class TicketController {
             .setCustomId(`ticket_setup|custom`)
             .setLabel("Create Custom Ticket Category")
             .setStyle(ButtonStyle.Secondary);
-
+        const deleteButton = new ButtonBuilder()
+            .setCustomId(`ticket_setup|delete`)
+            .setLabel("Delete Ticket Category")
+            .setStyle(ButtonStyle.Danger);
         const linkButton = new ButtonBuilder()
             .setLabel("Advance Setup")
             .setStyle(ButtonStyle.Link)
             .setURL(`https://keldo.vercel.app/guild/setting/${guildId}`);
 
-        const row = new ActionRowBuilder().addComponents(generalButton, customButton, linkButton);
+        const row = new ActionRowBuilder().addComponents(generalButton, customButton, deleteButton, linkButton);
 
         return { embeds: [embed], components: [row] };
     }
@@ -326,63 +330,6 @@ class TicketController {
         }
     }
 
-    /**
-     * Cập nhật thông tin category
-     */
-    static async updateCategory(client, guildId, cateType, updateData) {
-        try {
-            const { notification, categoryConfig } = await TicketService.findGuildAndCategory(client, guildId, cateType);
-
-            // Cập nhật các trường được phép
-            const allowedFields = ['description', 'cateName'];
-            allowedFields.forEach(field => {
-                if (updateData[field] !== undefined) {
-                    categoryConfig[field] = updateData[field];
-                }
-            });
-
-            // Cập nhật permissions nếu có thay đổi
-            if (updateData.notifyRoleIds || updateData.notifyUserIds) {
-                const categoryChannel = await TicketService.findCategoryChannel(
-                    client.guilds.cache.get(guildId),
-                    categoryConfig
-                );
-
-                await TicketService.updateCategoryPermissions(
-                    categoryChannel,
-                    updateData.notifyRoleIds || categoryConfig.roleIds,
-                    updateData.notifyUserIds || categoryConfig.userIds
-                );
-
-                if (updateData.notifyRoleIds) {
-                    categoryConfig.roleIds = updateData.notifyRoleIds;
-                }
-                if (updateData.notifyUserIds) {
-                    categoryConfig.userIds = updateData.notifyUserIds;
-                }
-            }
-
-            // Cập nhật required roles nếu có
-            if (updateData.requiredRoleIds) {
-                categoryConfig.requiredRoleIds = updateData.requiredRoleIds;
-            }
-
-            await TicketService.saveNotification(notification);
-
-            return {
-                success: true,
-                message: 'Cập nhật category thành công',
-                updatedCategory: categoryConfig
-            };
-
-        } catch (error) {
-            console.error('Lỗi khi cập nhật category:', error);
-            return {
-                success: false,
-                message: error.message || 'Có lỗi xảy ra khi cập nhật category'
-            };
-        }
-    }
     static async addRolesAndUsersToCategory(client, guildId, cateType, users = [], roles = []) {
         try {
             TicketService.validateParameters(guildId, cateType);
@@ -621,6 +568,7 @@ class TicketController {
             const errorEmbed = new EmbedBuilder()
                 .setTitle('❌ LỖI KHI LẤY THÔNG TIN TICKET')
                 .setColor(0xFF0000)
+                .set
                 .setDescription(error.message || 'Có lỗi xảy ra khi lấy thông tin ticket status')
                 .setTimestamp();
 
@@ -632,7 +580,7 @@ class TicketController {
         }
     }
 
-    static async createCategory(client, guildId, cateName, cateType, description, roleIds = [], userIds = [], requiredRoleIds = []) {
+    static async createCategory(client, guildId, cateName, cateType, userId, description, roleIds = [], userIds = [], requiredRoleIds = []) {
         try {
             if (!guildId || !cateType || !description) {
                 throw new Error('Thiếu các tham số bắt buộc: guildId, cateType, description');
@@ -640,7 +588,18 @@ class TicketController {
 
             const { guild } = await TicketService.findGuildAndNotification(client, guildId);
             let notification = await Notification.findOne({ guildId });
+            const ticketSize = notification.ticketCate.length || 0;
+            let isBought = false;
+            if (ticketSize > 3) {
+                // logic
+                const user = await UserService.findUserById(userId)
+                if (user.token < 5)
+                    throw new Error("Reached new category creation limit. To create a new category, please use 5 tokens/turn.")
 
+                user.token -= 5;
+                await user.save()
+                isBought = true;
+            }
             const category = await TicketService.createCategory(guild, cateName, cateType, description, roleIds, userIds, requiredRoleIds);
 
             const newCategory = {
@@ -665,7 +624,7 @@ class TicketController {
 
             return {
                 success: true,
-                message: 'Đã tạo category thành công',
+                message: `Đã tạo category thành công ${isBought ? 'Tốn 5 token cho lượt này' : ''}`,
                 category: {
                     ...newCategory,
                     discordCategory: category
@@ -680,6 +639,68 @@ class TicketController {
             };
         }
     }
+
+    static async deleteCategory(client, guildId, cateType) {
+        try {
+            if (!guildId || !cateType) {
+                throw new Error('Thiếu tham số bắt buộc: guildId hoặc cateType');
+            }
+
+            //  Lấy guild và notification
+            const { guild } = await TicketService.findGuildAndNotification(client, guildId);
+            let notification = await Notification.findOne({ guildId });
+
+            if (!notification || !notification.ticketCate || notification.ticketCate.length === 0) {
+                throw new Error('Không tìm thấy cấu hình ticket trong server này');
+            }
+
+            //  Tìm category cần xóa
+            const targetCategory = notification.ticketCate.find(
+                c => c.cateType.toLowerCase() === cateType.toLowerCase()
+            );
+
+            if (!targetCategory) {
+                throw new Error(`Không tìm thấy category với loại "${cateType}"`);
+            }
+
+            //  Lấy category từ Discord
+            const discordCategory = guild.channels.cache.get(targetCategory.cateId);
+            // console.log(discordCategory)
+            if (discordCategory) {
+                //  Xóa toàn bộ kênh nằm trong category
+                const channelsInCategory = guild.channels.cache.filter(
+                    ch => ch.parentId === discordCategory.id
+                );
+
+                for (const [, channel] of channelsInCategory) {
+                    await channel.delete(`Ticket system - Xóa channel trong category ${cateType}`);
+                }
+
+                //  Sau đó xóa luôn category
+                await discordCategory.delete(`Ticket system - Xóa category ${cateType}`);
+            }
+
+            //  Xóa category trong DB
+            notification.ticketCate = notification.ticketCate.filter(
+                c => c.cateType.toLowerCase() !== cateType.toLowerCase()
+            );
+
+            await notification.save();
+
+            return {
+                success: true,
+                message: `Đã xóa category "${cateType}" và các channel bên trong thành công`,
+                deletedCategory: targetCategory
+            };
+        } catch (error) {
+            console.error('Lỗi khi xóa category:', error);
+            return {
+                success: false,
+                message: error.message || 'Có lỗi xảy ra khi xóa category'
+            };
+        }
+    }
+
 }
 
 module.exports = TicketController;

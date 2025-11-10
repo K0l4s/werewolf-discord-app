@@ -13,6 +13,7 @@ class LanguageController {
     }
     static async getLang(guildId){
         const result = await Language.findOne({guildId:guildId})
+        console.log(result)
         if(result)
             return result.lang;
         return "en"

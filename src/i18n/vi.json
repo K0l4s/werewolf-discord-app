@@ -8,7 +8,8 @@
         "notJ":"Ê, nãy kêu chơi không chơi mà giờ tấy mấy gì đó?",
         "ro":"Ê mày ơi, tao không thấy cái role của mày trong kho",
         "miss_cmd":"Ơ, mày có đưa cho tao thiếu cái gì không nhể?",
-        "permission": "Ủa alo? Bạn không đủ quyền để làm trò này ở server này đâu!"
+        "permission": "Ủa alo? Bạn không đủ quyền để làm trò này ở server này đâu!",
+        "error":"Lỗi rồi nha!"
     },
     "s": {
         "prefix_succ": "Prefix của server đổi thành: ",
@@ -21,7 +22,8 @@
         "embed_succ":" Rồi, tao đã đặt embed là ",
         "embed_succ2":" .Giờ thì đừng làm **phìn** tao!",
         "streak_succ":" Rồi, tao đã đặt trạng thái chuỗi là ",
-        "streak_succ2":" .Giờ thì đừng làm **phìn** tao!"
+        "streak_succ2":" .Giờ thì đừng làm **phìn** tao!",
+        "setting":"Cài đặt server thành công!"
     },
     "inv": {
         "ad_succ": "Xong! Code mời của bạn đây: ",
@@ -40,5 +42,18 @@
         "ref_s_ti":"Rồi, rồi, rồi. Tao tạo lại game mới cho mày rồi đây!",
         "ref_s_de":"Đợi một lát, tao đang khởi tạo lại đây nè, làm gì phải nóng?",
         "eJ":"Please **create new"
+    },
+    "oneTwoThree":{
+        "win":"Chúc mừng bạn đã thắng! Bạn nhận được ",
+        "lose":"Tiếc quá, bạn đã thua và mất đi ",
+        "tie":"Hòa rồi nha! Không ai mất gì cả!",
+        "not_enough":"Bạn không đủ coin để đặt cược!",
+        "title":"Trò chơi kéo búa bao",
+        "description":"Bạn đã cược **",
+        "choose":"**\n Hãy chọn icon của bạn bên dưới và thách đấu với bot!",
+        "your_choice":"Lựa chọn của bạn: ",
+        "bot_choice":"Lựa chọn của bot: ",
+        "not_your_game":"🚫 Đây không phải trò chơi của bạn!",
+        "new_balance":"Số dư hiện tại của bạn là: "
     }
 }

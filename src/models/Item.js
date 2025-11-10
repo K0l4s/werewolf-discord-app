@@ -5,6 +5,7 @@ const itemSchema = new mongoose.Schema(
     {
         name: { type: String, require: true },
         price: { type: Number, require: true, default: 0 },
+        isBuy: { type: Boolean, required: false, default: true },
         description: { type: String, require: false },
         itemRef: { type: String, require: true, unique: true },
         icon: {
@@ -22,7 +23,7 @@ const itemSchema = new mongoose.Schema(
         },
         type: {
             type: String,
-            enum: [ITEM_TYPE.NORMAL, ITEM_TYPE.PRESENT_BOX, ITEM_TYPE.PET_FOOD],
+            enum: [ITEM_TYPE.NORMAL, ITEM_TYPE.PRESENT_BOX, ITEM_TYPE.PET_FOOD, ITEM_TYPE.MINERAL],
             required: true,
             default: ITEM_TYPE.NORMAL
         },

@@ -89,7 +89,7 @@ router.post("/discord/callback", async (req, res) => {
 router.post("/infor", async (req, res) => {
     try {
         const { token } = req.body
-        console.log("Token", token)
+        // console.log("Token", token)
         // tìm token trong DB
         const tokenRow = await Token.findOne({ token });
         // console.log(tokenRow)

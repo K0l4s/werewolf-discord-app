@@ -26,7 +26,25 @@ class handleMenu {
                     interaction.guild.id,
                     name,       // tên category
                     cateType,   // cateType
+                    interaction.user.id,
                     message     // description
+                );
+
+                if (result.success) {
+                    await interaction.reply({ content: `✅ ${result.message}`, ephemeral: true });
+                } else {
+                    await interaction.reply({ content: `❌ ${result.message}`, ephemeral: true });
+                }
+            }
+            if (interaction.customId.startsWith('ticket_delete_modal')) {
+                // console.log("All")
+                const cateType = interaction.fields.getTextInputValue('cateType');
+
+                // Gọi createCategory giống General
+                const result = await TicketController.deleteCategory(
+                    client,
+                    interaction.guild.id,
+                    cateType,   // cateType
                 );
 
                 if (result.success) {

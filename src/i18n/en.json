@@ -9,7 +9,8 @@
         "embed": "Hold up, my paper’s acting weird right now.",
         "ro": "Yo dude, I don’t see your role anywhere in the stash.",
         "miss_cmd": "Wait… didn’t you, like, forget to give me something?",
-        "permission": "Oops… looks like you’re not important enough to do this here!"
+        "permission": "Oops… looks like you’re not important enough to do this here!",
+        "setting": "It's some error!"
     },
     "s": {
         "prefix_succ": "Server prefix changed to: ",
@@ -17,12 +18,13 @@
         "cur_la": "This server’s language is **English :england:** (as if you didn’t know 😏).",
         "cur_pr": "Your current server prefix is",
         "cur_lucky": "Your current lucky buff is",
-        "vc_succ":" Alright, I’ve set the voice channel notification to ",
-        "vc_succ2":" .Now stop wasting my time!",
-        "embed_succ":" Alright, I’ve set the embed notification to ",
-        "embed_succ2":" .Now stop wasting my time!",
-        "streak_succ":" Alright, I’ve set the streak notification to ",
-        "streak_succ2":" .Now stop wasting my time!"
+        "vc_succ": " Alright, I’ve set the voice channel notification to ",
+        "vc_succ2": " .Now stop wasting my time!",
+        "embed_succ": " Alright, I’ve set the embed notification to ",
+        "embed_succ2": " .Now stop wasting my time!",
+        "streak_succ": " Alright, I’ve set the streak notification to ",
+        "streak_succ2": " .Now stop wasting my time!",
+        "setting": "Server settings updated successfully!"
     },
     "inv": {
         "ad_succ": "Done! Here’s your precious invite code: ",
@@ -40,5 +42,18 @@
         "total": "**Total players: **",
         "ref_s_ti": "Alright, alright, alright. I’ve set up a new game for you, happy now?",
         "ref_s_de": "Hold on a sec, I’m restarting it here. No need to get all worked up!"
+    },
+    "oneTwoThree":{
+        "win":"Congrats on your win! You’ve earned ",
+        "lose":"Tough luck, you lost and lost ",
+        "tie":"It’s a tie! No one loses anything.",
+        "not_enough":"You don’t have enough coins to place that bet!",
+        "title":"MiniGame | 1-2-3",
+        "description":"You bet **",
+        "choose":"**\n Choose your icon below and challenge the bot!",
+        "your_choice":"Your choice: ",
+        "bot_choice":"Bot's choice: ",
+        "not_your_game":"🚫 This isn’t your game!",
+        "new_balance":"Your current balance is: "
     }
 }
