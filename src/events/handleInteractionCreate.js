@@ -17,6 +17,7 @@ const { EmbedBuilder } = require('discord.js');
 const GiveawayHandlers = require('./giveAwayHandlers');
 const actionService = require('../services/actionService');
 const CommonController = require('../controllers/commonController');
+const TicketController = require('../controllers/ticketController');
 
 module.exports = async (interaction, client) => {
     if (!interaction.isChatInputCommand()) return;
@@ -26,6 +27,32 @@ module.exports = async (interaction, client) => {
     let lang = await LanguageController.getLang(interaction.guild.id);
 
     switch (commandName) {
+        case 'ticket': {
+            await interaction.deferReply({ ephemeral: true });
+            const cateType = interaction.options.getString('type') || 'general';
+            const result = await TicketController.createTicket(client, cateType, interaction.user.id, interaction.guild.id)
+            return interaction.editReply(result.message)
+        }
+        case 'ticket_tool': {
+            const result = TicketController.sendTool(interaction.guild.id)
+            return interaction.reply(result)
+        }
+        case 'ticket_status': {
+            try {
+                await interaction.deferReply({ ephemeral: true });
+                const result = await TicketController.getTicketStatus(client, interaction.guild.id);
+
+                if (result.success) {
+                    return interaction.editReply({ embeds: [result.embed] });
+                } else {
+                    return interaction.editReply(`❌ Lỗi: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Lỗi khi lấy ticket status:', error);
+                return interaction.editReply('❌ Có lỗi xảy ra khi lấy thông tin ticket status');
+            }
+        }
+
         case 'add-action': {
             await interaction.deferReply({ ephemeral: true });
 

@@ -246,6 +246,26 @@ const commands = [
         .setName('profile')
         .setDescription('Xem thông tin cá nhân')
         .toJSON(),
+    new SlashCommandBuilder()
+        .setName('ticket')
+        .setDescription('Create a support ticket')
+        .addStringOption(option =>
+            option.setName('type')
+                .setDescription('Type of ticket')
+                .setRequired(false)
+        )
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('ticket_tool')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageGuild)
+        .setDescription('Manage support tickets')
+        .toJSON(),
+    
+    new SlashCommandBuilder()
+        .setName('ticket_status')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageGuild)
+        .setDescription('Check the status of your ticket')
+        .toJSON(),
 ];
 
 const token = process.env.DISCORD_TOKEN;
