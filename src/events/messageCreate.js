@@ -28,6 +28,9 @@ const ServerController = require('../controllers/serverController');
 const TicketController = require('../controllers/ticketController');
 const MineController = require('../controllers/mineController');
 const CommonController = require('../controllers/commonController');
+const StreakController = require('../controllers/streakController');
+const InventoryController = require('../controllers/inventoryController');
+const CraftController = require('../controllers/craftController');
 // Thêm vào phần imports
 const handleMessageCreate = async (client, msg) => {
     // try {
@@ -91,7 +94,7 @@ const handleMessageCreate = async (client, msg) => {
     if (cmd === "mine") {
         let areaIndex = parseInt(args[0])
         if (!areaIndex)
-            areaIndex = 1
+            areaIndex = 0
         const result = await MineController.mine(msg.author.id, areaIndex)
         return msg.reply(result.message)
     }
@@ -103,6 +106,10 @@ const handleMessageCreate = async (client, msg) => {
 
     if (cmd === "top") {
         return await TopController.handleTopCommand(msg, args, false, client);
+    }
+    if (cmd === "streak") {
+        const data = await StreakController.getUserStreakInfo(client, msg.author.id, msg.guild.id, 1);
+        return msg.reply(data);
     }
     if (cmd === "status") {
         const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
@@ -129,9 +136,15 @@ const handleMessageCreate = async (client, msg) => {
     }
     if (cmd === "ticket") {
         const cateType = args[0] || 'general'
+
         const result = await TicketController.createTicket(client, cateType, msg.author.id, msg.guild.id)
         return msg.reply(result.message)
     }
+    if (cmd === "ticket_close_all") {
+        const result = await TicketController.closeAllTicket(client, msg.author.id, msg.guild.id)
+        return msg.reply(result.message)
+    }
+
     if (cmd === 'ticket_tool') {
         if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
             return msg.reply(`❌ ${t('e.permission', lang)}`);
@@ -570,6 +583,23 @@ const handleMessageCreate = async (client, msg) => {
     else if (cmd === "wallet" || cmd == "w" || cmd === "cash" || cmd === "money") {
         await UserController.handleBalance(msg);
         return;
+    }
+    else if (cmd === "inventory" || cmd === "inv") {
+        const userId = msg.author.id;
+        const result = await InventoryController.showInventoryEmbed(userId);
+        await msg.reply(result);
+        return;
+    }
+    else if (cmd === "craft") {
+        const itemRef = args[0];
+        let quantity = parseInt(args[1]);
+        if (!quantity || quantity < 0)
+            quantity = 1;
+        if (!itemRef)
+            return msg.reply("Don't have item ref")
+
+        const embed = await CraftController.craftItem(msg.author.id, itemRef, quantity)
+        msg.reply(embed)
     }
     else if (cmd === "give" || cmd === "g") {
         console.log("Processing give command");

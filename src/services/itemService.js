@@ -3,11 +3,15 @@ const { } = require('discord.js');
 const Item = require('../models/Item');
 
 class ItemService {
-    static async getAllItems(page = 1, limit = 5, sortBy = 'name', sortOrder = 'asc', rarityFilter = 'all', typeFilter = 'all') {
+    static async getAllItems(page = 1, limit = 5, sortBy = 'name', sortOrder = 'asc', rarityFilter = 'all', typeFilter = 'all', isBuyFilter = true) {
         // Xây dựng query lọc
         const filter = {};
         if (rarityFilter !== 'all') filter.rarity = rarityFilter;
         if (typeFilter !== 'all') filter.type = typeFilter;
+        // isBuy required is false. Only get items that can be bought or not have isBuy field
+        if (isBuyFilter) {
+            filter.$or = [{ isBuy: true }, { isBuy: { $exists: false } }];
+        }
 
         // Xây dựng options sắp xếp
         const sortOptions = {};

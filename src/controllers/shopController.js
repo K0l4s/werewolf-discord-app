@@ -15,7 +15,8 @@ class ShopController {
             sortBy,
             sortOrder,
             rarityFilter,
-            typeFilter
+            typeFilter,
+            true
         );
         const rarityIcons = {
             "Common": "❤️️",
@@ -56,20 +57,12 @@ class ShopController {
             description += `**Sắp xếp:** ${sortText[sortBy] || sortBy} (${sortOrder === 'asc' ? 'Tăng dần' : 'Giảm dần'})\n\n`;
 
             embed.setDescription(description);
-
-            // Thêm các items vào embed
-            // items.forEach((item) => {
-            //     embed.addFields({
-            //         name: `[${item.itemRef}]. ${item.icon} ${item.name}`,
-            //         value: `💰 Giá: ${wolfCoin(item.price)} | 📖 ${item.description || "Không có mô tả"} | 🎲 Độ hiếm: ${rarityIcons[item.rarity] || '❔'} ${item.rarity}`
-            //     });
-            // });
             items.forEach((item, index) => {
                 const itemNumber = (currentPage - 1) * limit + index + 1;
                 const rarityIcon = rarityIcons[item.rarity] || '❔';
 
                 embed.addFields({
-                    name: `[${itemNumber}] ${item.itemRef} | ${item.icon} ${item.name} | ${wolfCoin(item.price)} | ${rarityIcon} ${item.rarity}`,
+                    name: `[${itemNumber}] ${item.itemRef} | ${item.icon} ${item.name} | ${wolfCoin(item.price)} | ${rarityIcon} ${item.rarity} | ${item.isBuy?"🟢 Mua được":"🔴 Không mua được"}`,
                     value: `📖 ${item.description || "Không có mô tả"}`,
                     inline: false
                 });
@@ -90,19 +83,6 @@ class ShopController {
             .setLabel("Tiếp ➡️")
             .setStyle(ButtonStyle.Primary)
             .setDisabled(currentPage >= totalPages);
-        // ITEM_RARITY:{
-        //         C:'Common',
-        //         SM: 'Super Common',
-        //         R: 'Rare',
-        //         SR: 'Super Rare',
-        //         E: 'Epic',
-        //         SE: 'Super Epic',
-        //         L: 'Legendary',
-        //         SL: 'Super Legendary',
-        //         MY: 'Mythic',
-        //         SMY: 'Super Mythic'
-        //     },
-        // Tạo dropdown lọc theo độ hiếm
 
         const raritySelect = new StringSelectMenuBuilder()
             .setCustomId('shop_rarity_filter')
@@ -178,13 +158,6 @@ class ShopController {
                 }
             ]);
 
-        // Tạo nút reset bộ lọc
-        // const resetFilterButton = new ButtonBuilder()
-        //     .setCustomId('shop_reset_filters')
-        //     .setLabel('🔄 Reset Bộ Lọc')
-        //     .setStyle(ButtonStyle.Secondary)
-        //     .setDisabled(rarityFilter === 'all' && typeFilter === 'all' && sortBy === 'name' && sortOrder === 'asc');
-
         // Tạo các hàng component
         const paginationRow = new ActionRowBuilder()
             .addComponents(prevPageButton, nextPageButton);
@@ -198,8 +171,6 @@ class ShopController {
         const sortRow = new ActionRowBuilder()
             .addComponents(sortSelect);
 
-        // const resetRow = new ActionRowBuilder()
-        //     .addComponents(resetFilterButton);
 
         return {
             embeds: [embed],
@@ -254,7 +225,9 @@ class ShopController {
             if (!item) {
                 return `Don't find any item with ref: ${itemRef}!`;
             }
-
+            if(!item.isBuy){
+                return `Item ${item.icon} ${item.name} is not for sale!`;
+            }
             const userCoin = Number(user.coin);
             const totalItemsPrice = Number(item.price) * Number(quantity);
 

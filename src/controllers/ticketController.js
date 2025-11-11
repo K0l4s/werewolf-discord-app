@@ -1,4 +1,4 @@
-const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ChannelType } = require("discord.js");
+const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ChannelType, PermissionsBitField } = require("discord.js");
 const TicketService = require("../services/ticketService");
 const Notification = require("../models/Notification");
 const cron = require('node-cron');
@@ -579,7 +579,81 @@ class TicketController {
             };
         }
     }
+    static async closeAllTicket(client, hostId, guildId) {
+        try {
+            const tickets = await Ticket.find({ guildId, hostId, status: 'open' });
+            for (const ticket of tickets) {
+                await TicketController.deleteTicket(ticket.channelId, guildId, hostId, client);
+            }
+            const embed = new EmbedBuilder()
+                .setColor('Green')
+                .setTitle('Đã đóng tất cả ticket mở')
+                .setDescription(`🎟️ Đã đóng tất cả ticket mở của bạn!`)
+            return { status: "Success", message: {embeds: [embed] }};
+            // return { embeds: [embed] };
+        }
+        catch (e) {
+            return { status: "Error", message: e.message || "Lỗi khi đóng tất cả ticket"  };
+        }
+    }
+    static async sendCreateRoom(client, guildId, cateType = 'general') {
+        if (!guildId || !cateType)
+            throw new Error("Missing required field");
+        const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId);
+        if (!guild) throw new Error("❌ Không tìm thấy guild");
+        // tạo room tạo ticket
+        const config = await Notification.findOne({ guildId });
+        if (!config || !config.ticketCate || config.ticketCate.length === 0)
+            throw new Error("❌ Server chưa có thiết lập ticket");
+        const selectedCategory = config.ticketCate.find(
+            c => c.cateType.toLowerCase() === cateType.toLowerCase()
+        );
+        if (!selectedCategory)
+            throw new Error(`❌ Không tìm thấy category loại '${cateType}'`);
+        // tạo channel mới trong category
+        const channelName = `🎟️・tạo-ticket-${cateType}`;
+        let channel;
+        if (selectedCategory.createRoomId) {
+            channel = guild.channels.cache.get(selectedCategory.createRoomId);
+        }
 
+        // let channel = guild.channels.cache.find(c => c.name === channelName && c.parentId === selectedCategory.cateId);
+        if (!channel) {
+            channel = await guild.channels.create({
+                name: channelName,
+                type: ChannelType.GuildText,
+                parent: selectedCategory.cateId,
+                // everyone có quyền xem, không có quyền gửi tin nhắn
+                permissionOverwrites: [
+                    {
+                        id: guild.roles.everyone.id,
+                        deny: [PermissionsBitField.Flags.SendMessages],
+                    },
+                ],
+                reason: "Tạo kênh tạo ticket hỗ trợ"
+            });
+            // lưu lại createRoomId
+            selectedCategory.createRoomId = channel.id;
+            await Notification.updateOne(
+                { guildId, "ticketCate.cateType": cateType },
+                { $set: { "ticketCate.$.createRoomId": channel.id } }
+            );
+        }
+        const embed = new EmbedBuilder()
+            .setTitle(`🎟️ Tạo Ticket Hỗ Trợ cho kênh ${selectedCategory.cateName}`)
+            .setDescription(`Nhấn nút bên dưới để tạo ticket hỗ trợ cho kênh ${selectedCategory.cateName}!`)
+            .setColor('Blue');
+        const createButton = new ButtonBuilder()
+            .setCustomId(`ticket_create|${cateType}`)
+            .setLabel(`Tạo Ticket Hỗ Trợ cho kênh ${selectedCategory.cateName}`)
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji('🎟️');
+        const row = new ActionRowBuilder().addComponents(createButton);
+        // gửi embed vào ticket mới tạo
+        await channel.send({ embeds: [embed], components: [row] });
+        return channel.id;
+        // return { embeds: [embed], components: [row] };
+    }
     static async createCategory(client, guildId, cateName, cateType, userId, description, roleIds = [], userIds = [], requiredRoleIds = []) {
         try {
             if (!guildId || !cateType || !description) {
@@ -621,7 +695,7 @@ class TicketController {
             }
 
             await TicketService.saveNotification(notification);
-
+            await this.sendCreateRoom(client, guildId, cateType);
             return {
                 success: true,
                 message: `Đã tạo category thành công ${isBought ? 'Tốn 5 token cho lượt này' : ''}`,

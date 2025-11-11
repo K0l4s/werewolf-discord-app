@@ -18,6 +18,7 @@ const GiveawayHandlers = require('./giveAwayHandlers');
 const actionService = require('../services/actionService');
 const CommonController = require('../controllers/commonController');
 const TicketController = require('../controllers/ticketController');
+const StreakController = require('../controllers/streakController');
 
 module.exports = async (interaction, client) => {
     if (!interaction.isChatInputCommand()) return;
@@ -27,6 +28,11 @@ module.exports = async (interaction, client) => {
     let lang = await LanguageController.getLang(interaction.guild.id);
 
     switch (commandName) {
+        case 'streak': {
+            const data = await StreakController.getUserStreakInfo(client, interaction.user.id, interaction.guild.id, 1);
+            return interaction.reply(data);
+        }
+
         case 'ticket': {
             await interaction.deferReply({ ephemeral: true });
             const cateType = interaction.options.getString('type') || 'general';

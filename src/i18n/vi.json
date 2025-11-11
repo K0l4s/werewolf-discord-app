@@ -54,6 +54,7 @@
         "your_choice":"Lựa chọn của bạn: ",
         "bot_choice":"Lựa chọn của bot: ",
         "not_your_game":"🚫 Đây không phải trò chơi của bạn!",
-        "new_balance":"Số dư hiện tại của bạn là: "
+        "new_balance":"Số dư hiện tại của bạn là: ",
+        "result_title":"Trò chơi kéo búa bao - Kết quả"
     }
 }

@@ -23,7 +23,7 @@ const itemSchema = new mongoose.Schema(
         },
         type: {
             type: String,
-            enum: [ITEM_TYPE.NORMAL, ITEM_TYPE.PRESENT_BOX, ITEM_TYPE.PET_FOOD, ITEM_TYPE.MINERAL],
+            enum: [ITEM_TYPE.NORMAL, ITEM_TYPE.PRESENT_BOX, ITEM_TYPE.PET_FOOD, ITEM_TYPE.MINERAL,ITEM_TYPE.RING,ITEM_TYPE.WOODEN,ITEM_TYPE.TOOL,ITEM_TYPE.FRUIT],
             required: true,
             default: ITEM_TYPE.NORMAL
         },

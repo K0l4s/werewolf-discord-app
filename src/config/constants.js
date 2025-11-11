@@ -25,7 +25,11 @@ module.exports = {
         PRESENT_BOX: 'present',
         NORMAL: 'normal',
         PET_FOOD: 'pet_food',
-        MINERAL: 'mineral'
+        MINERAL: 'mineral',
+        TOOL: 'tool',
+        RING: 'ring',
+        WOODEN: 'wooden',
+        FRUIT: 'fruit'
     },
     ITEM_RARITY:{
         C:'Common',

@@ -74,8 +74,7 @@ class UserController {
         const spiritExpBar = this.createProgressBar(spiritExpPercentage, 15);
 
         // Xác định thông tin user từ cả message và interaction
-        // let userObject, username, avatarURL;
-
+        // let userObject, username, avatarURL
 
 
         // Tạo embed

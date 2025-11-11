@@ -54,6 +54,7 @@
         "your_choice":"Your choice: ",
         "bot_choice":"Bot's choice: ",
         "not_your_game":"🚫 This isn’t your game!",
-        "new_balance":"Your current balance is: "
+        "new_balance":"Your current balance is: ",
+        "result_title":"MiniGame | 1-2-3 - Result"
     }
 }

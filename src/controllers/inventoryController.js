@@ -1,0 +1,62 @@
+const { EmbedBuilder, ButtonBuilder, ActionRowBuilder } = require("discord.js");
+const Inventory = require("../models/Inventory");
+
+class InventoryController {
+    static async showInventoryEmbed(userId, page = 1) {
+        const inventoryItems = await Inventory.find({
+            userId,
+            quantity: { $gt: 0 }
+        })
+            .populate("item")
+            .skip((page - 1) * 10)
+            .limit(10);
+        const totalPages = Math.ceil(await Inventory.countDocuments({ userId, quantity: { $gt: 0 } }) / 10);
+        const totalItems = await Inventory.countDocuments({ userId, quantity: { $gt: 0 } });
+        const embed = new EmbedBuilder()
+            .setTitle("🎒 Kho đồ của bạn")
+            .setColor("#FFD700")
+            .setTimestamp()
+            .setFooter({ text: `Trang ${page} / ${totalPages} | Tổng số vật phẩm: ${totalItems}` });
+
+        if (!inventoryItems.length) {
+            embed.addFields({
+                name: "Không có vật phẩm",
+                value: "Bạn chưa sở hữu vật phẩm nào trong kho.",
+                inline: false
+            });
+            return { embeds: [embed] };
+        }
+
+        // Gom 2 item mỗi dòng
+        const rows = [];
+        for (let i = 0; i < inventoryItems.length; i += 2) {
+            const left = inventoryItems[i];
+            const right = inventoryItems[i + 1];
+
+            const leftStr = `[${left.item.itemRef}] ${left.item.icon} x${left.quantity}`;
+            const rightStr = right
+                ? `[${right.item.itemRef}] ${right.item.icon} x${right.quantity}`
+                : "";
+
+            rows.push({ name: "\u200B", value: `${leftStr}${rightStr ? " | " + rightStr : ""}`, inline: false });
+        }
+
+        embed.addFields(rows);
+        const prevButtonDisabled = page <= 1;
+        const nextButtonDisabled = inventoryItems.length < 10 ;
+        const prevButton = new ButtonBuilder()
+            .setCustomId(`inventory|${userId}|${page - 1}`)
+            .setLabel('Previous')
+            .setStyle('Primary')
+            .setDisabled(prevButtonDisabled);
+        const nextButton = new ButtonBuilder()
+            .setCustomId(`inventory|${userId}|${page + 1}`)
+            .setLabel('Next')
+            .setStyle('Primary')
+            .setDisabled(nextButtonDisabled);
+        const actionRow = new ActionRowBuilder().addComponents(prevButton, nextButton);
+        
+        return { embeds: [embed], components: [actionRow] };
+    }
+}
+module.exports = InventoryController;

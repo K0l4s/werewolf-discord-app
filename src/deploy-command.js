@@ -260,11 +260,16 @@ const commands = [
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageGuild)
         .setDescription('Manage support tickets')
         .toJSON(),
-    
+
     new SlashCommandBuilder()
         .setName('ticket_status')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageGuild)
         .setDescription('Check the status of your ticket')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('streak')
+        // .setDefaultMemberPermissions(PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageGuild)
+        .setDescription('Show your streak information')
         .toJSON(),
 ];
 

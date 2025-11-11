@@ -19,6 +19,8 @@ const { handleActionMessage } = require('./events/handleActionMessage');
 app.use(cookieParser());
 const path = require('path');
 const schedulePendingTicketDeletions = require('./jobs/schedulePendingTicketDeletions');
+const CraftItem = require('./models/CraftItem');
+const Item = require('./models/Item');
 // Discord client setup
 const client = new Client({
     intents: [
@@ -67,8 +69,17 @@ async function startServer() {
         app.listen(port, "0.0.0.0", () => {
             console.log(`🚀 Express server chạy trên http://0.0.0.0:${port}`);
         });
-
-
+        // const items = await Item.findById("6912205f0f1c2700331e154b");
+        // const com = await Item.findById("69122ab40f1c2700331e154f");
+        // CraftItem.create({
+        //     item: items,
+        //     components: [
+        //         { component: com, quantity: 15 }
+        //     ],
+        //     conditions: {
+        //         requiredLevel: 1
+        //     }
+        // })
         // Discord bot events
         client.once('ready', () => {
             console.log(`✅ Bot đã đăng nhập với tên: ${client.user.tag}`);
@@ -144,6 +155,7 @@ async function startServer() {
                 }
             }
         });
+
         function formatMessageError(message, error) {
             const user = message.author;
             const guild = message.guild;

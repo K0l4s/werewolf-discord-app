@@ -38,7 +38,8 @@ const notificationSchema = new mongoose.Schema({
             cateId: { type: String, required: true },
             roleIds: { type: [String], required: false, default: [] },
             userIds: { type: [String], required: false, default: [] },
-            requiredRoleIds: { type: [{ type: String }], required: false, default: [] }
+            requiredRoleIds: { type: [{ type: String }], required: false, default: [] },
+            createRoomId: { type: String, required: false }
         }]
         , required: false,
     },

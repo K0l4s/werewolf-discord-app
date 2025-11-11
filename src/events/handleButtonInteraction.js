@@ -7,6 +7,8 @@ const TicketController = require("../controllers/ticketController");
 const GameService = require("../services/gameService");
 const toggleComponents = require("../utils/toggleComponents");
 const UserController = require("../controllers/userController");
+const StreakController = require("../controllers/streakController");
+const InventoryController = require("../controllers/inventoryController");
 
 module.exports = async (interaction, client) => {
 
@@ -14,8 +16,28 @@ module.exports = async (interaction, client) => {
     const [actionType, refId] = customId.split('|');
     const args = customId.split('|')
     let lang = await LanguageController.getLang(message.guild.id)
-    if (actionType === 'ticket_setup') {
-
+    if (actionType === 'streak') {
+        const userId = args[1];
+        const guildId = args[2];
+        const page = parseInt(args[3]) || 1;
+        const data = await StreakController.getUserStreakInfo(client, userId, guildId, page);
+        return interaction.update(data);
+    }
+    else if (actionType === 'inventory') {
+        const userId = args[1];
+        const page = parseInt(args[2]) || 1;
+        const data = await InventoryController.showInventoryEmbed(userId, page);
+        return interaction.update(data);
+    }
+    else if(actionType === 'ticket_create'){
+        interaction.deferReply({ ephemeral: true })
+        const cateType = args[1];
+        await TicketController.createTicket(client,cateType,interaction.user.id,interaction.guild.id);
+        await interaction.editReply({content: "✅ Ticket created successfully!",ephemeral: true});
+        // xóa tin nhắn
+        setI
+    }
+    else if (actionType === 'ticket_setup') {
         const act = args[1];
         if (!act) return interaction.editReply({ content: "❌ Not found action" });
 
@@ -105,7 +127,7 @@ module.exports = async (interaction, client) => {
         await interaction.deferReply({ ephemeral: true });
         if (act === 'confirm') {
             const result = await UserController.confirmTransferFunds(interaction.guild.id, fromUserId, toUserId, amount);
-            if(result.success){
+            if (result.success) {
                 // xóa button của message gốc
                 try {
                     await interaction.message.edit({ components: [] });
@@ -120,7 +142,7 @@ module.exports = async (interaction, client) => {
         }
         else if (act === 'cancel') {
             const result = await UserController.cancelTransferFunds(interaction.guild.id, fromUserId, toUserId, amount);
-            if(result.success){
+            if (result.success) {
                 // xóa button của message gốc
                 try {
                     await interaction.message.edit({ components: [] });
@@ -221,7 +243,7 @@ module.exports = async (interaction, client) => {
         return;
     }
     else if (actionType === "onetwothree") {
-        return await handle123Result(interaction,lang)
+        return await handle123Result(interaction, lang)
     }
     // } catch (err) {
     //     console.error("❌ Lỗi handleButtonInteraction:", err);

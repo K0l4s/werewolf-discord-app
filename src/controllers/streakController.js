@@ -1,7 +1,8 @@
-const { ChannelType, EmbedBuilder } = require("discord.js");
+const { ChannelType, EmbedBuilder, ButtonBuilder, ActionRowBuilder } = require("discord.js");
 const StreakService = require("../services/StreakService");
 const LanguageController = require("./languageController");
 const Notification = require("../models/Notification");
+const userStreak = require("../models/userStreak");
 
 class StreakController {
     static async getNotificationSettings(guildId) {
@@ -10,8 +11,85 @@ class StreakController {
             isStreak: setting ? setting.isStreakEnabled : true // Default to true if not set
         };
     };
-    static async streakAnoucement(client, oldState, newState) {
+    static async getUserStreakInfo(client, userId, guildId, page = 1) {
+        try {
+            const perPage = 2;
+            const skip = (page - 1) * perPage;
 
+            // Lấy dữ liệu user streak
+            const streaks = await userStreak.find({ userId })
+                .sort({ currentStreak: -1 })
+                .skip(skip)
+                .limit(perPage);
+
+            const total = await userStreak.countDocuments({ userId });
+            const totalPages = Math.ceil(total / perPage);
+
+            if (!streaks.length) {
+                return new EmbedBuilder()
+                    .setColor("Red")
+                    .setTitle("📉 No Streak Data Found")
+                    .setDescription("Bạn chưa có dữ liệu streak nào được ghi nhận.")
+                    .setTimestamp();
+            }
+
+            // Format từng streak entry
+            const fields = streaks.map(s => {
+                const guild = client.guilds.cache.get(s.guildId);
+                // console.log(guild)
+                const guildName = guild ? guild.name : "Unknown Guild";
+                return {
+                    name: `<a:moneyfly:1437401769503232021> **${guildName}**`,
+                    value: [
+                        `<a:fire2:1433091789044318332> **Current Streak:** ${s.currentStreak} ngày`,
+                        `<a:hammer:1437444063635706037> **Longest Streak:** ${s.longestStreak} ngày`,
+                        `<a:book3:1433020262990745600> **Last Join:** ${s.lastJoinDate ? `<t:${Math.floor(s.lastJoinDate.getTime() / 1000)}:R>` : "Chưa có"}`,
+                        `<a:purplecrystalheart:1433020260398665780> **Start Date:** ${s.streakStartDate ? `<t:${Math.floor(s.streakStartDate.getTime() / 1000)}:d>` : "N/A"}`,
+                        `<a:starr:1437402008465440788> **Recoveries Used:** ${s.recoveryCount}`,
+                        `<a:alarm:1433097857740574840> **Total Joined:** ${s.totalDaysJoined} ngày`
+                    ].join("\n"),
+                    // inline: false
+                };
+            });
+            const prevButtonDisabled = page <= 1;
+            const nextButtonDisabled = page >= totalPages;
+            const prevButton = new ButtonBuilder()
+                .setCustomId(`streak|${userId}|${guildId}|${page - 1}`)
+                .setLabel('Previous')
+                .setStyle('Primary')
+                .setDisabled(prevButtonDisabled);
+            const nextButton = new ButtonBuilder()
+                .setCustomId(`streak|${userId}|${guildId}|${page + 1}`)
+                .setLabel('Next')
+                .setStyle('Primary')
+                .setDisabled(nextButtonDisabled);
+            const actionRow = new ActionRowBuilder().addComponents(prevButton, nextButton);
+            const user = await client.users.fetch(userId);
+            const embed = new EmbedBuilder()
+                .setColor("Aqua")
+                .setTitle(`<a:fire2:1433091789044318332> Streak Profile of ${user.globalName || user.username}`)
+                .setDescription(`Trang **${page}/${totalPages}**`)
+                .addFields(fields)
+                .setThumbnail(client.user.displayAvatarURL())
+                .setFooter({
+                    text: `Trang ${page}/${totalPages} • Tổng: ${total} record`,
+                    iconURL: client.user.displayAvatarURL()
+                })
+                .setTimestamp();
+
+            return { embeds: [embed], components: [actionRow] };
+
+        } catch (err) {
+            console.error("getUserStreakInfo error:", err);
+            const embed = new EmbedBuilder()
+                .setColor("Red")
+                .setTitle("<a:deny:1433805273595904070> Error Loading Streak Info")
+                .setDescription("Đã có lỗi khi lấy dữ liệu streak của bạn.")
+                .setTimestamp();
+            return { embeds: [embed] };
+        }
+    }
+    static async streakAnoucement(client, oldState, newState) {
         const settings = await this.getNotificationSettings(newState.guild.id);
         if (!settings.isStreak) return;
         let channel = newState.channel || oldState.channel;
