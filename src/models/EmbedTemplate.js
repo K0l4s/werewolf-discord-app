@@ -17,7 +17,7 @@
 //     fields?: Field[];
 // }
 const mongoose = require('mongoose');
-const embedDataSchema = new mongoose.Schema(({
+const embedTemplateSchema = new mongoose.Schema(({
     // author: { type: String, required: false },
     title: { type: String, required: false },
     description: { type: String, required: false },
@@ -38,4 +38,4 @@ const embedDataSchema = new mongoose.Schema(({
         required: false
     }
 }));
-module.exports = mongoose.model('EmbedData', embedDataSchema);
+module.exports = mongoose.model('EmbedTemplate', embedTemplateSchema);

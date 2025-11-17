@@ -80,7 +80,17 @@ class GiveawayController {
                     .setCustomId(`ga_join_${giveaway._id}`)
                     .setEmoji('<a:rocket:1433022000112074862>')
                     .setLabel('Tham gia')
-                    .setStyle(ButtonStyle.Primary)
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
+                    .setCustomId(`ga_list_${giveaway._id}`)
+                    .setLabel('Người Tham Gia')
+                    .setEmoji('<a:tools:1438545912325476533>')
+                    .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
+                    .setCustomId(`ga_remove_${giveaway._id}`)
+                    .setLabel('Xóa người')
+                    .setEmoji('<a:hammer:1437444063635706037>')
+                    .setStyle(ButtonStyle.Danger)
             );
 
             if (isAdmin) {

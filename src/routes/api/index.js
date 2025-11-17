@@ -11,6 +11,7 @@ const momoRoutes = require('./momo')
 const actionRoutes = require('./action')
 // const giveawayRoutes = require('./giveaway'); // Nếu có route cho GA
 const ticketRoutes = require('./ticket')
+const alertRoutes = require('./alert')
 // Group API routes
 // router.use('/auth', authRoutes);
 router.use('/bot', botRoutes);
@@ -23,6 +24,7 @@ router.use('/server', guildSettingRoutes)
 router.use('/momo',momoRoutes)
 router.use('/action',actionRoutes)
 router.use('/ticket',ticketRoutes)
+router.use('/alert',alertRoutes)
 // router.use('/giveaway', giveawayRoutes); // Nếu có route cho GA
 
 // Nếu có các route khác, thêm vào đây

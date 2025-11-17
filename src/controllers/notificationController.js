@@ -6,9 +6,8 @@ class NotificationController {
         if (oldState.channelId === newState.channelId) return;
 
         const member = newState.member;
-        const user = member.user;
 
-        // Helper to check notification settings
+        const user = member.user;
         const getNotificationSettings = async (guildId) => {
             const setting = await Notification.findOne({ guildId });
             return {
@@ -74,12 +73,20 @@ class NotificationController {
 
         // Create beautiful embed message
         const createEmbed = (title, description, color, emoji, channel = null) => {
-            const userStatus = user.presence ? (user.presence.status || 'offline') : 'offline';
+            console.log(user)
+            // const userStatus = user.presence ? (user.presence.status || 'offline') : 'offline';
+            const userStatus = member.presence?.status || 'offline';
+
             const status = statusEmoji[userStatus] || '⚫';
+            const activities = member.presence?.activities.filter(a => a.type !== 'CUSTOM') || [];
+
             const embed = new EmbedBuilder()
                 .setColor(color)
                 .setTitle(`${emoji} ${title}`)
                 .setDescription(`${status} ${description}`)
+                // .addFields(
+                //     { name: 'Activity', value: activities, inline: true },
+                // )
                 .setAuthor({
                     name: user.username,
                     iconURL: user.displayAvatarURL({ dynamic: true }),
@@ -90,7 +97,13 @@ class NotificationController {
                     text: `Voice Notifications • ${client.user.username}`,
                     iconURL: client.user.displayAvatarURL()
                 });
+            const activityText = activities.length
+                ? activities.map(a => `🎮 ${a.name}${a.details ? ` - ${a.details}` : ''}`).join('\n')
+                : 'Không có hoạt động';
 
+            embed.addFields(
+                { name: 'Activity', value: activityText, inline: true }
+            );
             // Add member count if channel is provided and not locked
             if (channel && channel.members && !isChannelLocked(channel)) {
                 const memberCount = channel.members.size;
@@ -111,7 +124,9 @@ class NotificationController {
 
         // Create simple text message
         const createTextMessage = (action, channel, isMove = false, oldChannel = null) => {
-            const userStatus = user.presence ? (user.presence.status || 'offline') : 'offline';
+            // const userStatus = user.presence ? (user.presence.status || 'offline') : 'offline';
+            const userStatus = member.presence?.status || 'offline';
+
             const status = statusEmoji[userStatus] || '⚫';
 
             let message = '';

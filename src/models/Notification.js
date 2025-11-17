@@ -11,8 +11,6 @@ const notificationSchema = new mongoose.Schema({
                 type: String,
                 enum: ["welcome", "goodbye", "booster"]
             },
-            // title: String,
-            // description: String,
             message: { type: String, required: false },
             isEmbed: { type: Boolean, default: false },
             embed: { type: mongoose.Schema.Types.ObjectId, ref: "EmbedTemplate", required: false },

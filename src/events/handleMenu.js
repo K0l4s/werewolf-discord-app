@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionsBitField } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionsBitField, ButtonBuilder, ButtonStyle } = require("discord.js");
 const Notification = require("../models/Notification");
 const SpiritRingController = require("../controllers/DauLaDaiLuc/spiritRingController");
 const ShopController = require("../controllers/shopController");
@@ -14,6 +14,61 @@ class handleMenu {
         // Xử lý Modal Submits
         if (interaction.isModalSubmit()) {
             // Modal setup notification
+            if (interaction.customId.startsWith("ga_remove_modal_")) {
+                try {
+                    await interaction.deferReply({ ephemeral: true });
+
+                    // Lấy giveawayId từ customId
+                    const giveawayId = interaction.customId.split("_")[3];
+
+                    // Lấy user input
+                    let input = interaction.fields.getTextInputValue("remove_user_id");
+
+                    // Nếu người dùng nhập dạng mention <@123456>
+                    const mentionRegex = /<@!?(\d+)>/;
+                    const match = input.match(mentionRegex);
+                    const userId = match ? match[1] : input; // nếu không phải mention thì lấy thẳng UserID
+
+                    const ga = await Giveaway.findById(giveawayId);
+                    if (!ga) {
+                        return interaction.editReply("❌ Giveaway không tồn tại.");
+                    }
+
+                    const beforeCount = ga.participants.length;
+
+                    // Lọc bỏ user
+                    ga.participants = ga.participants.filter(p => p.userId !== userId);
+
+                    const afterCount = ga.participants.length;
+
+                    // Nếu không thay đổi nghĩa là không tìm thấy user
+                    if (beforeCount === afterCount) {
+
+                        return interaction.editReply(`❌ Không tìm thấy người có ID: **${userId}** trong danh sách.`);
+                    }
+
+                    await ga.save();
+
+                    const embed = new EmbedBuilder()
+                        .setTitle("🗑️ Đã xoá người tham gia")
+                        .setDescription(`Đã xoá **<@${userId}>** khỏi giveaway.`)
+                        .setColor("Red");
+                    // 🔄 Cập nhật message gốc (nút & embed)
+                    const updatedEmbed = GiveawayController.createGiveawayEmbed(ga);
+                    const updatedButtons = GiveawayController.createGiveawayButtons(ga, true);
+
+                    await interaction.message.edit({
+                        embeds: [updatedEmbed],
+                        components: [updatedButtons]
+                    });
+                    return interaction.editReply({ embeds: [embed] });
+
+                } catch (err) {
+                    console.error(err);
+                    return interaction.editReply("❌ Có lỗi xảy ra khi xoá người tham gia.");
+                }
+            }
+
             if (interaction.customId.startsWith('ticket_custom_modal')) {
                 console.log("All")
                 const name = interaction.fields.getTextInputValue('custom_name');
@@ -354,6 +409,13 @@ class handleMenu {
                 await this.handleEndGiveaway(interaction);
             } else if (customId.startsWith('ga_claim_')) {
                 await this.handleClaimReward(interaction);
+            } else if (customId.startsWith('ga_list_')) {
+                await this.handleListAttention(interaction);
+            } else if (customId.startsWith('ga_remove_')) {
+                await this.handleRemoveUser(interaction);
+            } else if (interaction.customId.startsWith("ga_prev") ||
+                interaction.customId.startsWith("ga_next")) {
+                return GiveawayController.handlePageButton(interaction);
             }
         } catch (error) {
             console.error('Lỗi xử lý button giveaway:', error);
@@ -363,6 +425,124 @@ class handleMenu {
             });
         }
     }
+    static async handleRemoveUser(interaction) {
+        const giveawayId = interaction.customId.split("_")[2];
+        const giveaway = await Giveaway.findById(giveawayId)
+        const isHost = giveaway.hostId === interaction.user.id;
+        const isAdmin = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
+
+        if (!isHost && !isAdmin) {
+            return await interaction.reply({
+                embeds: [GiveawayController.createErrorEmbed('Bạn không có quyền thực hiện chức năng này!')],
+                ephemeral: true
+            });
+        }
+        const modal = new ModalBuilder()
+            .setCustomId(`ga_remove_modal_${giveawayId}`)
+            .setTitle("Xoá người tham gia");
+
+        const userInput = new TextInputBuilder()
+            .setCustomId("remove_user_id")
+            .setLabel("Nhập User ID hoặc Mention")
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(userInput)
+        );
+
+        return interaction.showModal(modal);
+    }
+    static generateParticipantsPage(ga, page, perPage = 10) {
+        const participants = ga.participants || [];
+        const total = participants.length;
+
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        const start = (page - 1) * perPage;
+        const end = start + perPage;
+
+        const sliced = participants.slice(start, end);
+
+        let list = sliced.map((p, i) => {
+            const index = start + i + 1;
+            const time = `<t:${Math.floor(new Date(p.joinedAt) / 1000)}:R>`;
+            const req = p.hasMetRequirement ? "✔️" : "❌";
+
+            return `**${index}.** <@${p.userId}> — ${time} — Yêu cầu: ${req}`;
+        }).join("\n");
+
+        if (!list) list = "❌ Không có ai tham gia.";
+
+        const embed = new EmbedBuilder()
+            .setTitle("<a:yellowsparklies:1437402422371815477> Danh sách người tham dự")
+            .setDescription(`**Tổng số:** ${total} người\n\n${list}`)
+            .setFooter({ text: `Trang ${page} / ${totalPages}` })
+            .setColor("#FFD700");
+
+        return { embed, totalPages };
+    }
+    static getButtons(page, totalPages, giveawayId) {
+        return new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`ga_prev_${giveawayId}_${page}`)
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel("⬅️ Trước")
+                .setDisabled(page <= 1),
+
+            new ButtonBuilder()
+                .setCustomId(`ga_next_${giveawayId}_${page}`)
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel("➡️ Sau")
+                .setDisabled(page >= totalPages)
+        );
+    }
+    static async handlePageButton(interaction) {
+        try {
+            // ga_prev_<id>_<page> OR ga_next_<id>_<page>
+            const [type, gaId, currentPage] = interaction.customId.split("_");
+            let page = parseInt(currentPage);
+
+            const ga = await Giveaway.findById(gaId);
+            if (!ga) return interaction.reply({ content: "❌ Giveaway không tồn tại.", ephemeral: true });
+
+            if (type === "ga_prev") page--;
+            if (type === "ga_next") page++;
+
+            const { embed, totalPages } = generateParticipantsPage(ga, page);
+
+            await interaction.update({
+                embeds: [embed],
+                components: [getButtons(page, totalPages, gaId)]
+            });
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    static async handleListAttention(interaction) {
+        try {
+            const giveawayId = interaction.customId.split("_")[2];
+
+            await interaction.deferReply({ ephemeral: true });
+
+            const ga = await Giveaway.findById(giveawayId);
+            if (!ga) return interaction.editReply("❌ Giveaway không tồn tại.");
+
+            const page = 1;
+            const { embed, totalPages } = this.generateParticipantsPage(ga, page);
+
+            await interaction.editReply({
+                embeds: [embed],
+                components: [this.getButtons(page, totalPages, giveawayId)]
+            });
+
+        } catch (e) {
+            console.error(e);
+            await interaction.editReply("❌ Lỗi khi hiển thị danh sách.");
+        }
+    }
+
 
     static async handleApproveGiveaway(interaction) {
         const giveawayId = interaction.customId.split('_')[2];
