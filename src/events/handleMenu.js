@@ -714,7 +714,12 @@ class handleMenu {
 
 
             const updatedEmbed = GiveawayController.createGiveawayEmbed(giveaway);
-            await interaction.message.edit({ embeds: [updatedEmbed] });
+            const updatedButtons = GiveawayController.createGiveawayButtons(giveaway, true);
+
+            await interaction.message.edit({
+                embeds: [updatedEmbed],
+                components: [updatedButtons]
+            });
             // Nếu có quest, hướng dẫn user
             if (giveaway.requirementMessage) {
                 const config = await GiveawayService.getGuildConfig(interaction.guild.id);
@@ -727,6 +732,8 @@ class handleMenu {
             await interaction.editReply({
                 embeds: [GiveawayController.createSuccessEmbed(replyMessage)]
             });
+            // const updatedEmbed = GiveawayController.createGiveawayEmbed(ga);
+
         } else {
             await interaction.editReply({
                 embeds: [GiveawayController.createErrorEmbed(result.error)]

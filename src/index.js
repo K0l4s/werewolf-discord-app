@@ -21,6 +21,7 @@ const path = require('path');
 const schedulePendingTicketDeletions = require('./jobs/schedulePendingTicketDeletions');
 const CraftItem = require('./models/CraftItem');
 const Item = require('./models/Item');
+const ScheduleGA = require('./jobs/scheduleDeleteGA');
 // Discord client setup
 const client = new Client({
     intents: [
@@ -65,7 +66,7 @@ async function startServer() {
         connectDB();
         cleanupTempImages();
         cleanDailyGiveaway();
-        cleanGA()
+        cleanGA();
         // Start Express server
         app.listen(port, "0.0.0.0", () => {
             console.log(`🚀 Express server chạy trên http://0.0.0.0:${port}`);
@@ -82,7 +83,7 @@ async function startServer() {
         //     }
         // })
         // Discord bot events
-        client.once('ready', () => {
+        client.once('ready', async() => {
             console.log(`✅ Bot đã đăng nhập với tên: ${client.user.tag}`);
             console.log(`📊 Bot đang ở ${client.guilds.cache.size} server`);
             client.user.setPresence({
@@ -94,6 +95,8 @@ async function startServer() {
                     }
                 ]
             });
+            await ScheduleGA.scheduleAutoDelete(client)
+
         });
         setupDailyStreakCheck();
         schedulePendingTicketDeletions(client)
@@ -111,7 +114,6 @@ async function startServer() {
             console.log("remove");
             await SettingController.sendNotification(member.guild.id, 'goodbye', member, client);
         });
-
         // Sự kiện boost server
         client.on('guildMemberUpdate', async (oldMember, newMember) => {
             if (!oldMember.premiumSince && newMember.premiumSince) {
@@ -201,7 +203,7 @@ async function startServer() {
                 } else if (interaction.isStringSelectMenu() || interaction.isSelectMenu()) {
                     return await require('./events/handleInteractionSelectCreate')(interaction);
                 } else if (interaction.isButton()) {
-                    return await require('./events/handleButtonInteraction')(interaction,client);
+                    return await require('./events/handleButtonInteraction')(interaction, client);
                 }
             } catch (error) {
                 console.error("⚠️ Lỗi interactionCreate:", error);
@@ -292,7 +294,7 @@ async function startServer() {
         }
         // Xử lý interactions
         client.on('interactionCreate', async (interaction) => {
-            await handleMenu.handleMenuInteraction(interaction,client);
+            await handleMenu.handleMenuInteraction(interaction, client);
         });
         client.on(Events.GuildCreate, async (guild) => {
             try {
