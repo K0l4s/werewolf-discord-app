@@ -30,7 +30,7 @@ class GiveawayController {
             rewardText += `🎁 **Items** (chi tiết trong DB)\n`;
         }
         if (giveaway.rewards.otherItem) {
-            rewardText += `<a:holodia:1433016936022802453> **${giveaway.rewards.otherItem}**\n`;
+            rewardText += `<a:holodia:1433016936022802453> **${giveaway.rewards.otherValue? giveaway.rewards.otherValue : 0} ${giveaway.rewards.otherItem}**\n`;
         }
 
         if (rewardText) {

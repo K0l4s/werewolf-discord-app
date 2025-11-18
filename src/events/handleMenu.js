@@ -219,6 +219,24 @@ class handleMenu {
     }
 
     // ==================== GIVEAWAY HANDLERS ====================
+    static parseDuration(input) {
+        const str = input.toLowerCase().replace(/\s+/g, "");
+        const regex = /(\d+)(d|h|m)/g;
+
+        let totalSeconds = 0;
+        let match;
+
+        while ((match = regex.exec(str)) !== null) {
+            const value = parseInt(match[1]);
+            const unit = match[2];
+
+            if (unit === "d") totalSeconds += value * 24 * 3600;
+            else if (unit === "h") totalSeconds += value * 3600;
+            else if (unit === "m") totalSeconds += value * 60;
+        }
+
+        return totalSeconds;
+    }
 
     static async handleCreateGiveawayFromModal(interaction) {
         await interaction.deferReply({ ephemeral: true });
@@ -227,28 +245,34 @@ class handleMenu {
             const title = interaction.fields.getTextInputValue('giveaway_title');
             const description = interaction.fields.getTextInputValue('giveaway_description') || '';
             const winnerCount = parseInt(interaction.fields.getTextInputValue('giveaway_winners'));
-            const durationHours = parseInt(interaction.fields.getTextInputValue('giveaway_duration'));
+            const durationInput = (interaction.fields.getTextInputValue('giveaway_duration'));
             const rewardsInput = interaction.fields.getTextInputValue('giveaway_rewards');
 
             const userId = interaction.user.id;
             const guildId = interaction.guildId;
 
             // Validate dữ liệu
-            if (!title || !winnerCount || !durationHours || !rewardsInput) {
+            if (!title || !winnerCount || !durationInput || !rewardsInput) {
                 return await interaction.editReply({
                     embeds: [GiveawayController.createErrorEmbed('❌ Thiếu thông tin bắt buộc!')]
                 });
             }
-
+            const durationSeconds = this.parseDuration(durationInput);
             if (winnerCount < 1 || winnerCount > 50) {
                 return await interaction.editReply({
                     embeds: [GiveawayController.createErrorEmbed('❌ Số người thắng phải từ 1-50!')]
                 });
             }
-
-            if (durationHours < 1 || durationHours > 720) {
+            if (durationSeconds < 60) {
                 return await interaction.editReply({
-                    embeds: [GiveawayController.createErrorEmbed('❌ Thời gian phải từ 1-720 giờ!')]
+                    embeds: [GiveawayController.createErrorEmbed('❌ Thời gian tối thiểu là 1 phút!')]
+                });
+            }
+
+            // max 30 days = 720h
+            if (durationSeconds > 720 * 3600) {
+                return await interaction.editReply({
+                    embeds: [GiveawayController.createErrorEmbed('❌ Thời gian tối đa là 720 giờ (30 ngày)!')]
                 });
             }
 
@@ -297,7 +321,7 @@ class handleMenu {
                 requirementMessage: '',
                 type: giveawayType,
                 rewards,
-                duration: durationHours * 3600,
+                duration: durationSeconds,
                 winnerCount,
                 requirements: {
                     minLevel: 0,
@@ -498,27 +522,30 @@ class handleMenu {
     }
     static async handlePageButton(interaction) {
         try {
-            // ga_prev_<id>_<page> OR ga_next_<id>_<page>
-            const [type, gaId, currentPage] = interaction.customId.split("_");
+            // ga_prev_<id>_<page>
+            const [ga, action, gaId, currentPage] = interaction.customId.split("_");
             let page = parseInt(currentPage);
 
-            const ga = await Giveaway.findById(gaId);
-            if (!ga) return interaction.reply({ content: "❌ Giveaway không tồn tại.", ephemeral: true });
+            const gaDoc = await Giveaway.findById(gaId);
+            if (!gaDoc) {
+                return interaction.reply({ content: "❌ Giveaway không tồn tại.", ephemeral: true });
+            }
 
-            if (type === "ga_prev") page--;
-            if (type === "ga_next") page++;
+            if (action === "prev") page--;
+            if (action === "next") page++;
 
-            const { embed, totalPages } = generateParticipantsPage(ga, page);
+            const { embed, totalPages } = this.generateParticipantsPage(gaDoc, page);
 
             await interaction.update({
                 embeds: [embed],
-                components: [getButtons(page, totalPages, gaId)]
+                components: [this.getButtons(page, totalPages, gaId)]
             });
 
         } catch (err) {
             console.error(err);
         }
     }
+
 
     static async handleListAttention(interaction) {
         try {

@@ -255,11 +255,11 @@ class GiveawayHandlers {
         // Thời gian (giờ)
         const durationInput = new TextInputBuilder()
             .setCustomId('giveaway_duration')
-            .setLabel('Thời gian (giờ)')
+            .setLabel('Thời gian')
             .setStyle(TextInputStyle.Short)
-            .setPlaceholder('VD: 24 (24 giờ)')
+            .setPlaceholder('Nhập theo định dạng: m: Phút, h: Giờ, d: Ngày \n VD: 2h 30m (Tức 2 giờ 30 phút)')
             .setRequired(true)
-            .setMaxLength(3);
+            .setMaxLength(50);
 
         // Phần thưởng
         const rewardsInput = new TextInputBuilder()
