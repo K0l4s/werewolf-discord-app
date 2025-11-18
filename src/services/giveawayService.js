@@ -1,6 +1,7 @@
 const Giveaway = require('../models/Giveaway');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const UserService = require('./userService');
 const GA_STATUS = require('../models/Giveaway').GA_STATUS;
 
 class GiveawayService {
@@ -96,10 +97,11 @@ class GiveawayService {
       }
 
       // Kiểm tra requirements
-      const user = await User.findOne({ userId });
-      if (!user) {
-        return { success: false, error: 'Không tìm thấy thông tin user' };
-      }
+      // const user = await User.findOne({ userId });
+      const user = await UserService.findUserById(userId)
+      // if (!user) {
+      //   return { success: false, error: 'Không tìm thấy thông tin user' };
+      // }
 
       if (user.lvl < giveaway.requirements.minLevel) {
         return {

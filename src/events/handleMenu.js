@@ -415,7 +415,7 @@ class handleMenu {
                 await this.handleRemoveUser(interaction);
             } else if (interaction.customId.startsWith("ga_prev") ||
                 interaction.customId.startsWith("ga_next")) {
-                return GiveawayController.handlePageButton(interaction);
+                return this.handlePageButton(interaction);
             }
         } catch (error) {
             console.error('Lỗi xử lý button giveaway:', error);
