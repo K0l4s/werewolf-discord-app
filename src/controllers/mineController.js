@@ -2,7 +2,8 @@ const { EmbedBuilder } = require("discord.js");
 const { ITEM_TYPE, ITEM_RARITY } = require("../config/constants");
 const Inventory = require("../models/Inventory");
 const Item = require("../models/Item");
-const UserService = require("../services/userService")
+const UserService = require("../services/userService");
+const ToolUse = require("../models/ToolUse");
 const MINE_COOLDOWN = 5 * 60 * 1000; // 5 phút
 const mineAreas = [
     {
@@ -85,11 +86,17 @@ class MineController {
         try {
             // const user = await User.findOne({ userId });
             const user = await UserService.findUserById(userId)
+
             if (!user) throw new Error("Không tìm thấy người dùng.");
 
             const area = mineAreas[areaIndex];
             if (!area) throw new Error("Khu đào không hợp lệ.");
-
+            const toolUses = await ToolUse.find({ userId: userId }).populate("item");
+            console.log(toolUses)
+            const item = toolUses.find(t => t.item?.type === ITEM_TYPE.PICKACE);
+            if (!item || item.remainingUse <= 0)
+                throw new Error("You must use pickage first!")
+            console.log(item)
             // check level mở khóa
             if (user.lvl < area.requiredLevel) {
                 throw new Error(`<a:deny:1433805273595904070> Cần level ${area.requiredLevel} để vào ${area.name}`);
@@ -118,6 +125,17 @@ class MineController {
             let inv = await Inventory.findOne({ userId, item: mineral._id });
             if (inv) inv.quantity += 1;
             else inv = new Inventory({ userId, item: mineral._id, quantity: 1 });
+            if (item.remainingUse === 1) {
+                // Nếu chỉ còn 1 thì xóa luôn document
+                await ToolUse.findByIdAndDelete(item._id);
+            } else {
+                // Ngược lại giảm số lượng
+                await ToolUse.findByIdAndUpdate(
+                    item._id,
+                    { $inc: { remainingUse: -1 } }
+                )
+            }
+
             await inv.save();
 
             // cập nhật cooldown
@@ -130,6 +148,7 @@ class MineController {
                     `> Độ hiếm: **${mineral.rarity.toUpperCase()}**\n` +
                     `> Khu vực: **${area.name}**`
                 )
+                .addFields({ name: `Độ bền vật phẩm:`, value: `${item.item.icon} ${item.item.name} còn ${item.remainingUse - 1 || 0} lượt sử dụng` })
                 .setColor(
                     mineral.rarity === "common" ? 0xaaaaaa :
                         mineral.rarity === "uncommon" ? 0x00ff99 :
@@ -141,7 +160,7 @@ class MineController {
                 .setThumbnail(mineral.iconURL || "https://cdn-icons-png.flaticon.com/512/854/854878.png")
                 .setFooter({
                     text: `${user.globalName} | Cấp độ: ${user.lvl}`,
-                    iconURL: user.avatar || undefined
+                    // iconURL: user.avatar || undefined
                 })
                 .setTimestamp();
             return {

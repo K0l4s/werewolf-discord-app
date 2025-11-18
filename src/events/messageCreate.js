@@ -31,6 +31,7 @@ const CommonController = require('../controllers/commonController');
 const StreakController = require('../controllers/streakController');
 const InventoryController = require('../controllers/inventoryController');
 const CraftController = require('../controllers/craftController');
+const ToolUseController = require('../controllers/toolUseController');
 // Thêm vào phần imports
 const handleMessageCreate = async (client, msg) => {
     // try {
@@ -81,6 +82,23 @@ const handleMessageCreate = async (client, msg) => {
     }
     else if (cmd === "giveaway" || cmd === "gaw") {
         return await GiveawayHandlers.handleGiveawayCommand(msg, args, serverPrefix, lang);
+    }
+    if (cmd === "use") {
+        const type = args[0]
+        console.log("Use")
+        if (!type)
+            throw new Error("Missing type")
+        if (type === "tool") {
+            const toolRef = args[1]
+            if (!toolRef)
+                return msg.reply("Missing itemRef")
+            console.log("Tool")
+
+            const data = await ToolUseController.usedTool(msg.author.id, toolRef)
+            console.log(data)
+            return msg.reply(data.message)
+        }
+
     }
     if (cmd === "invite") {
         if (!args[0]) {
