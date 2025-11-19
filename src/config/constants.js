@@ -32,7 +32,7 @@ module.exports = {
         AXE:'axe',
 
         RING: 'ring',
-        WOODEN: 'wooden',
+        WOOD: 'wood',
         FRUIT: 'fruit'
     },
     ITEM_RARITY:{

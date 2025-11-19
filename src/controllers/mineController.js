@@ -4,11 +4,11 @@ const Inventory = require("../models/Inventory");
 const Item = require("../models/Item");
 const UserService = require("../services/userService");
 const ToolUse = require("../models/ToolUse");
-const MINE_COOLDOWN = 5 * 60 * 1000; // 5 phút
+const MINE_COOLDOWN = 10 * 1000; // 5 phút
 const mineAreas = [
     {
         name: "⛰️ Khu 1: Hẻm Núi Đá Xám",
-        requiredLevel: 10,
+        requiredLevel: 1,
         rarityRates: {
             [ITEM_RARITY.C]: 60,
             [ITEM_RARITY.SM]: 25,
@@ -19,7 +19,7 @@ const mineAreas = [
     },
     {
         name: "💎 Khu 2: Hang Pha Lê",
-        requiredLevel: 30,
+        requiredLevel: 15,
         rarityRates: {
             [ITEM_RARITY.C]: 45,
             [ITEM_RARITY.SM]: 25,
@@ -30,7 +30,7 @@ const mineAreas = [
     },
     {
         name: "🌋 Khu 3: Núi Lửa Đỏ",
-        requiredLevel: 60,
+        requiredLevel: 30,
         rarityRates: {
             [ITEM_RARITY.SM]: 25,
             [ITEM_RARITY.R]: 25,
@@ -42,7 +42,7 @@ const mineAreas = [
     },
     {
         name: "🌕 Khu 4: Hầm Ánh Trăng",
-        requiredLevel: 90,
+        requiredLevel: 50,
         rarityRates: {
             [ITEM_RARITY.R]: 20,
             [ITEM_RARITY.SR]: 25,
@@ -56,7 +56,7 @@ const mineAreas = [
     },
     {
         name: "🔥 Khu 5: Lõi Trái Đất",
-        requiredLevel: 120,
+        requiredLevel: 55,
         rarityRates: {
             [ITEM_RARITY.R]: 10,
             [ITEM_RARITY.SR]: 20,
@@ -69,6 +69,22 @@ const mineAreas = [
         },
     },
 ];
+ const rarityRange = {
+    [ITEM_RARITY.R]: 20,
+    [ITEM_RARITY.SR]: 15,
+    [ITEM_RARITY.E]: 12,
+    [ITEM_RARITY.SE]: 10,
+    [ITEM_RARITY.L]: 7,
+    [ITEM_RARITY.SL]: 5,
+    [ITEM_RARITY.MY]: 3,
+    [ITEM_RARITY.SMY]: 1,
+};
+
+ function randomByRarity(rarity) {
+    const max = rarityRange[rarity] || 1;
+    return Math.floor(Math.random() * max) + 1;
+}
+
 const mineCooldowns = new Map();
 function randomRarity(rates) {
     const total = Object.values(rates).reduce((a, b) => a + b, 0);
@@ -123,7 +139,9 @@ class MineController {
 
             // cập nhật inventory
             let inv = await Inventory.findOne({ userId, item: mineral._id });
-            if (inv) inv.quantity += 1;
+            let quantity = randomByRarity(item.rarity);
+            // if (rarity)
+            if (inv) inv.quantity += quantity;
             else inv = new Inventory({ userId, item: mineral._id, quantity: 1 });
             if (item.remainingUse === 1) {
                 // Nếu chỉ còn 1 thì xóa luôn document
@@ -144,7 +162,7 @@ class MineController {
             const embed = new EmbedBuilder()
                 .setTitle("<a:rwhitesmoke:1433076077642780705> Kết Quả Khai Thác <a:lwhitesmoke:1433024102636982284>")
                 .setDescription(
-                    `Bạn đã đào được **${mineral.icon} ${mineral.name}**\n` +
+                    `Bạn đã đào được **${quantity} ${mineral.icon} ${mineral.name}**\n` +
                     `<a:yellowarr:1433016945589882891> Độ hiếm: **${mineral.rarity.toUpperCase()}**\n` +
                     `<a:arrowbluelite:1433016969304735804> Khu vực: **${area.name}**`
                 )

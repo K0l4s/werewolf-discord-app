@@ -32,6 +32,7 @@ const StreakController = require('../controllers/streakController');
 const InventoryController = require('../controllers/inventoryController');
 const CraftController = require('../controllers/craftController');
 const ToolUseController = require('../controllers/toolUseController');
+const ChopController = require('../controllers/chopController');
 // Thêm vào phần imports
 const handleMessageCreate = async (client, msg) => {
     // try {
@@ -114,6 +115,13 @@ const handleMessageCreate = async (client, msg) => {
         if (!areaIndex)
             areaIndex = 0
         const result = await MineController.mine(msg.author.id, areaIndex)
+        return msg.reply(result.message)
+    }
+    if (cmd === "chop") {
+        let areaIndex = parseInt(args[0])
+        if (!areaIndex)
+            areaIndex = 0
+        const result = await ChopController.chop(msg.author.id, areaIndex)
         return msg.reply(result.message)
     }
     if (cmd === "gaveaway" || cmd === "gaw") {
