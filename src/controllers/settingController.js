@@ -6,8 +6,9 @@ const { fs } = require("fs")
 class SettingController {
     static async sendNotification(guildId, type, member, client, booster = false) {
         try {
+            console.log(guildId)
             const notificationConfig = await Notification.findOne({ guildId })
-                .populate("channels.embed");
+                // .populate("channels.embed");
             console.log("Noti", notificationConfig)
             if (!notificationConfig) return;
 

@@ -58,7 +58,60 @@ module.exports = async (interaction, client) => {
                 return interaction.editReply('❌ Có lỗi xảy ra khi lấy thông tin ticket status');
             }
         }
+        case 'action': {
+            await interaction.deferReply({ ephemeral: true });
 
+            try {
+                // const user = await User.findOne({ userId: interaction.user.id });
+                const stats = await actionService.getServerActions(
+                    // interaction.user.id,
+                    interaction.guild.id
+                );
+
+                const embed = {
+                    color: 0x0099ff,
+                    title: 'Action Usage Statistics',
+                    fields: [
+                        {
+                            name: 'Uploaded Action',
+                            value: `**${stats.length}/10**`,
+                            inline: true
+                        },
+                        ...stats.map(e => ({
+                            name: e.action,
+                            value: e.imgUrl || 'No image',
+                            inline: false
+                        }))
+                    ],
+                    timestamp: new Date()
+                };
+
+
+                return await interaction.editReply({ embeds: [embed] });
+
+            } catch (error) {
+                console.error('Error getting stats:', error);
+                return await interaction.editReply('An error occurred while fetching your statistics.');
+            }
+        }
+        case 'delete-action': {
+            await interaction.deferReply({ ephemeral: true });
+
+            const actionName = interaction.options.getString('action');
+
+            try {
+                await actionService.deleteAction(
+                    interaction.guild.id,
+                    actionName,
+                    interaction.user.id
+                );
+
+                return await interaction.editReply(`Action "${actionName}" has been deleted successfully!`);
+
+            } catch (error) {
+                return await interaction.editReply(`Error: ${error.message}`);
+            }
+        }
         case 'add-action': {
             await interaction.deferReply({ ephemeral: true });
 

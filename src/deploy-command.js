@@ -215,6 +215,19 @@ const commands = [
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
     new SlashCommandBuilder()
+        .setName('delete-action')
+        .setDescription('Delete a custom action')
+        .addStringOption(option =>
+            option.setName('action')
+                .setDescription('Action name to delete')
+                .setRequired(true)
+        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+    new SlashCommandBuilder()
+        .setName('action')
+        .setDescription('Check your server action')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+    new SlashCommandBuilder()
         .setName('top')
         .setDescription('Xem bảng xếp hạng')
         .addStringOption(option =>

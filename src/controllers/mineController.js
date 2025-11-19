@@ -142,11 +142,11 @@ class MineController {
             userCooldown[areaIndex] = Date.now();
             mineCooldowns.set(userId, userCooldown);
             const embed = new EmbedBuilder()
-                .setTitle("<a:hammer:1437444063635706037> Kết Quả Khai Thác")
+                .setTitle("<a:rwhitesmoke:1433076077642780705> Kết Quả Khai Thác <a:lwhitesmoke:1433024102636982284>")
                 .setDescription(
                     `Bạn đã đào được **${mineral.icon} ${mineral.name}**\n` +
-                    `> Độ hiếm: **${mineral.rarity.toUpperCase()}**\n` +
-                    `> Khu vực: **${area.name}**`
+                    `<a:yellowarr:1433016945589882891> Độ hiếm: **${mineral.rarity.toUpperCase()}**\n` +
+                    `<a:arrowbluelite:1433016969304735804> Khu vực: **${area.name}**`
                 )
                 .addFields({ name: `Độ bền vật phẩm:`, value: `${item.item.icon} ${item.item.name} còn ${item.remainingUse - 1 || 0} lượt sử dụng` })
                 .setColor(

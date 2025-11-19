@@ -3,11 +3,13 @@ const Action = require("../models/Action");
 const actionService = require("../services/actionService");
 const storageService = require("../services/storageService");
 
+const removeDiacritics = require("diacritics").remove;
+
 const handleActionMessage = async (client, msg) => {
     if (msg.author.bot || !msg.guild) return;
 
-    const content = msg.content.toLowerCase();
-    // if (!content.startsWith('wa ')) return;
+    const rawContent = msg.content.toLowerCase();
+    const content = removeDiacritics(rawContent);
 
     try {
         const actions = await Action.find({
@@ -17,17 +19,33 @@ const handleActionMessage = async (client, msg) => {
             ]
         });
 
-        // const actions = await Action
         if (!actions || actions.length === 0) return;
-        // console.log(content)
-        // const actionContent = content.substring(3).trim();
-        const matchedAction = actions.find(action =>
-            content.includes(action.action.toLowerCase())
+
+        // Chuẩn hóa danh sách action
+        const normalizedActions = actions.map(a => ({
+            ...a._doc,
+            normalizedAction: removeDiacritics(a.action.toLowerCase())
+        }));
+
+        // Lọc ra những action MATCH với nội dung
+        let matchedList = normalizedActions.filter(a =>
+            content.includes(a.normalizedAction)
         );
+
+        if (matchedList.length === 0) return;
+
+        // 1. Ưu tiên action của server
+        const serverActions = matchedList.filter(a => a.guildId === msg.guild.id);
+        const finalList = serverActions.length > 0 ? serverActions : matchedList;
+
+        // 2. Ưu tiên action match dài nhất
+        const matchedAction = finalList.sort((a, b) =>
+            b.normalizedAction.length - a.normalizedAction.length
+        )[0];
 
         if (!matchedAction) return;
 
-        // Validate URL ảnh trước khi gửi
+        // Validate URL trước khi gửi
         if (!matchedAction.imgUrl || !storageService.validateImageUrl(matchedAction.imgUrl)) {
             console.error(`Invalid image URL for action ${matchedAction.action}: ${matchedAction.imgUrl}`);
             await msg.reply('❌ Action image is not available. Please contact admin.');
@@ -35,17 +53,12 @@ const handleActionMessage = async (client, msg) => {
         }
 
         const targetUser = msg.mentions.users.first();
-
-        let finalMessage = matchedAction.message
+        const finalMessage = matchedAction.message
             .replace(/{user}/g, msg.author.toString())
             .replace(/{target}/g, targetUser ? targetUser.toString() : '')
             .replace(/\s+/g, ' ')
             .trim();
 
-        // await msg.reply({
-        //     content: finalMessage,
-        //     files: [matchedAction.imgUrl]
-        // });
         const embed = new EmbedBuilder()
             .setTitle("Action")
             .setDescription(finalMessage)
@@ -53,16 +66,14 @@ const handleActionMessage = async (client, msg) => {
             .setColor('#0099ff')
             .setFooter({
                 text: 'Use /add-action | First 10 actions free | 3 tokens each after'
-            })
-        await msg.reply({
-            embeds: [embed]
-            // files: [matchedAction.imgUrl] // Bỏ dòng này khi dùng embed
-        });
+            });
+
+        await msg.reply({ embeds: [embed] });
 
     } catch (error) {
-        console.error('Error handling action message:', error);
-        // Không gửi message lỗi để tránh spam
+        console.error("Error handling action message:", error);
     }
 };
+
 
 module.exports = { handleActionMessage };
