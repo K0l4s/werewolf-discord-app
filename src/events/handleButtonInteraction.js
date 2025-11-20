@@ -40,29 +40,44 @@ module.exports = async (interaction, client) => {
                     content: `Bạn không có quyền!`
                 });
             }
-
-
             try {
                 await interaction.message.edit({ components: [] });
             } catch (err) {
                 console.error("Không thể xóa button:", err);
             }
+
+            // Kiểm tra thời gian gửi tin nhắn
+            const messageTimestamp = interaction.message.createdTimestamp; // thời gian tin nhắn gốc
+            const now = Date.now();
+            const sixtyMinutes = 60 * 60 * 1000; // 60 phút = 3600000 ms
+
+            if (now - messageTimestamp > sixtyMinutes) {
+                return interaction.editReply({
+                    content: "Xin lỗi, thời gian để đồng ý đã hết hạn (hơn 60 phút)."
+                });
+            }
+
+
             if (type == "accept") {
                 const result = await MarryController.acceptMarry(userId, targetId, ringId, client)
                 await interaction.editReply({
                     content: `Bạn đã đồng ý kết hôn với <@${userId}>.`
-                })
+                });
                 return await interaction.message.edit(result);
             }
+
             const item = await ItemService.getItemById(ringId);
             await interaction.editReply({
                 content: `Bạn đã từ chối <@${userId}>. Ắt hẳn cậu ấy sẽ buồn lắm!`
-            })
-            return await interaction.followUp({ content: `<@${userId}> đã bị <@${targetId}> từ chối trong sự ngỡ ngàng.\n${userId} bị mất **2 chiếc nhẫn ${item.icon ? item.icon : ""} ${item.name ? item.name : ""}**!` })
+            });
+            return await interaction.followUp({
+                content: `<@${userId}> đã bị <@${targetId}> từ chối trong sự ngỡ ngàng.\n${userId} bị mất **2 chiếc nhẫn ${item.icon ? item.icon : ""} ${item.name ? item.name : ""}**!`
+            });
         } catch (e) {
             return interaction.editReply({ content: `Error: ${e.message}` })
         }
     }
+
     else if (actionType === 'inventory') {
         const userId = args[1];
         const page = parseInt(args[2]) || 1;
