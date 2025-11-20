@@ -11,7 +11,8 @@ const craftItemSchema = new mongoose.Schema({
     ],
     conditions: {
         requiredLevel: { type: Number, default: 1, min: 1 },
-    }
+    },
+    successRate: { type: Number, required: false, default: 1 }
 });
 
 

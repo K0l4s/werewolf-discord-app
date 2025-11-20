@@ -9,6 +9,8 @@ const toggleComponents = require("../utils/toggleComponents");
 const UserController = require("../controllers/userController");
 const StreakController = require("../controllers/streakController");
 const InventoryController = require("../controllers/inventoryController");
+const MarryController = require("../controllers/marryController");
+const ItemService = require("../services/itemService");
 
 module.exports = async (interaction, client) => {
 
@@ -23,17 +25,55 @@ module.exports = async (interaction, client) => {
         const data = await StreakController.getUserStreakInfo(client, userId, guildId, page);
         return interaction.update(data);
     }
+    else if (actionType === "marry") {
+        await interaction.deferReply({ ephemeral: true });
+        try {
+            console.log(args);
+
+            const type = args[1];
+            const userId = args[2];
+            const targetId = args[3];
+            const ringId = args[4];
+
+            if (interaction.user.id !== targetId) {
+                return interaction.editReply({
+                    content: `Bạn không có quyền!`
+                });
+            }
+
+
+            try {
+                await interaction.message.edit({ components: [] });
+            } catch (err) {
+                console.error("Không thể xóa button:", err);
+            }
+            if (type == "accept") {
+                const result = await MarryController.acceptMarry(userId, targetId, ringId, client)
+                await interaction.editReply({
+                    content: `Bạn đã đồng ý kết hôn với <@${userId}>.`
+                })
+                return await interaction.message.edit(result);
+            }
+            const item = await ItemService.getItemById(ringId);
+            await interaction.editReply({
+                content: `Bạn đã từ chối <@${userId}>. Ắt hẳn cậu ấy sẽ buồn lắm!`
+            })
+            return await interaction.followUp({ content: `<@${userId}> đã bị <@${targetId}> từ chối trong sự ngỡ ngàng.\n${userId} bị mất **2 chiếc nhẫn ${item.icon ? item.icon : ""} ${item.name ? item.name : ""}**!` })
+        } catch (e) {
+            return interaction.editReply({ content: `Error: ${e.message}` })
+        }
+    }
     else if (actionType === 'inventory') {
         const userId = args[1];
         const page = parseInt(args[2]) || 1;
         const data = await InventoryController.showInventoryEmbed(userId, page);
         return interaction.update(data);
     }
-    else if(actionType === 'ticket_create'){
+    else if (actionType === 'ticket_create') {
         interaction.deferReply({ ephemeral: true })
         const cateType = args[1];
-        await TicketController.createTicket(client,cateType,interaction.user.id,interaction.guild.id);
-        await interaction.editReply({content: "✅ Ticket created successfully!",ephemeral: true});
+        await TicketController.createTicket(client, cateType, interaction.user.id, interaction.guild.id);
+        await interaction.editReply({ content: "✅ Ticket created successfully!", ephemeral: true });
         // xóa tin nhắn
         setI
     }

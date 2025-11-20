@@ -10,12 +10,8 @@ class CraftController {
             const item = await ItemService.getItemByRef(itemRef);
             if (!item) throw new Error("Vật phẩm không tồn tại.");
 
-            console.log(item);
-            const all = await CraftItem.find().lean();
-            console.log(JSON.stringify(all, null, 2));
-
-            const craft = await CraftItem.findOne({ item: item._id }).populate("item.components.component");
-            console.log(craft);
+            const craft = await CraftItem.findOne({ item: item._id })
+                .populate("components.component");
 
             if (!craft) throw new Error("Vật phẩm này không thể chế tạo.");
 
@@ -39,8 +35,7 @@ class CraftController {
                 const inv = await Inventory.findOne({ userId, item: comp.component._id });
                 const requiredQty = comp.quantity * quantity;
                 if (!inv || inv.quantity < requiredQty) {
-                    const com = await Item.findById(comp.component._id);
-                    missingItems.push(`${com.icon} ${com.name} x${requiredQty}`);
+                    missingItems.push(`${comp.component.icon} ${comp.component.name} x${requiredQty}`);
                 }
             }
 
@@ -52,16 +47,46 @@ class CraftController {
                 return { embeds: [embed] };
             }
 
-            // đủ nguyên liệu => trừ và thêm item
+            // trừ nguyên liệu trước
             for (const comp of components) {
                 const requiredQty = comp.quantity * quantity;
-                await Inventory.findOneAndUpdate(
+
+                const updated = await Inventory.findOneAndUpdate(
                     { userId, item: comp.component._id },
-                    { $inc: { quantity: -requiredQty } }
+                    { $inc: { quantity: -requiredQty } },
+                    { new: true } // trả về document sau khi cập nhật
                 );
+
+                // Nếu không còn tài nguyên hoặc âm thì xóa luôn
+                if (updated && updated.quantity <= 0) {
+                    await Inventory.deleteOne({ _id: updated._id });
+                }
             }
 
-            // cộng vật phẩm chế tạo
+
+            // ===============================
+            // 🎲 TỶ LỆ THÀNH CÔNG / THẤT BẠI
+            // ===============================
+            const successRate = craft.successRate ?? 1; // mặc định 100%
+            const isSuccess = Math.random() < successRate;
+
+            if (!isSuccess) {
+                // ❌ thất bại – mất nguyên liệu, không nhận item
+                const embed = new EmbedBuilder()
+                    .setColor("Red")
+                    .setTitle("💥 Chế tạo thất bại!")
+                    .setDescription(
+                        `Rất tiếc! Bạn đã **thất bại** khi chế tạo **${item.icon} ${item.name}**.\n` +
+                        `Toàn bộ nguyên liệu đã bị **tiêu hao**.`
+                    )
+                    .setFooter({ text: "Hệ thống chế tạo vật phẩm" });
+
+                return { embeds: [embed] };
+            }
+
+            // ===============================
+            // 🎉 THÀNH CÔNG – CỘNG VẬT PHẨM
+            // ===============================
             await Inventory.findOneAndUpdate(
                 { userId, item: item._id },
                 { $inc: { quantity } },
@@ -75,6 +100,7 @@ class CraftController {
                 .setFooter({ text: "Hệ thống chế tạo vật phẩm" });
 
             return { embeds: [embed] };
+
         } catch (err) {
             const embed = new EmbedBuilder()
                 .setColor("Red")
@@ -82,6 +108,7 @@ class CraftController {
             return { embeds: [embed] };
         }
     }
+
 }
 
 module.exports = CraftController;

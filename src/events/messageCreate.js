@@ -27,6 +27,7 @@ const ServerController = require('../controllers/serverController');
 // const GiveawayHandlers = require('./giveAwayHandlers');
 const TicketController = require('../controllers/ticketController');
 const MineController = require('../controllers/mineController');
+const MarryController = require('../controllers/marryController');
 const CommonController = require('../controllers/commonController');
 const StreakController = require('../controllers/streakController');
 const InventoryController = require('../controllers/inventoryController');
@@ -109,6 +110,23 @@ const handleMessageCreate = async (client, msg) => {
         const code = args[0]
         const embed = await UserController.fillInviteCode(msg.author.id, code)
         return msg.reply(embed)
+    }
+    if (cmd === "marry") {
+        console.log("Hi!")
+        const target = msg.mentions.users.first()
+        // console.log(targetId)
+        const ringRef = args[1]
+        console.log(ringRef)
+        if (target) {
+            if (!ringRef)
+                return await msg.reply("Câu hôn mà không mang nhẫn hả cha? Thêm Ring Ref vào!")
+            console.log("Hi!")
+
+            const result = await MarryController.marry(msg.author.id, target.id, ringRef,client)
+            console.log(result)
+            return await msg.reply(result.message)
+        }
+
     }
     if (cmd === "mine") {
         let areaIndex = parseInt(args[0])
