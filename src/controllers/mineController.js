@@ -135,7 +135,7 @@ class MineController {
                 // rarity: Object.keys(ITEM_RARITY).find(key => ITEM_RARITY[key] === rarity),
             });
 
-            if (!mineral) throw new Error(`Không tìm thấy khoáng vật loại ${rarity}`);
+            if (!mineral) throw new Error(`Không tìm thấy khoáng thạch loại ${rarity}`);
 
             // cập nhật inventory
             let inv = await Inventory.findOne({ userId, item: mineral._id });
@@ -166,7 +166,7 @@ class MineController {
                     `<a:yellowarr:1433016945589882891> Độ hiếm: **${mineral.rarity.toUpperCase()}**\n` +
                     `<a:arrowbluelite:1433016969304735804> Khu vực: **${area.name}**`
                 )
-                .addFields({ name: `Độ bền vật phẩm:`, value: `${item.item.icon} ${item.item.name} còn ${item.remainingUse - 1 || 0} lượt sử dụng` })
+                .addFields({ name: `Độ bền ${item.item.icon} ${item.item.name}:`, value: `Còn lại ${item.remainingUse - 1 || 0} lượt sử dụng` })
                 .setColor(
                     mineral.rarity === "common" ? 0xaaaaaa :
                         mineral.rarity === "uncommon" ? 0x00ff99 :

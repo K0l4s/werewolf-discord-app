@@ -8,6 +8,299 @@ const Item = require("../models/Item");
 
 
 class MarryController {
+    static async marryStatus(userId) {
+        const marry = await Marry.findOne({
+            $or: [
+                { senderId: userId },
+                { receiverId: userId }
+            ]
+        })
+            .populate({
+                path: "rings.ring",  // populate vào field ring bên trong array rings
+                model: "Item"
+            });
+        if (!marry) {
+            const embed = new EmbedBuilder()
+                .setTitle("Bạn chưa có bạn đời!")
+                .setDescription("Bạn hãy tìm nửa kia và tiến hành hôn lễ bằng `kmarry @lover [ref nhẫn]`")
+                .setColor(0xff69b4)
+                .setFooter({ text: "Keldo Chúc hai bạn trăm năm hạnh phúc!" })
+                .setTimestamp();
+            return {
+                success:true,
+                message:{ embeds: [embed] }}
+        }
+        const now = Date.now(); // ms
+        const start = new Date(marry.marryDate).getTime(); // ms
+
+        const diffMs = now - start; // milliseconds chênh lệch
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24)); // đổi sang ngày
+        const MAX_FIELDS = 18;
+
+        // Field đầu tiên
+        const fields = [];
+
+        // Tối đa còn được thêm bao nhiêu field cho nhẫn
+        const maxRingFields = MAX_FIELDS - fields.length;
+
+        // Tổng số nhẫn
+        const totalRings = marry.rings.length;
+
+        // Nếu số nhẫn <= số slot còn lại → thêm hết
+        if (totalRings <= maxRingFields) {
+            marry.rings.forEach(r => {
+                const ring = r.ring; // đã populate
+                const timeStamp = Math.floor(new Date(r.giftDate).getTime() / 1000);
+
+                fields.push({
+                    name: ring.name,
+                    value: `${ring.icon} **${ring.name}**\n<t:${timeStamp}:R>`,
+                    inline: true
+                });
+            });
+        } else {
+            // Chỉ thêm đủ slot - 1 để chừa field "Số nhẫn khác"
+            const usableSlots = maxRingFields - 1;
+
+            marry.rings.slice(0, usableSlots).forEach(r => {
+                const ring = r.ring;
+                const timeStamp = Math.floor(new Date(r.giftDate).getTime() / 1000);
+
+                fields.push({
+                    name: ring.name,
+                    value: `${ring.icon} **${ring.name}**\nNhận vào <t:${timeStamp}:R>`,
+                    inline: true
+                });
+            });
+
+            // Field cuối báo còn bao nhiêu nhẫn
+            const remaining = totalRings - usableSlots;
+
+            fields.push({
+                name: "Số nhẫn khác",
+                value: `**${remaining}** nhẫn`,
+                inline: true
+            });
+        }
+        const embed = new EmbedBuilder()
+            .setTitle("💍 Mang ngay lễ đường đến đây!")
+            .setColor(0xff69b4)
+            .addFields(
+                { name: "🤵 Cầu hôn bởi", value: `<@${marry.senderId}>`, inline: true },
+                { name: "👰 Đồng ý bởi", value: `<@${marry.receiverId}>`, inline: true },
+                // { name: "🌐 Server", value: `${marry.serverName || "Server không xác định"}`, inline: true },
+                { name: "💖 Love Point", value: `${marry.lovePoint}`, inline: true },
+                { name: "📅 Ngày thành hôn", value: `<t:${Math.floor(new Date(marry.marryDate).getTime() / 1000)}:F>`, inline: true },
+                { name: "Số ngày bên nhau", value: `${days} ngày`, inline: true },
+                ...fields
+            )
+            .setThumbnail("https://genk.mediacdn.vn/zoom/700_438/2016/8274-3d773b5ce67533d1b5b52d9b57936860-orig-1455733255496-crop-1455733285857.gif") // tùy chọn ảnh minh họa
+            .setFooter({ text: "Keldo Chúc hai bạn trăm năm hạnh phúc!" })
+            .setTimestamp();
+        const button = new ButtonBuilder()
+            .setCustomId(`blessing|${marry._id}`)
+            .setEmoji("<a:present_4_4:1440816257782907121>")
+            .setLabel("Chúc phúc")
+            .setStyle(ButtonStyle.Primary)
+        const row = new ActionRowBuilder().addComponents(button);
+        return {
+            success: true,
+            message: { embeds: [embed], components: [row] }
+        }
+    }
+    static async blessing(userId, marrieId) {
+        try {
+            const marry = await Marry.findById(marrieId);
+
+            if (!marry)
+                throw new Error("Hôn nhân này không tồn tại.");
+            // Không cho duplicate
+            if (marry.blesserIds.includes(userId)) {
+                throw new Error("Bạn đã chúc phúc cho cặp đôi này rồi!");
+            }
+
+            // Random love point 10 -> 15
+            const bonus = Math.floor(Math.random() * 6) + 10;  // 10-15
+
+            // Cập nhật
+            marry.blesserIds.push(userId);
+            marry.lovePoint += bonus;
+
+            const newMarry = await marry.save();
+            const button = new ButtonBuilder()
+                .setCustomId(`blessing|${marry._id}`)
+                .setEmoji("<a:present_4_4:1440816257782907121>")
+                .setLabel("Chúc phúc")
+                .setStyle(ButtonStyle.Primary)
+            const row = new ActionRowBuilder().addComponents(button);
+            const embed = new EmbedBuilder()
+                .setTitle("💖 Chúc phúc thành công")
+                .setDescription(`💖 <@${userId}> đã chúc phúc cho cặp đôi! **+${bonus}** Love Points`)
+                .setColor(0xff69b4)
+                .addFields(
+                    { name: "🤵 Cầu hôn bởi", value: `<@${newMarry.senderId}>`, inline: true },
+                    { name: "👰 Đồng ý bởi", value: `<@${newMarry.receiverId}>`, inline: true },
+                    // { name: "🌐 Server", value: `${marry.serverName || "Server không xác định"}`, inline: true },
+                    { name: "💖 Love Point", value: `${newMarry.lovePoint}`, inline: true },
+                    { name: "📅 Ngày thành hôn", value: `<t:${Math.floor(new Date(newMarry.marryDate).getTime() / 1000)}:F>`, inline: true },
+                )
+                // .setThumbnail("https://genk.mediacdn.vn/zoom/700_438/2016/8274-3d773b5ce67533d1b5b52d9b57936860-orig-1455733255496-crop-1455733285857.gif") // tùy chọn ảnh minh họa
+                .setFooter({ text: "Keldo Chúc hai bạn trăm năm hạnh phúc!" })
+                .setTimestamp();
+            return {
+                message: { embeds: [embed], components: [row] },
+                // message: `💖 <@${userId}> đã chúc phúc! +${bonus} Love Points`,
+                // bonus,
+                marry
+            };
+        }
+        catch (e) {
+            return {
+                success: false,
+                message: e.message
+            }
+        }
+    }
+
+    static async divorceAccept(userId, client) {
+        try {
+            const marry = await Marry.findOne({
+                $or: [
+                    { senderId: userId },
+                    { receiverId: userId }
+                ]
+            })
+                .populate({
+                    path: "rings.ring",  // populate vào field ring bên trong array rings
+                    model: "Item"
+                });
+
+            if (!marry)
+                throw new Error("Bạn... Đang **Ờ LON ĐÓ**! Ảo tưởng mình có gia đình rồi sao?!?")
+
+            await Marry.deleteOne({ _id: marry._id });
+            const embed = new EmbedBuilder()
+                .setTitle(`Hôm nay là ngày buồn!`)
+                .setDescription(`💔 Cuộc hôn nhân giữa <@${marry.senderId}> và <@${marry.receiverId}> đã chấm dứt.`)
+                .setFooter({ text: "Chúc hai bạn tìm được hạnh phúc thật sự!" })
+            return {
+                success: true,
+                message: { embeds: [embed], components: [] }
+            }
+        }
+        catch (e) {
+            return {
+                success: false,
+                message: e.message
+            }
+        }
+    }
+    static async divorceRequest(userId, client) {
+        try {
+            const marry = await Marry.findOne({
+                $or: [
+                    { senderId: userId },
+                    { receiverId: userId }
+                ]
+            })
+                .populate({
+                    path: "rings.ring",  // populate vào field ring bên trong array rings
+                    model: "Item"
+                });
+
+            if (!marry)
+                throw new Error("Bạn... Đang **Ờ LON ĐÓ**! Ảo tưởng mình có gia đình rồi sao?!?")
+            const acceptButton = new ButtonBuilder()
+                .setLabel("Đồng ý ly hôn")
+                .setEmoji("<a:rocket:1433022000112074862>")
+                .setCustomId(`divorce|accept|${userId}`)
+                .setStyle(ButtonStyle.Danger)
+            const denyButton = new ButtonBuilder()
+                .setLabel("Từ chối ly hôn")
+                .setEmoji("<a:rocket:1433022000112074862>")
+                .setCustomId(`divorce|deny|${userId}`)
+                .setStyle(ButtonStyle.Success)
+            const cancelButton = new ButtonBuilder()
+                .setLabel("Hủy")
+                .setEmoji("<a:rocket:1433022000112074862>")
+                .setCustomId(`divorce|cancel|${userId}`)
+                .setStyle(ButtonStyle.Primary)
+            const row = new ActionRowBuilder()
+                .addComponents(acceptButton, denyButton, cancelButton)
+            const user = await client.users.fetch(userId)
+            const name = user.globalName || "Không xác định"
+            const now = Date.now(); // ms
+            const start = new Date(marry.marryDate).getTime(); // ms
+
+            const diffMs = now - start; // milliseconds chênh lệch
+            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24)); // đổi sang ngày
+            const MAX_FIELDS = 23;
+
+            // Field đầu tiên
+            const fields = [];
+
+            // Tối đa còn được thêm bao nhiêu field cho nhẫn
+            const maxRingFields = MAX_FIELDS - fields.length;
+
+            // Tổng số nhẫn
+            const totalRings = marry.rings.length;
+
+            // Nếu số nhẫn <= số slot còn lại → thêm hết
+            if (totalRings <= maxRingFields) {
+                marry.rings.forEach(r => {
+                    const ring = r.ring; // đã populate
+                    const timeStamp = Math.floor(new Date(r.giftDate).getTime() / 1000);
+
+                    fields.push({
+                        name: ring.name,
+                        value: `${ring.icon} **${ring.name}**\n<t:${timeStamp}:R>`,
+                        inline: true
+                    });
+                });
+            } else {
+                // Chỉ thêm đủ slot - 1 để chừa field "Số nhẫn khác"
+                const usableSlots = maxRingFields - 1;
+
+                marry.rings.slice(0, usableSlots).forEach(r => {
+                    const ring = r.ring;
+                    const timeStamp = Math.floor(new Date(r.giftDate).getTime() / 1000);
+
+                    fields.push({
+                        name: ring.name,
+                        value: `${ring.icon} **${ring.name}**\nNhận vào <t:${timeStamp}:R>`,
+                        inline: true
+                    });
+                });
+
+                // Field cuối báo còn bao nhiêu nhẫn
+                const remaining = totalRings - usableSlots;
+
+                fields.push({
+                    name: "Số nhẫn khác",
+                    value: `**${remaining}** nhẫn`,
+                    inline: true
+                });
+            }
+            const embed = new EmbedBuilder()
+                .setTitle(`${name}, bạn muốn ly hôn ư? Bình tĩnh đã nào!`)
+                .setDescription(`<@${marry.senderId}> và <@${marry.receiverId}> quyết định dẫn nhau ra tòa ly dị.\n Hãy cùng ngẫm lại hành trình bên nhau trước khi quyết định nhé!`)
+                .addFields(
+                    { name: `Số ngày bên nhau`, value: `**${days}** ngày`, inline: true },
+                    { name: `Số người chúc phúc`, value: `${marry.blesserIds.length}`, inline: true },
+                    ...fields
+                )
+                .setFooter({ text: "Họ đã từng có câu chuyện rất đẹp..." })
+            return {
+                success: true,
+                message: { content: `<@${marry.senderId}> và <@${marry.receiverId}> ơi, hãy bình tĩnh!`, embeds: [embed], components: [row] }
+            }
+        } catch (e) {
+            return {
+                success: false,
+                message: e.message
+            }
+        }
+    }
     static async acceptMarry(userId, targetId, ringId, client) {
         try {
             // Kiểm tra ring có tồn tại không
@@ -38,10 +331,18 @@ class MarryController {
             const marry = await Marry.create({
                 senderId: userId,
                 receiverId: targetId,
-                rings: [ringId],
+                rings: [{
+                    ring: ringId,
+                    giftDate: Date.now()
+                }],
                 lovePoint: lovePoint
             });
-
+            const button = new ButtonBuilder()
+                .setCustomId(`blessing|${marry._id}`)
+                .setEmoji("<a:present_4_4:1440816257782907121>")
+                .setLabel("Chúc phúc")
+                .setStyle(ButtonStyle.Primary)
+            const row = new ActionRowBuilder().addComponents(button);
             // return newMarry;
             const embed = new EmbedBuilder()
                 .setTitle("💍 Mang ngay lễ đường đến đây!")
@@ -56,12 +357,11 @@ class MarryController {
                 .setThumbnail("https://genk.mediacdn.vn/zoom/700_438/2016/8274-3d773b5ce67533d1b5b52d9b57936860-orig-1455733255496-crop-1455733285857.gif") // tùy chọn ảnh minh họa
                 .setFooter({ text: "Keldo Chúc hai bạn trăm năm hạnh phúc!" })
                 .setTimestamp();
-            return { embeds: [embed] }
+            return { embeds: [embed], components: [row] }
         }
         catch (err) {
             console.error(err);
             throw err;
-            // return err.message;
         }
     }
     static async marry(userId, targetId, ringRef, client) {
@@ -92,8 +392,8 @@ class MarryController {
             const existed = await Marry.findOne({
                 $or: [
                     { senderId: userId },
-                    { receiverId: targetId },
-                    { senderId: userId },
+                    { receiverId: userId },
+                    { senderId: targetId },
                     { receiverId: targetId }
                 ]
             });

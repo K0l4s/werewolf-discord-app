@@ -1,4 +1,4 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require("discord.js");
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, EmbedBuilder } = require("discord.js");
 const { client } = require("..");
 const GameController = require("../controllers/gameController");
 const LanguageController = require("../controllers/languageController");
@@ -11,6 +11,7 @@ const StreakController = require("../controllers/streakController");
 const InventoryController = require("../controllers/inventoryController");
 const MarryController = require("../controllers/marryController");
 const ItemService = require("../services/itemService");
+const Marry = require("../models/Marry");
 
 module.exports = async (interaction, client) => {
 
@@ -24,6 +25,112 @@ module.exports = async (interaction, client) => {
         const page = parseInt(args[3]) || 1;
         const data = await StreakController.getUserStreakInfo(client, userId, guildId, page);
         return interaction.update(data);
+    }
+    else if (actionType === "divorce") {
+        await interaction.deferReply({ ephemeral: true })
+        try {
+            const type = args[1]
+            const userId = args[2]
+            if (type === "cancel") {
+                if (userId != interaction.user.id)
+                    return await interaction.editReply({ content: "Bạn không có quyền!" })
+                const embed = new EmbedBuilder()
+                    .setTitle("Bạn... Không muốn ly hôn!")
+                    .setDescription(`Sau thời gian suy nghĩ thì <@${userId}> đã rút đơn ly hôn. Cả nhà êm ấm`)
+                    .setFooter({ text: "Marry | Keldo" })
+                await interaction.editReply({ content: "Ơn giời! Bạn đã suy nghĩ lại rồi!" })
+                return await interaction.message.edit({ embeds: [embed], components: [] })
+            }
+            else if (type === "deny") {
+                const marry = await Marry.findOne({
+                    $or: [
+                        { senderId: userId },
+                        { receiverId: userId }
+                    ]
+                })
+                // .populate({
+                //     path: "rings.ring",  // populate vào field ring bên trong array rings
+                //     model: "Item"
+                // });
+                const otherId = marry.senderId === userId
+                    ? marry.receiverId
+                    : marry.senderId;
+
+                // Chỉ người còn lại mới được quyền
+                if (interaction.user.id !== otherId) {
+                    return await interaction.editReply({
+                        content: `Chỉ có <@${otherId}>  mới được thực hiện hành động này.`,
+                    });
+                }
+
+                const embed = new EmbedBuilder()
+                    .setTitle("Bạn... Không muốn ly hôn!")
+                    .setDescription(`<@${otherId}> đã quyết định không ly hôn. Cuộc sống có vẻ êm ấm về sau`)
+                    .setFooter({ text: "Marry | Keldo" })
+
+                await interaction.editReply({ content: "Ơn giời! Bạn đã suy nghĩ lại rồi!" })
+                return await interaction.message.edit({ embeds: [embed], components: [] })
+            }
+            else if (type === "accept") {
+                const marry = await Marry.findOne({
+                    $or: [
+                        { senderId: userId },
+                        { receiverId: userId }
+                    ]
+                })
+                // .populate({
+                //     path: "rings.ring",  // populate vào field ring bên trong array rings
+                //     model: "Item"
+                // });
+                const otherId = marry.senderId === userId
+                    ? marry.receiverId
+                    : marry.senderId;
+
+                // Chỉ người còn lại mới được quyền
+                if (interaction.user.id !== otherId) {
+                    return await interaction.editReply({
+                        content: `Chỉ có <@${otherId}>  mới được thực hiện hành động này.`,
+                    });
+                }
+
+                // const embed = new EmbedBuilder()
+                //     .setTitle("Bạn... Không muốn ly hôn!")
+                //     .setDescription(`<@${otherId}> đã quyết định không ly hôn. Cuộc sống có vẻ êm ấm về sau`)
+                //     .setFooter({ text: "Marry | Keldo" })
+                const request = await MarryController.divorceAccept(otherId, client)
+                console.log(request)
+                const embed = request.message;
+
+                await interaction.editReply({ content: "Ôi không, bạn sẽ hối hận!" })
+                await interaction.message.edit({ components: [] })
+                return await interaction.message.edit(embed)
+            }
+            return;
+        }
+        catch (e) {
+            // return {
+            //     success: false,
+            //     message: e.message
+            // }
+            console.log(e)
+            return interaction.editReply({ content: "Đã có lỗi xảy ra!" })
+        }
+    }
+    else if (actionType === "blessing") {
+        await interaction.deferReply()
+        try {
+            const id = args[1]
+            const response = await MarryController.blessing(interaction.user.id, id)
+            await interaction.editReply(response.message)
+        }
+        catch (e) {
+            // return {
+            //     success: false,
+            //     message: e.message
+            // }
+            console.log(e)
+            return interaction.editReply({ content: "Đã có lỗi xảy ra!" })
+        }
     }
     else if (actionType === "marry") {
         await interaction.deferReply({ ephemeral: true });
@@ -50,7 +157,7 @@ module.exports = async (interaction, client) => {
             const messageTimestamp = interaction.message.createdTimestamp; // thời gian tin nhắn gốc
             const now = Date.now();
             const sixtyMinutes = 60 * 60 * 1000; // 60 phút = 3600000 ms
-
+            console.log(messageTimestamp)
             if (now - messageTimestamp > sixtyMinutes) {
                 return interaction.editReply({
                     content: "Xin lỗi, thời gian để đồng ý đã hết hạn (hơn 60 phút)."

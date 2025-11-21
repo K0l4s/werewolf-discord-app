@@ -111,18 +111,31 @@ const handleMessageCreate = async (client, msg) => {
         const embed = await UserController.fillInviteCode(msg.author.id, code)
         return msg.reply(embed)
     }
+    else if (cmd === "divorce") {
+        console.log("Hi!")
+
+        const result = await MarryController.divorceRequest(msg.author.id, client)
+        return await msg.reply(result.message)
+
+    }
     if (cmd === "marry") {
         console.log("Hi!")
         const target = msg.mentions.users.first()
         // console.log(targetId)
-        const ringRef = args[1]
-        console.log(ringRef)
-        if (target) {
+        if (!target) {
+            const response = await MarryController.marryStatus(msg.author.id)
+            console.log(response.messsage)
+            return await msg.reply(response.message)
+
+        } else {
+            const ringRef = args[1]
+            console.log(ringRef)
+
             if (!ringRef)
                 return await msg.reply("Câu hôn mà không mang nhẫn hả cha? Thêm Ring Ref vào!")
             console.log("Hi!")
 
-            const result = await MarryController.marry(msg.author.id, target.id, ringRef,client)
+            const result = await MarryController.marry(msg.author.id, target.id, ringRef, client)
             console.log(result)
             return await msg.reply(result.message)
         }
