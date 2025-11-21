@@ -1,9 +1,10 @@
 const { EmbedBuilder } = require("discord.js");
-const { ITEM_TYPE, ITEM_RARITY } = require("../config/constants");
+const { ITEM_TYPE, ITEM_RARITY, DEFAULT_EXP_LVL1, STEP_EXP } = require("../config/constants");
 const Inventory = require("../models/Inventory");
 const Item = require("../models/Item");
 const UserService = require("../services/userService");
 const ToolUse = require("../models/ToolUse");
+const UserController = require("./userController");
 const MINE_COOLDOWN = 10 * 1000; // 5 phút
 const mineAreas = [
     {
@@ -69,7 +70,8 @@ const mineAreas = [
         },
     },
 ];
- const rarityRange = {
+
+const rarityRange = {
     [ITEM_RARITY.R]: 20,
     [ITEM_RARITY.SR]: 15,
     [ITEM_RARITY.E]: 12,
@@ -80,7 +82,7 @@ const mineAreas = [
     [ITEM_RARITY.SMY]: 1,
 };
 
- function randomByRarity(rarity) {
+function randomByRarity(rarity) {
     const max = rarityRange[rarity] || 1;
     return Math.floor(Math.random() * max) + 1;
 }
@@ -129,6 +131,7 @@ class MineController {
             // random kết quả
             const rarity = randomRarity(area.rarityRates);
             console.log(rarity)
+
             const mineral = await Item.findOne({
                 type: ITEM_TYPE.MINERAL,
                 rarity: rarity
@@ -139,7 +142,7 @@ class MineController {
 
             // cập nhật inventory
             let inv = await Inventory.findOne({ userId, item: mineral._id });
-            let quantity = randomByRarity(item.rarity);
+            let quantity = Math.ceil(randomByRarity(mineral.rarity) * (item.item.multiplierRate || 1));
             // if (rarity)
             if (inv) inv.quantity += quantity;
             else inv = new Inventory({ userId, item: mineral._id, quantity: 1 });
@@ -155,7 +158,25 @@ class MineController {
             }
 
             await inv.save();
+            user.exp += 10
+            let levelsGained = 0;
+            let levelUpText = '';
+            const originalLevel = user.lvl;
+            const expToNextLevel = () => Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
 
+            while (user.exp >= expToNextLevel()) {
+                user.exp -= expToNextLevel();
+                user.lvl += 1;
+                levelsGained += 1;
+            }
+            if (levelsGained > 0) {
+                if (levelsGained === 1) {
+                    levelUpText = `<a:rocket:1433022000112074862> **Level Up!** Level ${originalLevel} → **${user.lvl}**`;
+                } else {
+                    levelUpText = `<a:rocket:1433022000112074862> **Level Up!** +${levelsGained} levels (${originalLevel} → **${user.lvl}**)`;
+                }
+            }
+            await user.save()
             // cập nhật cooldown
             userCooldown[areaIndex] = Date.now();
             mineCooldowns.set(userId, userCooldown);
@@ -181,6 +202,9 @@ class MineController {
                     // iconURL: user.avatar || undefined
                 })
                 .setTimestamp();
+            if (levelUpText) {
+                embed.addFields({ name: '<a:yellowsparklies:1437402422371815477> Thành tựu', value: levelUpText, inline: false });
+            }
             return {
                 success: true,
                 message: {

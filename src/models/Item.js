@@ -5,6 +5,9 @@ const itemSchema = new mongoose.Schema(
     {
         name: { type: String, require: true },
         price: { type: Number, require: true, default: 0 },
+        sell: {type:Number,require:false,default:0}, //Giá bán
+        point: {type:Number,require: false,default:0}, //Điểm tình bạn cộng vào
+        multiplierRate:{type:Number,require:false,default:1},
         isBuy: { type: Boolean, required: false, default: true },
         description: { type: String, require: false },
         itemRef: { type: String, require: true, unique: true },

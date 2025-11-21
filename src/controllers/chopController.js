@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { ITEM_TYPE, ITEM_RARITY } = require("../config/constants");
+const { ITEM_TYPE, ITEM_RARITY, DEFAULT_EXP_LVL1, STEP_EXP } = require("../config/constants");
 const Inventory = require("../models/Inventory");
 const Item = require("../models/Item");
 const UserService = require("../services/userService");
@@ -132,7 +132,7 @@ class ChopController {
             if (!wood) throw new Error(`Không tìm thấy loại gỗ ${rarity}`);
 
             // Tính số lượng theo độ hiếm rìu
-            let quantity = randomByRarity(axe.item.rarity);
+            let quantity = Math.ceil(randomByRarity(wood.rarity) * (axe.item.multiplierRate || 1));
 
             // Tăng vào kho
             let inv = await Inventory.findOne({ userId, item: wood._id });
@@ -148,7 +148,25 @@ class ChopController {
             }
 
             await inv.save();
+            user.exp += 10
+            let levelsGained = 0;
+            let levelUpText = '';
+            const originalLevel = user.lvl;
+            const expToNextLevel = () => Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
 
+            while (user.exp >= expToNextLevel()) {
+                user.exp -= expToNextLevel();
+                user.lvl += 1;
+                levelsGained += 1;
+            }
+            if (levelsGained > 0) {
+                if (levelsGained === 1) {
+                    levelUpText = `<a:rocket:1433022000112074862> **Level Up!** Level ${originalLevel} → **${user.lvl}**`;
+                } else {
+                    levelUpText = `<a:rocket:1433022000112074862> **Level Up!** +${levelsGained} levels (${originalLevel} → **${user.lvl}**)`;
+                }
+            }
+            await user.save()
             // Set cooldown
             userCooldown[areaIndex] = Date.now();
             chopCooldowns.set(userId, userCooldown);
@@ -169,7 +187,9 @@ class ChopController {
                 .setThumbnail(wood.iconURL || null)
                 .setFooter({ text: `${user.globalName} | Cấp độ: ${user.lvl}` })
                 .setTimestamp();
-
+            if (levelUpText) {
+                embed.addFields({ name: '<a:yellowsparklies:1437402422371815477> Thành tựu', value: levelUpText, inline: false });
+            }
             return {
                 success: true,
                 message: { embeds: [embed] }
