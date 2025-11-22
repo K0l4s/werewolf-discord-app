@@ -34,6 +34,7 @@ const InventoryController = require('../controllers/inventoryController');
 const CraftController = require('../controllers/craftController');
 const ToolUseController = require('../controllers/toolUseController');
 const ChopController = require('../controllers/chopController');
+const SellController = require('../controllers/sellIController');
 // Thêm vào phần imports
 const handleMessageCreate = async (client, msg) => {
     // try {
@@ -632,6 +633,26 @@ const handleMessageCreate = async (client, msg) => {
     else if (cmd === "start" || cmd === "s") {
         await GameController.handleStartGame(msg, lang);
         return;
+    }
+    else if (cmd === "sell") {
+        // // Auto sell
+        // const embed = await SellController.sellAuto(interaction.user.id);
+        // interaction.reply({ embeds: [embed] });
+
+        // // Sell one item
+        // const embed = await SellController.sellOne(interaction.user.id, "WOOD1", 5);
+        // interaction.reply({ embeds: [embed] });
+        const itemRef = args[0]
+        const quantity = Math.max(1, Number(args[1]) || 1);
+
+        if (!itemRef) {
+            const embed = new EmbedBuilder()
+                .setTitle("❌ Không tìm thấy itemRef")
+                .setColor("Red");
+            return msg.reply({ embeds: [embed] })
+        }
+        const result = await SellController.sellOne(msg.author.id, itemRef, quantity)
+        return msg.reply({ embeds: [result] })
     }
     else if (cmd === "shop") {
         const embed = await ShopController.getShopEmbed()

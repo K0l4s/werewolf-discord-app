@@ -145,7 +145,7 @@ class MineController {
             let quantity = Math.ceil(randomByRarity(mineral.rarity) * (item.item.multiplierRate || 1));
             // if (rarity)
             if (inv) inv.quantity += quantity;
-            else inv = new Inventory({ userId, item: mineral._id, quantity: 1 });
+            else inv = new Inventory({ userId, item: mineral._id, quantity: quantity });
             if (item.remainingUse === 1) {
                 // Nếu chỉ còn 1 thì xóa luôn document
                 await ToolUse.findByIdAndDelete(item._id);
