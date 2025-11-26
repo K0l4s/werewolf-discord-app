@@ -9,7 +9,7 @@ const { Colors } = require("discord.js");
 
 class FriendActionController {
     static async sendGift(senderId, receiverId, itemRef, quantity = 1) {
-        // try {
+        try {
             // Giới hạn số lượng tối đa 10 (nhẫn thì quantity = 1)
             const quan = Math.min(parseInt(quantity) || 1, 10);
 
@@ -159,12 +159,12 @@ class FriendActionController {
                 message: { embeds: [embed] }
             };
 
-        // } catch (e) {
-        //     return {
-        //         success: false,
-        //         message: e.message
-        //     };
-        // }
+        } catch (e) {
+            return {
+                success: false,
+                message: e.message
+            };
+        }
     }
 
 
