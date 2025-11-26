@@ -5,25 +5,25 @@
     },
     "e": {
         "embed": "Đợi lát đê, cái tờ giấy của tao bị gì rồi nè",
-        "notJ":"Ê, nãy kêu chơi không chơi mà giờ tấy mấy gì đó?",
-        "ro":"Ê mày ơi, tao không thấy cái role của mày trong kho",
-        "miss_cmd":"Ơ, mày có đưa cho tao thiếu cái gì không nhể?",
+        "notJ": "Ê, nãy kêu chơi không chơi mà giờ tấy mấy gì đó?",
+        "ro": "Ê mày ơi, tao không thấy cái role của mày trong kho",
+        "miss_cmd": "Ơ, mày có đưa cho tao thiếu cái gì không nhể?",
         "permission": "Ủa alo? Bạn không đủ quyền để làm trò này ở server này đâu!",
-        "error":"Lỗi rồi nha!"
+        "error": "Lỗi rồi nha!"
     },
     "s": {
         "prefix_succ": "Prefix của server đổi thành: ",
-        "role":"Thương lắm mới tiết lộ nhá, role mày nè",
+        "role": "Thương lắm mới tiết lộ nhá, role mày nè",
         "cur_la": "Ngôn ngữ hiện tại của server này là **Việt Nam :flag_vn:** (Nếu như mày không biết 😏) nha!",
         "cur_pr": "Prefix hiện tại của server này là",
         "cur_lucky": "Buff may mắn hiện tại của bạn là",
-        "vc_succ":" Rồi, tao đã đặt voice channel là ",
-        "vc_succ2":" .Giờ thì đừng làm phiền tao!",
-        "embed_succ":" Rồi, tao đã đặt embed là ",
-        "embed_succ2":" .Giờ thì đừng làm **phìn** tao!",
-        "streak_succ":" Rồi, tao đã đặt trạng thái chuỗi là ",
-        "streak_succ2":" .Giờ thì đừng làm **phìn** tao!",
-        "setting":"Cài đặt server thành công!"
+        "vc_succ": " Rồi, tao đã đặt voice channel là ",
+        "vc_succ2": " .Giờ thì đừng làm phiền tao!",
+        "embed_succ": " Rồi, tao đã đặt embed là ",
+        "embed_succ2": " .Giờ thì đừng làm **phìn** tao!",
+        "streak_succ": " Rồi, tao đã đặt trạng thái chuỗi là ",
+        "streak_succ2": " .Giờ thì đừng làm **phìn** tao!",
+        "setting": "Cài đặt server thành công!"
     },
     "inv": {
         "ad_succ": "Xong! Code mời của bạn đây: ",
@@ -39,22 +39,23 @@
         "al_joined": "Vô rồi thì ngồi yên đi, nóng tính quá!",
         "joined": "Vô game rồi nha, đừng réo nữa!",
         "total": "**Tổng số người chơi: **",
-        "ref_s_ti":"Rồi, rồi, rồi. Tao tạo lại game mới cho mày rồi đây!",
-        "ref_s_de":"Đợi một lát, tao đang khởi tạo lại đây nè, làm gì phải nóng?",
-        "eJ":"Please **create new"
+        "ref_s_ti": "Rồi, rồi, rồi. Tao tạo lại game mới cho mày rồi đây!",
+        "ref_s_de": "Đợi một lát, tao đang khởi tạo lại đây nè, làm gì phải nóng?",
+        "eJ": "Please **create new"
     },
-    "oneTwoThree":{
-        "win":"Chúc mừng bạn đã thắng! Bạn nhận được ",
-        "lose":"Tiếc quá, bạn đã thua và mất đi ",
-        "tie":"Hòa rồi nha! Không ai mất gì cả!",
-        "not_enough":"Bạn không đủ coin để đặt cược!",
-        "title":"Trò chơi kéo búa bao",
-        "description":"Bạn đã cược **",
-        "choose":"**\n Hãy chọn icon của bạn bên dưới và thách đấu với bot!",
-        "your_choice":"Lựa chọn của bạn: ",
-        "bot_choice":"Lựa chọn của bot: ",
-        "not_your_game":"🚫 Đây không phải trò chơi của bạn!",
-        "new_balance":"Số dư hiện tại của bạn là: ",
-        "result_title":"Trò chơi kéo búa bao - Kết quả"
+    "oneTwoThree": {
+        "win": "Chúc mừng bạn đã thắng! Bạn nhận được ",
+        "lose": "Tiếc quá, bạn đã thua và mất đi ",
+        "tie": "Hòa rồi nha! Không ai mất gì cả!",
+        "not_enough": "Bạn không đủ coin để đặt cược!",
+        "title": "Trò chơi kéo búa bao",
+        "description": "Bạn đã cược **",
+        "choose": "**\n Hãy chọn icon của bạn bên dưới và thách đấu với bot!",
+        "your_choice": "Lựa chọn của bạn: ",
+        "bot_choice": "Lựa chọn của bot: ",
+        "not_your_game": "🚫 Đây không phải trò chơi của bạn!",
+        "new_balance": "Số dư hiện tại của bạn là: ",
+        "result_title": "Trò chơi kéo búa bao - Kết quả",
+        "bot_choice_load": "Đợi Keldo tí..."
     }
 }

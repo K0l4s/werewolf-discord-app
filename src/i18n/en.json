@@ -55,6 +55,7 @@
         "bot_choice":"Bot's choice: ",
         "not_your_game":"🚫 This isn’t your game!",
         "new_balance":"Your current balance is: ",
-        "result_title":"MiniGame | 1-2-3 - Result"
+        "result_title":"MiniGame | 1-2-3 - Result",
+        "bot_choice_load":"Keldo's choosing..."
     }
 }

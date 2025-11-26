@@ -5,6 +5,7 @@ const Inventory = require("../models/Inventory");
 const { ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder } = require("discord.js");
 const { ITEM_TYPE } = require("../config/constants");
 const Item = require("../models/Item");
+const Friend = require("../models/Friend");
 
 
 class MarryController {
@@ -27,8 +28,9 @@ class MarryController {
                 .setFooter({ text: "Keldo Chúc hai bạn trăm năm hạnh phúc!" })
                 .setTimestamp();
             return {
-                success:true,
-                message:{ embeds: [embed] }}
+                success: true,
+                message: { embeds: [embed] }
+            }
         }
         const now = Date.now(); // ms
         const start = new Date(marry.marryDate).getTime(); // ms
@@ -178,7 +180,25 @@ class MarryController {
             if (!marry)
                 throw new Error("Bạn... Đang **Ờ LON ĐÓ**! Ảo tưởng mình có gia đình rồi sao?!?")
 
+
             await Marry.deleteOne({ _id: marry._id });
+            const friend = await Friend.findOne({
+                $or: [
+                    { user1: userId },
+                    { user2: userId }
+                ]
+            })
+            if (!friend) {
+                friend = await Friend.create({
+                    user1: userId,
+                    user2: userId,
+                    friendPoint: 0,
+                    itemsCount: 0,
+                    last5Send: []
+                });
+            }
+            friend.friendPoint = 0
+            await friend.save()
             const embed = new EmbedBuilder()
                 .setTitle(`Hôm nay là ngày buồn!`)
                 .setDescription(`💔 Cuộc hôn nhân giữa <@${marry.senderId}> và <@${marry.receiverId}> đã chấm dứt.`)
@@ -253,7 +273,7 @@ class MarryController {
 
                     fields.push({
                         name: ring.name,
-                        value: `${ring.icon} **${ring.name}**\n<t:${timeStamp}:R>`,
+                        value: `**${r.quantity}** ${ring.icon} **${ring.name}**\n<t:${timeStamp}:R>`,
                         inline: true
                     });
                 });
@@ -366,6 +386,15 @@ class MarryController {
     }
     static async marry(userId, targetId, ringRef, client) {
         try {
+            let friends = await Friend.findOne({
+                $or: [
+                    { user1: userId, user2: targetId },
+                    { user1: targetId, user2: userId }
+                ]
+            });
+
+            if (!friends || friends.friendPoint < 200)
+                throw new Error(`Bạn và <@${targetId}> không thể cử hành hôn lễ điểm tình bạn chỉ mới đạt đến **${friends.friendPoint}/200**! Đừng nóng vội quá chứ!`)
 
             if (userId == targetId) {
                 const randomBad = [

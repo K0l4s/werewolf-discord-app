@@ -30,19 +30,19 @@ class MiniGameController {
 
         const scissorsButton = new ButtonBuilder()
             .setCustomId(`onetwothree|scissors|${bet}|${userId}`)
-            .setEmoji("<a:scissor:1437444788612890684>")
+            .setEmoji("<a:tool_3:1443140051344166983>")
             .setLabel("Scissors")
             .setStyle(1);
 
         const hammerButton = new ButtonBuilder()
             .setCustomId(`onetwothree|hammer|${bet}|${userId}`)
-            .setEmoji("<a:hammer:1437444063635706037>")
+            .setEmoji("<a:tool_1:1443140039801569336>")
             .setLabel("Hammer")
             .setStyle(1);
 
         const paperButton = new ButtonBuilder()
             .setCustomId(`onetwothree|paper|${bet}|${userId}`)
-            .setEmoji("<a:paper:1433099319711629393>")
+            .setEmoji("<a:tool_2:1443140043467260076>")
             .setLabel("Paper")
             .setStyle(1);
 
@@ -68,11 +68,11 @@ class MiniGameController {
         try {
             await interaction.deferUpdate();
 
-            const loadingEmoji = "<a:load:1410394844324429886>";
+            const loadingEmoji = "<a:tool_4:1443141674346877071>";
             const choiceEmojis = {
-                scissors: "<a:scissor:1437444788612890684>",
-                hammer: "<a:hammer:1437444063635706037>",
-                paper: "<a:paper:1433099319711629393>",
+                scissors: "<a:tool_3:1443140051344166983>",
+                hammer: "<a:tool_1:1443140039801569336>",
+                paper: "<a:tool_2:1443140043467260076>",
             };
 
             const parts = interaction.customId.split("|");
@@ -104,6 +104,23 @@ class MiniGameController {
             let buff = await calculateLuckyBuff(userId, interaction.guildId);
             if (isNaN(buff)) buff = 0;
             buff = Math.max(0, Math.min(buff, 100)); // giới hạn 0–100
+            // --- Hiệu ứng roll trong 2–3 giây ---
+            const rollIcons = [
+                choiceEmojis.scissors,
+                choiceEmojis.hammer,
+                choiceEmojis.paper
+            ];
+
+            for (let i = 0; i < 10; i++) { // 10 lần ~ 2 giây
+                const randomIcon = rollIcons[Math.floor(Math.random() * rollIcons.length)];
+
+                await interaction.editReply({
+                    content: `${t("oneTwoThree.your_choice", lang)} ${choiceEmojis[playerChoice]}
+${t("oneTwoThree.bot_choice_load", lang)} ${randomIcon}`
+                });
+
+                await new Promise(res => setTimeout(res, 200)); // 200ms/lần
+            }
 
             // mapping thắng/thua/hòa
             let winChoice, loseChoice, drawChoice;
@@ -262,7 +279,7 @@ class MiniGameController {
         const embed = new EmbedBuilder()
         embed.setTitle("Minigames | Bầu cua")
             .setDescription(`🎲 You bet **${wolfCoin(bet)}**\n Select random button below and you'll become a **Tycoon**!`)
-            .setImage("https://i.pinimg.com/736x/b0/55/7e/b0557ea48b720f61455d10f5dce24eb8.jpg")
+            .setImage("https://i.ibb.co/R4gTz6nv/board.png")
         return { embeds: [embed], components: [rows] }
     }
     static async bauCuaFinal(bet, userId, userChoice, interaction) {

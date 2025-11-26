@@ -6,7 +6,8 @@ const marrySchema = new mongoose.Schema({
     // ring: { type: mongoose.Schema.Types.ObjectId, ref: "Item", required: true },
     rings: [{
         ring: { type: mongoose.Schema.Types.ObjectId, ref: "Item" },
-        giftDate: { type: Date, default: Date.now() }
+        giftDate: { type: Date, default: Date.now() },
+        quantity: { type: Number, default: 2 }
     }],
     marryDate: { type: Date, required: true, default: Date.now() },
     lovePoint: { type: Number, required: true, default: 0 },
