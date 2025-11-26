@@ -916,17 +916,23 @@ const handleMessageCreate = async (client, msg) => {
         if (!itemRef)
             return msg.reply("Can't find itemRef!")
         let quan = Number(args[2]);
-        if(!quan)
+        if (!quan)
             quan = 1
         // if (isNaN(quan) || quan < 1)
-            // return msg.reply("Quantity must be a positive number!");
-        if(quan <0)
+        // return msg.reply("Quantity must be a positive number!");
+        if (quan < 0)
             quan = -quan
         if (quan > 10)
             quan = 10;
 
         const result = await FriendActionController.sendGift(msg.author.id, targetMember.id, itemRef, quan)
         return msg.reply(result.message)
+    }
+    else if (cmd === "friend") {
+        const targetMember = msg.mentions.members.first();
+        
+        const result = await FriendActionController.getFriendInfoEmbed(msg.author.id,targetMember.id)
+        return msg.reply(result)
     }
     else if (cmd === "baucua") {
         let bet = args[0];

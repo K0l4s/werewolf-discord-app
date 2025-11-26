@@ -8,6 +8,61 @@ const { Colors } = require("discord.js");
 
 
 class FriendActionController {
+    static async getFriendInfoEmbed(senderId, receiverId) {
+        // tìm hoặc tạo friends
+        let friends = await Friend.findOne({
+            $or: [
+                { user1: senderId, user2: receiverId },
+                { user1: receiverId, user2: senderId }
+            ]
+        });
+
+        if (!friends) {
+            friends = await Friend.create({
+                user1: senderId,
+                user2: receiverId,
+                friendPoint: 0,
+                itemsCount: 0,
+                last5Send: []
+            });
+        }
+        const last5 = friends.last5Send && friends.last5Send.length > 0
+            ? friends.last5Send
+                .slice(-5)
+                .reverse()
+                .map((d, i) => `**${i + 1}.** <t:${Math.floor(d.getTime() / 1000)}:R>`)
+                .join("\n")
+            : "_Chưa có lịch sử tặng quà_";
+
+        const embed = new EmbedBuilder()
+            .setColor(Colors.DarkVividPink)
+            .setTitle("💙 Thông Tin Tình Bạn")
+            .addFields(
+                {
+                    name: "👫 Bạn",
+                    value: `<@${senderId}> ↔️ <@${receiverId}>`,
+                    inline: false
+                },
+                {
+                    name: "🎁 Tổng quà đã tặng",
+                    value: `${friends.itemsCount || 0}`,
+                    inline: true
+                },
+                {
+                    name: "💎 Friend Point",
+                    value: `${friends.friendPoint || 0}`,
+                    inline: true
+                },
+                {
+                    name: "🕒 5 lần tặng gần nhất",
+                    value: last5,
+                    inline: false
+                }
+            )
+            .setTimestamp();
+
+        return { embeds: [embed] };
+    }
     static async sendGift(senderId, receiverId, itemRef, quantity = 1) {
         try {
             // Giới hạn số lượng tối đa 10 (nhẫn thì quantity = 1)
