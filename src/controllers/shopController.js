@@ -62,8 +62,8 @@ class ShopController {
                 const rarityIcon = rarityIcons[item.rarity] || '❔';
 
                 embed.addFields({
-                    name: `[${itemNumber}] ${item.itemRef} | ${item.icon} ${item.name} | ${wolfCoin(item.price)} | ${rarityIcon} ${item.rarity} | ${item.isBuy ? "🟢 Mua được" : "🔴 Không mua được"}`,
-                    value: `📖 ${item.description || "Không có mô tả"}`,
+                    name: `[${itemNumber}] ${item.itemRef} | ${item.icon} ${item.name} | ${wolfCoin(item.price)} | ${item.tokenPrice? wolfToken(item.tokenPrice): ""} | ${rarityIcon} ${item.rarity}`,
+                    value: `📖 ${item.description || "Không có mô tả"}`, 
                     inline: false
                 });
             });
