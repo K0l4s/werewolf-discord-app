@@ -184,21 +184,14 @@ class FriendActionController {
                 await Inventory.findByIdAndUpdate(inv._id, { $inc: { quantity: -quan } });
 
             // ====== GIVE ITEM TO RECEIVER ======
-            if (item.type != ITEM_TYPE.RING) {
-                let receInv = await Inventory.findOne({ userId: receiverId, item: item._id });
-
-                if (!receInv) {
-                    receInv = await Inventory.create({
-                        userId: receiverId,
-                        item: item._id,
-                        quantity: quan
-                    });
-                } else {
-                    await Inventory.findByIdAndUpdate(receInv._id, {
-                        $inc: { quantity: quan }
-                    });
-                }
+            if (item.type !== ITEM_TYPE.RING && item.type !== ITEM_TYPE.GIFT) {
+                await Inventory.findOneAndUpdate(
+                    { userId: receiverId, item: item._id },
+                    { $inc: { quantity: quan } },
+                    { upsert: true, new: true }
+                );
             }
+
 
             const embed = new EmbedBuilder()
                 .setTitle("Send Gift Success!")

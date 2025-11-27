@@ -26,6 +26,7 @@ module.exports = {
         NORMAL: 'normal',
         PET_FOOD: 'pet_food',
         MINERAL: 'mineral',
+        GIFT: 'gift',
         // TOOL: 'tool',
         
         PICKACE:'pickace',
