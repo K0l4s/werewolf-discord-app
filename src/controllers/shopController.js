@@ -258,7 +258,44 @@ class ShopController {
             const embed = new EmbedBuilder();
             embed.setTitle(`✅ Success!`)
                 .setDescription(`You bought ${quantity} x ${item.icon} ${item.name} (${wolfCoin(item.price)}) = ${wolfCoin(totalItemsPrice)} \nYou have: ${inv.quantity} ${item.icon} ${item.name} now`)
-                .setFooter({ text: "@Werewolf Shop" })
+                .setFooter({ text: "@Keldo Shop" })
+                .setTimestamp()
+                .setColor(0x00FF00);
+
+            return { embeds: [embed] };
+
+        } catch (error) {
+            console.error('Error in buyItem:', error);
+            return `An error occurred while purchasing the item.`;
+        }
+    }
+
+     static async buyItemRequest(userId, itemRef, quantity) {
+        try {
+            const user = await UserService.findUserById(userId);
+            const item = await ItemService.getItemByRef(itemRef);
+
+            if (!item) {
+                return `Don't find any item with ref: ${itemRef}!`;
+            }
+            if(!item.isBuy){
+                return `Item ${item.icon} ${item.name} is not for sale!`;
+            }
+            // const userCoin = Number(user.coin);
+            // const totalItemsPrice = Number(item.price) * Number(quantity);
+
+            // if (userCoin < totalItemsPrice) {
+            //     return `You don't have enough ${wolfIcon()}`;
+            // }
+
+            const buyByCoinBtn = new ButtonBuilder()
+            .setCustomId(`buy|coin|${userId}|${itemRef}|${quantity}`)
+            .setEmoji()
+
+            const embed = new EmbedBuilder();
+            embed.setTitle(`Buy Request!`)
+                .setDescription(``)
+                .setFooter({ text: "@Keldo Shop" })
                 .setTimestamp()
                 .setColor(0x00FF00);
 

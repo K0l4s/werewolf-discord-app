@@ -2,6 +2,7 @@ const Giveaway = require('../models/Giveaway');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const UserService = require('./userService');
+const { wolfIcon } = require('../utils/wolfCoin');
 const GA_STATUS = require('../models/Giveaway').GA_STATUS;
 
 class GiveawayService {
@@ -37,7 +38,7 @@ class GiveawayService {
         if (!host || host.coin < giveaway.rewards.currency) {
           return {
             success: false,
-            error: `Host không đủ coins. Cần: ${giveaway.rewards.currency}, Hiện có: ${host?.coin || 0}`
+            error: `Host không đủ ${wolfIcon()}. Cần: ${giveaway.rewards.currency}, Hiện có: ${host?.coin || 0}`
           };
         }
       }

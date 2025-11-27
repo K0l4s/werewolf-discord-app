@@ -14,7 +14,7 @@ const HuntSpiritController = require('../controllers/DauLaDaiLuc/huntSpiritContr
 const User = require('../models/User');
 const Prefix = require('../models/Prefix');
 const SpiritRingController = require('../controllers/DauLaDaiLuc/spiritRingController');
-const { wolfCoin } = require('../utils/wolfCoin');
+const { wolfCoin, wolfIcon } = require('../utils/wolfCoin');
 const MiniGameController = require('../controllers/miniGameController');
 const LanguageController = require("../controllers/languageController")
 const { t } = require('../i18n');
@@ -381,7 +381,7 @@ const handleMessageCreate = async (client, msg) => {
                         { name: 'ID', value: createdPet._id.toString(), inline: true },
                         { name: 'Loại', value: createdPet.type, inline: true },
                         { name: 'Lucky Boost', value: `${createdPet.luckyBoost}%`, inline: true },
-                        { name: 'Giá', value: `${createdPet.price} coins`, inline: true },
+                        { name: 'Giá', value: `${createdPet.price} ${wolfIcon()}`, inline: true },
                         { name: 'Yêu cầu Level', value: createdPet.lvlRequirement.toString(), inline: true }
                     ],
                     thumbnail: { url: createdPet.image },

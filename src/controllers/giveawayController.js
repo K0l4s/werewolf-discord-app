@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { wolfCoin } = require('../utils/wolfCoin');
+const { wolfCoin, wolfIcon } = require('../utils/wolfCoin');
 const GA_STATUS = require('../models/Giveaway').GA_STATUS;
 const GA_TYPE = require('../models/Giveaway').GA_TYPE;
 
@@ -24,7 +24,7 @@ class GiveawayController {
         // Thêm phần thưởng
         let rewardText = '';
         if (giveaway.rewards.currency) {
-            rewardText += `<a:animatedarrowgreen:1433017001567059968> **${giveaway.rewards.currency} coins**\n`;
+            rewardText += `<a:animatedarrowgreen:1433017001567059968> **${giveaway.rewards.currency} ${wolfIcon()}**\n`;
         }
         if (giveaway.rewards.items && giveaway.rewards.items.length > 0) {
             rewardText += `🎁 **Items** (chi tiết trong DB)\n`;
