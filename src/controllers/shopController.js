@@ -6,6 +6,7 @@ const InventoryService = require("../services/inventoryService");
 const Inventory = require("../models/Inventory");
 const { ITEM_RARITY, ITEM_TYPE } = require("../config/constants");
 const { formatType, rarityIcons } = require("../utils/format");
+
 class ShopController {
     static async getShopEmbed(page = 1, limit = 5, sortBy = 'name', sortOrder = 'asc', rarityFilter = 'all', typeFilter = 'all') {
         // Lấy dữ liệu items với các tham số lọc và sắp xếp
@@ -18,18 +19,7 @@ class ShopController {
             typeFilter,
             true
         );
-        const rarityIcons = {
-            "Common": "❤️️",
-            "Super Common": "🍀",
-            "Rare": "💎",
-            "Super Rare": "🔥",
-            "Epic": "🌌",
-            "Super Epic": "⚔️",
-            "Legendary": "👑",
-            "Super Legendary": "🌟",
-            "Mythic": "🐉",
-            "Super Mythic": "🚀"
-        };
+
         const embed = new EmbedBuilder()
             .setTitle("🛒 Shop")
             .setColor("Blue");
@@ -58,12 +48,12 @@ class ShopController {
 
             embed.setDescription(description);
             items.forEach((item, index) => {
-                const itemNumber = (currentPage - 1) * limit + index + 1;
+                // const itemNumber = (currentPage - 1) * limit + index + 1;
                 const rarityIcon = rarityIcons[item.rarity] || '❔';
 
                 embed.addFields({
-                    name: `[${itemNumber}] ${item.itemRef} | ${item.icon} ${item.name} | ${wolfCoin(item.price)} | ${item.tokenPrice? wolfToken(item.tokenPrice): ""} | ${rarityIcon} ${item.rarity}`,
-                    value: `📖 ${item.description || "Không có mô tả"}`, 
+                    name: `[${item.itemRef}]  | ${item.icon} ${item.name} | ${wolfCoin(item.price)} ${item.tokenPrice ? "| "+wolfToken(item.tokenPrice) + " |" : ""} ${rarityIcon}`,
+                    value: `📖 ${item.description || "Không có mô tả"}`,
                     inline: false
                 });
             });
@@ -83,6 +73,15 @@ class ShopController {
             .setLabel("Tiếp ➡️")
             .setStyle(ButtonStyle.Primary)
             .setDisabled(currentPage >= totalPages);
+        function parseCustomEmoji(emojiString) {
+            const match = emojiString.match(/<(a?):(\w+):(\d+)>/);
+            if (!match) return null;
+            return {
+                animated: match[1] === 'a',
+                name: match[2],
+                id: match[3]
+            };
+        }
 
         const raritySelect = new StringSelectMenuBuilder()
             .setCustomId('shop_rarity_filter')
@@ -93,14 +92,18 @@ class ShopController {
                     value: 'all',
                     default: rarityFilter === 'all'
                 },
-                ...Object.values(ITEM_RARITY).map(rarity => ({
-                    label: `
-                    ${rarityIcons[rarity] || '❔'}
-                    ${rarity}`,
-                    value: rarity,
-                    default: rarityFilter === rarity
-                }))
+                ...Object.values(ITEM_RARITY).map(rarity => {
+                    const emoji = parseCustomEmoji(rarityIcons[rarity]);
+
+                    return {
+                        label: rarity,
+                        value: rarity,
+                        default: rarityFilter === rarity,
+                        emoji: emoji ? { id: emoji.id, name: emoji.name } : undefined
+                    };
+                })
             ]);
+
 
         // Tạo dropdown lọc theo loại item
         const typeSelect = new StringSelectMenuBuilder()
@@ -363,10 +366,10 @@ class ShopController {
                 .setStyle(ButtonStyle.Secondary)
 
             const row = new ActionRowBuilder().addComponents(buyByCoinBtn, buyByTokenBtn)
-            
+
             const embed = new EmbedBuilder();
             embed.setTitle(`Buy Request!`)
-                .setDescription(`Method Payment \n **${isBuyCoin? wolfCoin(item.price):""}** ${isBuyToken? "or **"+wolfToken(item.tokenPrice)+"**":""}`)
+                .setDescription(`Method Payment \n **${isBuyCoin ? wolfCoin(item.price) : ""}** ${isBuyToken ? "or **" + wolfToken(item.tokenPrice) + "**" : ""}`)
                 .setFooter({ text: "@Keldo Shop" })
                 .setTimestamp()
                 .setColor(0x00FF00);

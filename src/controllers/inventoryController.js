@@ -28,22 +28,30 @@ class InventoryController {
         }
 
         // Gom 2 item mỗi dòng
+        // Gom 4 item mỗi dòng
         const rows = [];
-        for (let i = 0; i < inventoryItems.length; i += 2) {
-            const left = inventoryItems[i];
-            const right = inventoryItems[i + 1];
+        for (let i = 0; i < inventoryItems.length; i += 4) {
+            const items = inventoryItems.slice(i, i + 4);
 
-            const leftStr = `[${left.item.itemRef}] ${left.item.icon} x${left.quantity}`;
-            const rightStr = right
-                ? `[${right.item.itemRef}] ${right.item.icon} x${right.quantity}`
-                : "";
+            const strings = items.map((inv) => {
+                if (!inv) return "";
+                return `[${inv.item.itemRef}] ${inv.item.icon} (x${inv.quantity.toLocaleString("en-US")})`;
+            });
 
-            rows.push({ name: "\u200B", value: `${leftStr}${rightStr ? " | " + rightStr : ""}`, inline: false });
+            // Ghép bằng " || " nhưng bỏ slot trống
+            const rowValue = strings.filter(Boolean).join(" **||** ");
+
+            rows.push({
+                name: "\u200B",
+                value: rowValue,
+                inline: false
+            });
         }
+
 
         embed.addFields(rows);
         const prevButtonDisabled = page <= 1;
-        const nextButtonDisabled = inventoryItems.length < 10 ;
+        const nextButtonDisabled = inventoryItems.length < 10;
         const prevButton = new ButtonBuilder()
             .setCustomId(`inventory|${userId}|${page - 1}`)
             .setLabel('Previous')
@@ -55,7 +63,7 @@ class InventoryController {
             .setStyle('Primary')
             .setDisabled(nextButtonDisabled);
         const actionRow = new ActionRowBuilder().addComponents(prevButton, nextButton);
-        
+
         return { embeds: [embed], components: [actionRow] };
     }
 }
