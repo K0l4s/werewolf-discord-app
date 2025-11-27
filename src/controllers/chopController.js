@@ -57,25 +57,44 @@ const forestAreas = [
             [ITEM_RARITY.MY]: 3,
             [ITEM_RARITY.SMY]: 2,
         },
-    }
+    },
+    {
+            name: "🔥 Rừng Nguyên Sinh",
+            requiredLevel: 55,
+            rarityRates: {
+                [ITEM_RARITY.R]: 10,
+                [ITEM_RARITY.SR]: 20,
+                [ITEM_RARITY.E]: 20,
+                [ITEM_RARITY.SE]: 15,
+                [ITEM_RARITY.L]: 15,
+                [ITEM_RARITY.SL]: 10,
+                [ITEM_RARITY.MY]: 7,
+                [ITEM_RARITY.SMY]: 3,
+            },
+        },
 ];
 
-// Range số lượng theo độ hiếm của RÌU
-const rarityRange = {
-    [ITEM_RARITY.R]: 20,
-    [ITEM_RARITY.SR]: 15,
-    [ITEM_RARITY.E]: 12,
-    [ITEM_RARITY.SE]: 10,
-    [ITEM_RARITY.L]: 7,
-    [ITEM_RARITY.SL]: 5,
-    [ITEM_RARITY.MY]: 3,
-    [ITEM_RARITY.SMY]: 1,
+// thay thế rarityRange cũ bằng mapping có ý nghĩa hơn
+const dropMaxByRarity = {
+    [ITEM_RARITY.C]: 20,   // Common => rớt nhiều nhất
+    [ITEM_RARITY.SM]: 16,  // Super Common
+    [ITEM_RARITY.R]: 10,   // Rare
+    [ITEM_RARITY.SR]: 6,   // Super Rare
+    [ITEM_RARITY.E]: 4,    // Epic
+    [ITEM_RARITY.SE]: 3,   // Super Epic
+    [ITEM_RARITY.L]: 2,    // Legendary
+    [ITEM_RARITY.SL]: 2,   // Super Legendary (giữ 2)
+    [ITEM_RARITY.MY]: 1,   // Mythic
+    [ITEM_RARITY.SMY]: 1,  // Super Mythic (ít nhất)
 };
 
+// trả về 1..max (max dựa trên phẩm chất: phẩm chất cao => max nhỏ hơn)
 function randomByRarity(rarity) {
-    const max = rarityRange[rarity] || 1;
+    // phòng khi dữ liệu rarity là chuỗi khác -> fallback an toàn
+    const max = dropMaxByRarity[rarity] ?? 1;
     return Math.floor(Math.random() * max) + 1;
 }
+
 
 function randomRarity(rates) {
     const total = Object.values(rates).reduce((a, b) => a + b, 0);
