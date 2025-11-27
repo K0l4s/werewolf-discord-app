@@ -8,10 +8,11 @@ class InventoryController {
             quantity: { $gt: 0 }
         })
             .populate("item")
-            .skip((page - 1) * 10)
-            .limit(10);
-        const totalPages = Math.ceil(await Inventory.countDocuments({ userId, quantity: { $gt: 0 } }) / 10);
+            .skip((page - 1) * 16)
+            .limit(16);
+
         const totalItems = await Inventory.countDocuments({ userId, quantity: { $gt: 0 } });
+        const totalPages = Math.ceil(totalItems / 16);
         const embed = new EmbedBuilder()
             .setTitle("🎒 Kho đồ của bạn")
             .setColor("#FFD700")
@@ -35,7 +36,7 @@ class InventoryController {
 
             const strings = items.map((inv) => {
                 if (!inv) return "";
-                return `[${inv.item.itemRef}] ${inv.item.icon} (x${inv.quantity.toLocaleString("en-US")})`;
+                return `${"`"}[${inv.item.itemRef}]${"`"} ${inv.item.icon} (x${inv.quantity.toLocaleString("en-US")})`;
             });
 
             // Ghép bằng " || " nhưng bỏ slot trống

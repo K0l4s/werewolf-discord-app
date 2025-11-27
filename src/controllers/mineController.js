@@ -5,6 +5,7 @@ const Item = require("../models/Item");
 const UserService = require("../services/userService");
 const ToolUse = require("../models/ToolUse");
 const UserController = require("./userController");
+const { rarityIcons } = require("../utils/format");
 const MINE_COOLDOWN = 10 * 1000; // 5 phút
 const mineAreas = [
     {
@@ -184,7 +185,7 @@ class MineController {
                 .setTitle("<a:rwhitesmoke:1433076077642780705> Kết Quả Khai Thác <a:lwhitesmoke:1433024102636982284>")
                 .setDescription(
                     `Bạn đã đào được **${quantity} ${mineral.icon} ${mineral.name}**\n` +
-                    `<a:yellowarr:1433016945589882891> Độ hiếm: **${mineral.rarity.toUpperCase()}**\n` +
+                    `<a:yellowarr:1433016945589882891> Độ hiếm: ${rarityIcons[mineral.rarity] || ""} **${mineral.rarity.toUpperCase()}**\n` +
                     `<a:arrowbluelite:1433016969304735804> Khu vực: **${area.name}**`
                 )
                 .addFields({ name: `Độ bền ${item.item.icon} ${item.item.name}:`, value: `Còn lại ${item.remainingUse - 1 || 0} lượt sử dụng` })
@@ -198,7 +199,7 @@ class MineController {
                 )
                 .setThumbnail(mineral.iconURL || "https://cdn-icons-png.flaticon.com/512/854/854878.png")
                 .setFooter({
-                    text: `${user.globalName} | Cấp độ: ${user.lvl}`,
+                    text: `Keldo Mine | Cấp độ: ${user.lvl}`,
                     // iconURL: user.avatar || undefined
                 })
                 .setTimestamp();

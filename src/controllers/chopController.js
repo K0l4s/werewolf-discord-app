@@ -4,6 +4,7 @@ const Inventory = require("../models/Inventory");
 const Item = require("../models/Item");
 const UserService = require("../services/userService");
 const ToolUse = require("../models/ToolUse");
+const { rarityIcons } = require("../utils/format");
 
 const CHOP_COOLDOWN = 10 * 1000; // cooldown
 
@@ -108,7 +109,7 @@ class ChopController {
 
             // Kiểm tra level
             if (user.lvl < area.requiredLevel) {
-                throw new Error(`❌ Cần level ${area.requiredLevel} để vào ${area.name}`);
+                throw new Error(`<a:deny:1433805273595904070> Cần level ${area.requiredLevel} để vào ${area.name}`);
             }
 
             // Cooldown
@@ -117,7 +118,7 @@ class ChopController {
 
             if (lastChop && Date.now() - lastChop < CHOP_COOLDOWN) {
                 const remain = Math.ceil((CHOP_COOLDOWN - (Date.now() - lastChop)) / 1000);
-                throw new Error(`⏳ Vui lòng chờ ${remain}s để tiếp tục chặt cây.`);
+                throw new Error(`<a:alarm:1433097857740574840> Vui lòng chờ ${remain}s để tiếp tục chặt cây.`);
             }
 
             // Random độ hiếm
@@ -173,11 +174,11 @@ class ChopController {
 
             // Embed kết quả
             const embed = new EmbedBuilder()
-                .setTitle("🌲 Kết Quả Chặt Cây 🌲")
+                .setTitle("<a:rwhitesmoke:1433076077642780705> Kết Quả Chặt Cây <a:lwhitesmoke:1433024102636982284>")
                 .setDescription(
                     `Bạn đã chặt được **${quantity} ${wood.icon} ${wood.name}**\n` +
-                    `⭐ Độ hiếm: **${wood.rarity.toUpperCase()}**\n` +
-                    `📍 Khu vực: **${area.name}**`
+                    `<a:yellowarr:1433016945589882891> Độ hiếm: ${rarityIcons[wood.rarity] || ""} **${wood.rarity.toUpperCase()}**\n` +
+                    `<a:arrowbluelite:1433016969304735804> Khu vực: **${area.name}**`
                 )
                 .addFields({
                     name: `Độ bền rìu:`,
@@ -185,7 +186,7 @@ class ChopController {
                 })
                 .setColor(0x34c759)
                 .setThumbnail(wood.iconURL || null)
-                .setFooter({ text: `${user.globalName} | Cấp độ: ${user.lvl}` })
+                .setFooter({ text: `Keldo Chop | Cấp độ: ${user.lvl}` })
                 .setTimestamp();
             if (levelUpText) {
                 embed.addFields({ name: '<a:yellowsparklies:1437402422371815477> Thành tựu', value: levelUpText, inline: false });
