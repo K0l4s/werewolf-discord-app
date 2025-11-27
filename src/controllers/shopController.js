@@ -1,6 +1,6 @@
 const { Embed, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const ItemService = require("../services/itemService");
-const { wolfCoin, wolfIcon } = require("../utils/wolfCoin");
+const { wolfCoin, wolfIcon, wolfToken } = require("../utils/wolfCoin");
 const UserService = require("../services/userService");
 const InventoryService = require("../services/inventoryService");
 const Inventory = require("../models/Inventory");
@@ -62,7 +62,7 @@ class ShopController {
                 const rarityIcon = rarityIcons[item.rarity] || '❔';
 
                 embed.addFields({
-                    name: `[${itemNumber}] ${item.itemRef} | ${item.icon} ${item.name} | ${wolfCoin(item.price)} | ${rarityIcon} ${item.rarity} | ${item.isBuy?"🟢 Mua được":"🔴 Không mua được"}`,
+                    name: `[${itemNumber}] ${item.itemRef} | ${item.icon} ${item.name} | ${wolfCoin(item.price)} | ${rarityIcon} ${item.rarity} | ${item.isBuy ? "🟢 Mua được" : "🔴 Không mua được"}`,
                     value: `📖 ${item.description || "Không có mô tả"}`,
                     inline: false
                 });
@@ -217,7 +217,7 @@ class ShopController {
     //     return { embeds: [embed], components: [row] }; // phải là embeds: [embed]
 
     // }
-    static async buyItem(userId, itemRef, quantity) {
+    static async buyItemByCoin(userId, itemRef, quantity) {
         try {
             const user = await UserService.findUserById(userId);
             const item = await ItemService.getItemByRef(itemRef);
@@ -225,7 +225,7 @@ class ShopController {
             if (!item) {
                 return `Don't find any item with ref: ${itemRef}!`;
             }
-            if(!item.isBuy){
+            if (!item.isBuy) {
                 return `Item ${item.icon} ${item.name} is not for sale!`;
             }
             const userCoin = Number(user.coin);
@@ -237,6 +237,61 @@ class ShopController {
 
             // Trừ coin
             user.coin -= totalItemsPrice;
+            await user.save();
+
+            // Sử dụng findOneAndUpdate với upsert để đảm bảo không bị lỗi
+            const inv = await Inventory.findOneAndUpdate(
+                {
+                    userId: userId,
+                    item: item._id
+                },
+                {
+                    $inc: { quantity: quantity }
+                },
+                {
+                    upsert: true, // Tạo mới nếu không tồn tại
+                    new: true, // Trả về document sau khi update
+                    setDefaultsOnInsert: true
+                }
+            ).populate('item'); // Populate để lấy thông tin item
+
+            const embed = new EmbedBuilder();
+            embed.setTitle(`✅ Success!`)
+                .setDescription(`You bought ${quantity} x ${item.icon} ${item.name} (${wolfToken(item.tokenPrice)}) = ${wolfToken(totalItemsPrice)} \nYou have: ${inv.quantity} ${item.icon} ${item.name} now`)
+                .setFooter({ text: "@Keldo Shop" })
+                .setTimestamp()
+                .setColor(0x00FF00);
+
+            return { embeds: [embed] };
+
+        } catch (error) {
+            console.error('Error in buyItem:', error);
+            return `An error occurred while purchasing the item.`;
+        }
+    }
+    static async buyItemByToken(userId, itemRef, quantity) {
+        try {
+            const user = await UserService.findUserById(userId);
+            const item = await ItemService.getItemByRef(itemRef);
+
+            if (!item) {
+                return `Don't find any item with ref: ${itemRef}!`;
+            }
+            if (!item.isBuy) {
+                return `Item ${item.icon} ${item.name} is not for sale!`;
+            }
+            if (!item.tokenPrice)
+                return `Can't buy by token!`;
+
+            const userCoin = Number(user.token) || 0;
+            const totalItemsPrice = Number(item.tokenPrice) * Number(quantity);
+
+            if (userCoin < totalItemsPrice) {
+                return `You don't have enough ${wolfIcon()}`;
+            }
+
+            // Trừ coin
+            user.token -= totalItemsPrice;
             await user.save();
 
             // Sử dụng findOneAndUpdate với upsert để đảm bảo không bị lỗi
@@ -269,16 +324,15 @@ class ShopController {
             return `An error occurred while purchasing the item.`;
         }
     }
-
-     static async buyItemRequest(userId, itemRef, quantity) {
+    static async buyItemRequest(userId, itemRef, quantity) {
         try {
-            const user = await UserService.findUserById(userId);
+            // const user = await UserService.findUserById(userId);
             const item = await ItemService.getItemByRef(itemRef);
 
             if (!item) {
                 return `Don't find any item with ref: ${itemRef}!`;
             }
-            if(!item.isBuy){
+            if (!item.isBuy) {
                 return `Item ${item.icon} ${item.name} is not for sale!`;
             }
             // const userCoin = Number(user.coin);
@@ -287,19 +341,37 @@ class ShopController {
             // if (userCoin < totalItemsPrice) {
             //     return `You don't have enough ${wolfIcon()}`;
             // }
+            let isBuyCoin = false;
+            let isBuyToken = false;
 
+            if (item.price)
+                isBuyCoin = true
+            if (item.tokenPrice)
+                isBuyToken = true
             const buyByCoinBtn = new ButtonBuilder()
-            .setCustomId(`buy|coin|${userId}|${itemRef}|${quantity}`)
-            .setEmoji()
+                .setCustomId(`buy|coin|${userId}|${itemRef}|${quantity}`)
+                .setEmoji("<:wolf_coin:1443472537425022996>")
+                .setDisabled(!isBuyCoin)
+                .setLabel("Mua bằng coin")
+                .setStyle(ButtonStyle.Secondary)
 
+            const buyByTokenBtn = new ButtonBuilder()
+                .setCustomId(`buy|token|${userId}|${itemRef}|${quantity}`)
+                .setEmoji("<:token:1443472738303082677>")
+                .setDisabled(!isBuyToken)
+                .setLabel("Mua bằng token")
+                .setStyle(ButtonStyle.Secondary)
+
+            const row = new ActionRowBuilder().addComponents(buyByCoinBtn, buyByTokenBtn)
+            
             const embed = new EmbedBuilder();
             embed.setTitle(`Buy Request!`)
-                .setDescription(``)
+                .setDescription(`Method Payment \n **${isBuyCoin? wolfCoin(item.price):""}** ${isBuyToken? "or **"+wolfToken(item.tokenPrice)+"**":""}`)
                 .setFooter({ text: "@Keldo Shop" })
                 .setTimestamp()
                 .setColor(0x00FF00);
 
-            return { embeds: [embed] };
+            return { embeds: [embed], components: [row] };
 
         } catch (error) {
             console.error('Error in buyItem:', error);

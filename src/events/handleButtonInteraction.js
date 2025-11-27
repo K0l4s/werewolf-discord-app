@@ -12,6 +12,7 @@ const InventoryController = require("../controllers/inventoryController");
 const MarryController = require("../controllers/marryController");
 const ItemService = require("../services/itemService");
 const Marry = require("../models/Marry");
+const ShopController = require("../controllers/shopController");
 
 module.exports = async (interaction, client) => {
 
@@ -25,6 +26,27 @@ module.exports = async (interaction, client) => {
         const page = parseInt(args[3]) || 1;
         const data = await StreakController.getUserStreakInfo(client, userId, guildId, page);
         return interaction.update(data);
+    }
+    else if (actionType === "buy") {
+        await interaction.deferReply({ ephemeral: true })
+        try {
+            const type = args[1]
+            const userId = args[2]
+            const itemRef = args[3];
+            const quantity = parseInt(args[4])
+            if (!type || !userId || !itemRef | !quantity)
+                throw new Error("Missing");
+            if (type == "token") {
+                const embed = await ShopController.buyItemByToken(userId, itemRef, quantity)
+                await interaction.editReply(embed)
+                return await interaction.message.edit({ components: [] })
+            }
+            const embed = await ShopController.buyItemByCoin(userId, itemRef, quantity)
+            await interaction.editReply(embed)
+            return await interaction.message.edit({ components: [] })
+        } catch (e) {
+            return interaction.editReply({ content: "Đã có lỗi xảy ra!" })
+        }
     }
     else if (actionType === "divorce") {
         await interaction.deferReply({ ephemeral: true })

@@ -719,7 +719,8 @@ const handleMessageCreate = async (client, msg) => {
         //     msg.reply("Don't have item Id")
         if (!quantity || quantity < 0)
             quantity = 1;
-        const embed = await ShopController.buyItem(userId, itemRef, quantity)
+        // const embed = await ShopController.buyItem(userId, itemRef, quantity)
+        const embed = await ShopController.buyItemRequest(userId, itemRef, quantity)
         msg.reply(embed)
     }
     // if (cmd === 'cit') {
@@ -930,8 +931,8 @@ const handleMessageCreate = async (client, msg) => {
     }
     else if (cmd === "friend") {
         const targetMember = msg.mentions.members.first();
-        
-        const result = await FriendActionController.getFriendInfoEmbed(msg.author.id,targetMember.id)
+
+        const result = await FriendActionController.getFriendInfoEmbed(msg.author.id, targetMember.id)
         return msg.reply(result)
     }
     else if (cmd === "baucua") {
