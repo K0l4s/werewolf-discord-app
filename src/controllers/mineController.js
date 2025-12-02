@@ -6,73 +6,74 @@ const UserService = require("../services/userService");
 const ToolUse = require("../models/ToolUse");
 const UserController = require("./userController");
 const { rarityIcons } = require("../utils/format");
+const MineArea = require("../models/MineArea");
 const MINE_COOLDOWN = 10 * 1000; // 5 phút
-const mineAreas = [
-    {
-        name: "⛰️ Khu 1: Hẻm Núi Đá Xám",
-        requiredLevel: 1,
-        rarityRates: {
-            [ITEM_RARITY.C]: 60,
-            [ITEM_RARITY.SM]: 25,
-            [ITEM_RARITY.R]: 10,
-            [ITEM_RARITY.SR]: 4,
-            [ITEM_RARITY.E]: 1,
-        },
-    },
-    {
-        name: "💎 Khu 2: Hang Pha Lê",
-        requiredLevel: 15,
-        rarityRates: {
-            [ITEM_RARITY.C]: 45,
-            [ITEM_RARITY.SM]: 25,
-            [ITEM_RARITY.R]: 15,
-            [ITEM_RARITY.SR]: 10,
-            [ITEM_RARITY.E]: 5,
-        },
-    },
-    {
-        name: "🌋 Khu 3: Núi Lửa Đỏ",
-        requiredLevel: 30,
-        rarityRates: {
-            [ITEM_RARITY.SM]: 25,
-            [ITEM_RARITY.R]: 25,
-            [ITEM_RARITY.SR]: 20,
-            [ITEM_RARITY.E]: 15,
-            [ITEM_RARITY.SE]: 10,
-            [ITEM_RARITY.L]: 5,
-        },
-    },
-    {
-        name: "🌕 Khu 4: Hầm Ánh Trăng",
-        requiredLevel: 50,
-        rarityRates: {
-            [ITEM_RARITY.R]: 20,
-            [ITEM_RARITY.SR]: 25,
-            [ITEM_RARITY.E]: 20,
-            [ITEM_RARITY.SE]: 15,
-            [ITEM_RARITY.L]: 10,
-            [ITEM_RARITY.SL]: 5,
-            [ITEM_RARITY.MY]: 3,
-            [ITEM_RARITY.SMY]: 2,
-        },
-    },
-    {
-        name: "🔥 Khu 5: Lõi Trái Đất",
-        requiredLevel: 55,
-        rarityRates: {
-            [ITEM_RARITY.R]: 10,
-            [ITEM_RARITY.SR]: 20,
-            [ITEM_RARITY.E]: 20,
-            [ITEM_RARITY.SE]: 15,
-            [ITEM_RARITY.L]: 15,
-            [ITEM_RARITY.SL]: 10,
-            [ITEM_RARITY.MY]: 7,
-            [ITEM_RARITY.SMY]: 3,
-        },
-    },
-];
+// const mineAreas = [
+//     {
+//         name: "⛰️ Khu 1: Hẻm Núi Đá Xám",
+//         requiredLevel: 1,
+//         rarityRates: {
+//             [ITEM_RARITY.C]: 60,
+//             [ITEM_RARITY.SM]: 25,
+//             [ITEM_RARITY.R]: 10,
+//             [ITEM_RARITY.SR]: 4,
+//             [ITEM_RARITY.E]: 1,
+//         },
+//     },
+//     {
+//         name: "💎 Khu 2: Hang Pha Lê",
+//         requiredLevel: 15,
+//         rarityRates: {
+//             [ITEM_RARITY.C]: 45,
+//             [ITEM_RARITY.SM]: 25,
+//             [ITEM_RARITY.R]: 15,
+//             [ITEM_RARITY.SR]: 10,
+//             [ITEM_RARITY.E]: 5,
+//         },
+//     },
+//     {
+//         name: "🌋 Khu 3: Núi Lửa Đỏ",
+//         requiredLevel: 30,
+//         rarityRates: {
+//             [ITEM_RARITY.SM]: 25,
+//             [ITEM_RARITY.R]: 25,
+//             [ITEM_RARITY.SR]: 20,
+//             [ITEM_RARITY.E]: 15,
+//             [ITEM_RARITY.SE]: 10,
+//             [ITEM_RARITY.L]: 5,
+//         },
+//     },
+//     {
+//         name: "🌕 Khu 4: Hầm Ánh Trăng",
+//         requiredLevel: 50,
+//         rarityRates: {
+//             [ITEM_RARITY.R]: 20,
+//             [ITEM_RARITY.SR]: 25,
+//             [ITEM_RARITY.E]: 20,
+//             [ITEM_RARITY.SE]: 15,
+//             [ITEM_RARITY.L]: 10,
+//             [ITEM_RARITY.SL]: 5,
+//             [ITEM_RARITY.MY]: 3,
+//             [ITEM_RARITY.SMY]: 2,
+//         },
+//     },
+//     {
+//         name: "🔥 Khu 5: Lõi Trái Đất",
+//         requiredLevel: 55,
+//         rarityRates: {
+//             [ITEM_RARITY.R]: 10,
+//             [ITEM_RARITY.SR]: 20,
+//             [ITEM_RARITY.E]: 20,
+//             [ITEM_RARITY.SE]: 15,
+//             [ITEM_RARITY.L]: 15,
+//             [ITEM_RARITY.SL]: 10,
+//             [ITEM_RARITY.MY]: 7,
+//             [ITEM_RARITY.SMY]: 3,
+//         },
+//     },
+// ];
 
-// thay thế rarityRange cũ bằng mapping có ý nghĩa hơn
+// // thay thế rarityRange cũ bằng mapping có ý nghĩa hơn
 const dropMaxByRarity = {
     [ITEM_RARITY.C]: 20,   // Common => rớt nhiều nhất
     [ITEM_RARITY.SM]: 16,  // Super Common
@@ -113,8 +114,10 @@ class MineController {
 
             if (!user) throw new Error("Không tìm thấy người dùng.");
 
-            const area = mineAreas[areaIndex];
+            // const area = mineAreas[areaIndex];
+            const area = await MineArea.findOne({ index: areaIndex });
             if (!area) throw new Error("Khu đào không hợp lệ.");
+            // if (!area) throw new Error("Khu đào không hợp lệ.");
             const toolUses = await ToolUse.find({ userId: userId }).populate("item");
             console.log(toolUses)
             const item = toolUses.find(t => t.item?.type === ITEM_TYPE.PICKACE);

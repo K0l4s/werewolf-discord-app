@@ -1,6 +1,8 @@
 const { EmbedBuilder } = require("discord.js");
 const Inventory = require("../models/Inventory");
 const Item = require("../models/Item");
+const UserService = require("../services/userService");
+const { wolfCoin } = require("../utils/wolfCoin");
 
 class SellController {
 
@@ -76,12 +78,14 @@ class SellController {
             inv.quantity -= quantity;
             if (inv.quantity <= 0) await Inventory.deleteOne({ _id: inv._id });
             else await inv.save();
-
+            const user = await UserService.findUserById(userId)
+            user.coin += earn;
+            await user.save();
             return new EmbedBuilder()
                 .setTitle("💰 Bán Vật Phẩm")
                 .setColor("Green")
                 .setDescription(
-                    `${item.icon} **${item.name}** × ${quantity}\n👉 Thu được: **${earn}**`
+                    `${item.icon} **${item.name}** × ${quantity}\n👉 Thu được: **${wolfCoin(earn)}**`
                 );
 
         } catch (err) {

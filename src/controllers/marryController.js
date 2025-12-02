@@ -393,8 +393,14 @@ class MarryController {
                 ]
             });
 
-            if (!friends || friends.friendPoint < 200)
-                throw new Error(`Bạn và <@${targetId}> không thể cử hành hôn lễ điểm tình bạn chỉ mới đạt đến **${friends.friendPoint}/200**! Đừng nóng vội quá chứ!`)
+            if (!friends) {
+                throw new Error(`Bạn và <@${targetId}> hiện **chưa phải bạn bè** nên không thể cử hành hôn lễ!`);
+            }
+            
+            if (friends.friendPoint < 200) {
+                throw new Error(`Bạn và <@${targetId}> không thể cử hành hôn lễ điểm tình bạn chỉ mới đạt đến **${friends.friendPoint}/200**! Đừng nóng vội quá chứ!`);
+            }
+
 
             if (userId == targetId) {
                 const randomBad = [

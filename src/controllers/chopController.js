@@ -9,70 +9,70 @@ const { rarityIcons } = require("../utils/format");
 const CHOP_COOLDOWN = 10 * 1000; // cooldown
 
 // Danh sách khu rừng
-const forestAreas = [
-    {
-        name: "🌲 Rừng Sồi Xanh",
-        requiredLevel: 1,
-        rarityRates: {
-            [ITEM_RARITY.C]: 55,
-            [ITEM_RARITY.SM]: 25,
-            [ITEM_RARITY.R]: 12,
-            [ITEM_RARITY.SR]: 6,
-            [ITEM_RARITY.E]: 2,
-        },
-    },
-    {
-        name: "🌳 Rừng Cổ Thụ",
-        requiredLevel: 15,
-        rarityRates: {
-            [ITEM_RARITY.C]: 40,
-            [ITEM_RARITY.SM]: 30,
-            [ITEM_RARITY.R]: 15,
-            [ITEM_RARITY.SR]: 10,
-            [ITEM_RARITY.E]: 5,
-        },
-    },
-    {
-        name: "🎋 Khu Tre Trăm Năm",
-        requiredLevel: 30,
-        rarityRates: {
-            [ITEM_RARITY.SM]: 25,
-            [ITEM_RARITY.R]: 25,
-            [ITEM_RARITY.SR]: 20,
-            [ITEM_RARITY.E]: 15,
-            [ITEM_RARITY.SE]: 10,
-            [ITEM_RARITY.L]: 5,
-        },
-    },
-    {
-        name: "🌕 Rừng Ánh Trăng",
-        requiredLevel: 50,
-        rarityRates: {
-            [ITEM_RARITY.R]: 20,
-            [ITEM_RARITY.SR]: 25,
-            [ITEM_RARITY.E]: 20,
-            [ITEM_RARITY.SE]: 15,
-            [ITEM_RARITY.L]: 10,
-            [ITEM_RARITY.SL]: 5,
-            [ITEM_RARITY.MY]: 3,
-            [ITEM_RARITY.SMY]: 2,
-        },
-    },
-    {
-            name: "🔥 Rừng Nguyên Sinh",
-            requiredLevel: 55,
-            rarityRates: {
-                [ITEM_RARITY.R]: 10,
-                [ITEM_RARITY.SR]: 20,
-                [ITEM_RARITY.E]: 20,
-                [ITEM_RARITY.SE]: 15,
-                [ITEM_RARITY.L]: 15,
-                [ITEM_RARITY.SL]: 10,
-                [ITEM_RARITY.MY]: 7,
-                [ITEM_RARITY.SMY]: 3,
-            },
-        },
-];
+// const forestAreas = [
+//     {
+//         name: "🌲 Rừng Sồi Xanh",
+//         requiredLevel: 1,
+//         rarityRates: {
+//             [ITEM_RARITY.C]: 55,
+//             [ITEM_RARITY.SM]: 25,
+//             [ITEM_RARITY.R]: 12,
+//             [ITEM_RARITY.SR]: 6,
+//             [ITEM_RARITY.E]: 2,
+//         },
+//     },
+//     {
+//         name: "🌳 Rừng Cổ Thụ",
+//         requiredLevel: 15,
+//         rarityRates: {
+//             [ITEM_RARITY.C]: 40,
+//             [ITEM_RARITY.SM]: 30,
+//             [ITEM_RARITY.R]: 15,
+//             [ITEM_RARITY.SR]: 10,
+//             [ITEM_RARITY.E]: 5,
+//         },
+//     },
+//     {
+//         name: "🎋 Khu Tre Trăm Năm",
+//         requiredLevel: 30,
+//         rarityRates: {
+//             [ITEM_RARITY.SM]: 25,
+//             [ITEM_RARITY.R]: 25,
+//             [ITEM_RARITY.SR]: 20,
+//             [ITEM_RARITY.E]: 15,
+//             [ITEM_RARITY.SE]: 10,
+//             [ITEM_RARITY.L]: 5,
+//         },
+//     },
+//     {
+//         name: "🌕 Rừng Ánh Trăng",
+//         requiredLevel: 50,
+//         rarityRates: {
+//             [ITEM_RARITY.R]: 20,
+//             [ITEM_RARITY.SR]: 25,
+//             [ITEM_RARITY.E]: 20,
+//             [ITEM_RARITY.SE]: 15,
+//             [ITEM_RARITY.L]: 10,
+//             [ITEM_RARITY.SL]: 5,
+//             [ITEM_RARITY.MY]: 3,
+//             [ITEM_RARITY.SMY]: 2,
+//         },
+//     },
+//     {
+//             name: "🔥 Rừng Nguyên Sinh",
+//             requiredLevel: 55,
+//             rarityRates: {
+//                 [ITEM_RARITY.R]: 10,
+//                 [ITEM_RARITY.SR]: 20,
+//                 [ITEM_RARITY.E]: 20,
+//                 [ITEM_RARITY.SE]: 15,
+//                 [ITEM_RARITY.L]: 15,
+//                 [ITEM_RARITY.SL]: 10,
+//                 [ITEM_RARITY.MY]: 7,
+//                 [ITEM_RARITY.SMY]: 3,
+//             },
+//         },
+// ];
 
 // thay thế rarityRange cũ bằng mapping có ý nghĩa hơn
 const dropMaxByRarity = {
