@@ -5,6 +5,7 @@ const Item = require("../models/Item");
 const UserService = require("../services/userService");
 const ToolUse = require("../models/ToolUse");
 const { rarityIcons } = require("../utils/format");
+const ForestArea = require("../models/ForestArea");
 
 const CHOP_COOLDOWN = 10 * 1000; // cooldown
 
@@ -116,7 +117,9 @@ class ChopController {
             const user = await UserService.findUserById(userId);
             if (!user) throw new Error("Không tìm thấy người dùng.");
 
-            const area = forestAreas[areaIndex];
+            // const area = forestAreas[areaIndex];
+            const area = await ForestArea.findOne({ index: areaIndex });
+
             if (!area) throw new Error("Khu chặt cây không hợp lệ.");
 
             // Lấy tool RÌU

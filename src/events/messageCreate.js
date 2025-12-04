@@ -36,6 +36,8 @@ const ToolUseController = require('../controllers/toolUseController');
 const ChopController = require('../controllers/chopController');
 const SellController = require('../controllers/sellIController');
 const FriendActionController = require('../controllers/friendActionController');
+const { getExtendedLunarInfo, getFullLunarInfo } = require('../utils/lunar');
+const LunarCalendarController = require('../controllers/lunarCalendarController');
 // Thêm vào phần imports
 const handleMessageCreate = async (client, msg) => {
     // try {
@@ -654,6 +656,64 @@ const handleMessageCreate = async (client, msg) => {
         }
         const result = await SellController.sellOne(msg.author.id, itemRef, quantity)
         return msg.reply({ embeds: [result] })
+    }
+    else if (cmd === "amlich") {
+
+        // 1. Regex quét tìm ngày tháng trong msg.content
+        // Giải thích:
+        // (\d{1,2})      : Tìm 1 hoặc 2 số (Ngày)
+        // [\/\:\s\-]     : Ký tự phân cách (Dấu /, dấu :, khoảng trắng, hoặc dấu -)
+        // (\d{1,2})      : Tìm 1 hoặc 2 số (Tháng)
+        // [\/\:\s\-]     : Ký tự phân cách tiếp
+        // (\d{4})        : Tìm 4 số (Năm)
+        const datePattern = /(\d{1,2})[\/\:\s\-](\d{1,2})[\/\:\s\-](\d{4})/;
+
+        // Hàm match sẽ tìm chuỗi phù hợp đầu tiên trong msg.content
+        const match = msg.content.match(datePattern);
+
+        let dd, mm, yy;
+        let isValid = false; // Cờ đánh dấu xem dữ liệu nhập có hợp lệ không
+
+        if (match) {
+            // match[1] là ngày, match[2] là tháng, match[3] là năm
+            dd = parseInt(match[1]);
+            mm = parseInt(match[2]);
+            yy = parseInt(match[3]);
+
+            // 2. Kiểm tra logic ngày tháng (Valid Date Check)
+            // Tháng trong JS chạy từ 0-11 nên phải trừ 1
+            const testDate = new Date(yy, mm - 1, dd);
+
+            // Kiểm tra xem JS có tự động sửa ngày không (VD: 30/02 -> 01/03 là sai logic nhập)
+            if (testDate.getFullYear() === yy &&
+                testDate.getMonth() === mm - 1 &&
+                testDate.getDate() === dd) {
+                isValid = true;
+            }
+        }
+
+        // 3. Nếu không tìm thấy ngày (match == null) hoặc ngày nhập sai logic (isValid == false)
+        // -> Lấy ngày hiện tại
+        if (!isValid) {
+            const today = Date.now();
+
+            const now = new Date(today);
+
+            // Lưu ý quan trọng: 
+            // .getDate() lấy ngày trong tháng (1-31)
+            // .getDay() là lấy THỨ trong tuần (0-6) -> Đừng dùng cái này cho biến dd
+            dd = now.getDate();
+            mm = now.getMonth() + 1; // Tháng (0-11) nên phải +1
+            yy = now.getFullYear();
+
+            console.log(`Dữ liệu không hợp lệ hoặc không có. Lấy ngày hôm nay: ${dd}/${mm}/${yy}`);
+        }
+
+        // 4. Xử lý logic
+        const lunarInfo = getFullLunarInfo(dd, mm, yy);
+        const result = LunarCalendarController.buildExtendedLunarEmbed(lunarInfo);
+
+        msg.reply(result.message);
     }
     else if (cmd === "shop") {
         const embed = await ShopController.getShopEmbed()
