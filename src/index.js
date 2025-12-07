@@ -22,6 +22,7 @@ const schedulePendingTicketDeletions = require('./jobs/schedulePendingTicketDele
 const CraftItem = require('./models/CraftItem');
 const Item = require('./models/Item');
 const ScheduleGA = require('./jobs/scheduleDeleteGA');
+const BoxDropRate = require('./models/BoxDropRate');
 // Discord client setup
 const client = new Client({
     intents: [
@@ -82,6 +83,18 @@ async function startServer() {
         //         requiredLevel: 1
         //     }
         // })
+        const items = await Item.findById("6935bad1cf5eafa67cd81429");
+        const id = await Item.findById("6920b5b023b9f65be13c9692");
+        BoxDropRate.create({
+            box:items,
+            items:[
+                {
+                    id:id,
+                    dropRate:0.2,
+                    maxQuantity:3
+                }
+            ]
+        })
         // Discord bot events
         client.once('ready', async() => {
             console.log(`✅ Bot đã đăng nhập với tên: ${client.user.tag}`);

@@ -38,6 +38,7 @@ const SellController = require('../controllers/sellIController');
 const FriendActionController = require('../controllers/friendActionController');
 const { getExtendedLunarInfo, getFullLunarInfo } = require('../utils/lunar');
 const LunarCalendarController = require('../controllers/lunarCalendarController');
+const BoxController = require('../controllers/boxdropController');
 // Thêm vào phần imports
 const handleMessageCreate = async (client, msg) => {
     // try {
@@ -172,6 +173,7 @@ const handleMessageCreate = async (client, msg) => {
         const data = await StreakController.getUserStreakInfo(client, msg.author.id, msg.guild.id, 1);
         return msg.reply(data);
     }
+
     if (cmd === "status") {
         const devUser = await client.users.fetch(process.env.DEVELOPER_ID);
         console.log(devUser)
@@ -195,6 +197,41 @@ const handleMessageCreate = async (client, msg) => {
                 });
             }
     }
+    if (cmd === "open") {
+        const itemRef = args[0];
+        const quantityInput = args[1];
+
+        // Nếu không nhập quantity → mặc định 1
+        let quantity = quantityInput ? parseInt(quantityInput, 10) : 1;
+        const userId = msg.author.id;
+
+        // Kiểm tra thiếu itemRef
+        if (!itemRef) {
+            return msg.reply("❌ Vui lòng nhập mã vật phẩm để mở! Ví dụ: `!open box1 5`");
+        }
+
+        // Nếu parse lỗi hoặc nhập số âm → set về 1
+        if (isNaN(quantity) || quantity <= 0) {
+            quantity = 1;
+        }
+
+        // Limit đầu vào để tránh spam
+        if (quantity > 30) quantity = 30;
+
+        try {
+            const result = await BoxController.openBox(itemRef, userId, quantity);
+
+            if (!result.success) {
+                return msg.reply(`❌ ${result.message}`);
+            }
+
+            return msg.reply(result.message);
+        } catch (err) {
+            return msg.reply(`❌ ${err.message}`);
+        }
+    }
+
+
     if (cmd === "ticket") {
         const cateType = args[0] || 'general'
 
@@ -657,6 +694,20 @@ const handleMessageCreate = async (client, msg) => {
         const result = await SellController.sellOne(msg.author.id, itemRef, quantity)
         return msg.reply({ embeds: [result] })
     }
+    // else if (cmd === "calendar") {
+    //     const today = Date.now();
+
+    //     const now = new Date(today);
+
+    //     // Lưu ý quan trọng: 
+    //     // .getDate() lấy ngày trong tháng (1-31)
+    //     // .getDay() là lấy THỨ trong tuần (0-6) -> Đừng dùng cái này cho biến dd
+    //     // dd = now.getDate();
+    //     mm = now.getMonth() + 1; // Tháng (0-11) nên phải +1
+    //     yy = now.getFullYear();
+    //     const result = await LunarCalendarController.getCalendarBeautifulString(yy,mm)
+    //     return msg.reply(result)
+    // }
     else if (cmd === "amlich") {
 
         // 1. Regex quét tìm ngày tháng trong msg.content

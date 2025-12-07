@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder } = require("discord.js");
-const { getExtendedLunarInfo } = require("../utils/lunar");
+const { getExtendedLunarInfo, getMonthLunarCalendar } = require("../utils/lunar");
 
 class LunarCalendarController {
     static buildExtendedLunarEmbed(lunarInfo) {
@@ -168,7 +168,125 @@ class LunarCalendarController {
     }
 
 
-
+    static getCalendarBeautifulString(yy, mm, timeZone = 7) {
+    const lunarData = getMonthLunarCalendar(yy, mm, timeZone);
+    const monthNames = ["❄️ **THÁNG 1**", "🌸 **THÁNG 2**", "🌱 **THÁNG 3**", "☀️ **THÁNG 4**", 
+                       "🌺 **THÁNG 5**", "🌧️ **THÁNG 6**", "🌞 **THÁNG 7**", "🍂 **THÁNG 8**", 
+                       "🌕 **THÁNG 9**", "🍁 **THÁNG 10**", "❄️ **THÁNG 11**", "🎄 **THÁNG 12**"];
+    
+    // Tiêu đề với định dạng đẹp
+    let result = `## 📅 **|| LỊCH ${monthNames[mm-1]} NĂM ${yy} ||**\n`;
+    result += "```ansi\n";
+    
+    // Xác định ngày đầu tháng
+    const firstDate = new Date(yy, mm - 1, 1);
+    const startDay = firstDate.getDay();
+    
+    // Tên các ngày trong tuần với định dạng đẹp
+    const weekDays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+    result += weekDays.map(d => d.padEnd(10)).join("") + "\n";
+    result += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+    
+    // Tạo lưới lịch 6x7
+    const totalCells = 42;
+    const calendarGrid = Array(totalCells).fill("          ");
+    
+    // Tìm ngày hôm nay
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === yy && today.getMonth() + 1 === mm;
+    
+    // Điền ngày vào lưới với định dạng đặc biệt
+    for (let i = 0; i < lunarData.length; i++) {
+        const dayData = lunarData[i];
+        const position = startDay + i;
+        
+        const solarDay = dayData.solar.day.toString().padStart(2, '0');
+        const lunarDay = dayData.lunarDay.toString().padStart(2, '0');
+        
+        // Kiểm tra có phải ngày hôm nay không
+        const isToday = isCurrentMonth && dayData.solar.day === today.getDate();
+        
+        let cellContent;
+        
+        // Định dạng đặc biệt cho các loại ngày
+        if (dayData.lunarDay === 1) { // MÙNG 1
+            cellContent = `🟡${solarDay}/${lunarDay}`;
+        } else if (dayData.lunarDay === 15) { // RẰM
+            cellContent = `🔴${solarDay}/${lunarDay}`;
+        } else if (dayData.lunarDay === 10 || dayData.lunarDay === 20) { // Ngày tròn chục
+            cellContent = `${solarDay}/${lunarDay}`;
+        } else if (isToday) { // HÔM NAY
+            cellContent = `🔵${solarDay}/${lunarDay}`;
+        } else {
+            cellContent = `${solarDay}/${lunarDay}`;
+        }
+        
+        calendarGrid[position] = cellContent.padEnd(10);
+    }
+    
+    // In lịch theo tuần
+    for (let week = 0; week < 6; week++) {
+        let weekLine = "";
+        for (let day = 0; day < 7; day++) {
+            const index = week * 7 + day;
+            weekLine += calendarGrid[index];
+        }
+        result += weekLine + "\n";
+        
+        // Thêm dòng phân cách giữa các tuần
+        if (week < 5) {
+            result += "────────────────────────────────────────────\n";
+        }
+    }
+    
+    result += "```\n";
+    
+    // Tạo chú thích với biểu tượng
+    result += "\n 📌 CHÚ THÍCH:\n";
+    result += "> 🔵 Ngày hiện tại\n";
+    result += "> 🟡 Mùng 1 (bấm để xem)\n";
+    result += "> 🔴 Rằm (bấm để xem)\n";
+    result += "> Ngày thường\n";
+    
+    // Thông tin tháng âm
+    if (lunarData.length > 0) {
+        const firstDay = lunarData[0];
+        const midDay = lunarData[14]; // Ngày giữa tháng
+        const lastDay = lunarData[lunarData.length - 1];
+        
+        result += "\n 🌙 **THÔNG TIN THÁNG:**\n";
+        result += `**Tháng âm:** ${firstDay.lunarMonth}${firstDay.isLeap ? " (tháng nhuận)🔄" : ""}\n`;
+        result += `**Đầu tháng:** ${firstDay.canChiDay} - **${firstDay.lucDieu}**\n`;
+        result += `**Giữa tháng:** ${midDay.canChiDay} - **${midDay.lucDieu}**\n`;
+        result += `**Cuối tháng:** ${lastDay.canChiDay} - **${lastDay.lucDieu}**\n`;
+    }
+    
+    // Các ngày đặc biệt trong tháng
+    const specialDays = lunarData.filter(day => 
+        day.lunarDay === 1 || day.lunarDay === 15 || 
+        day.lunarDay === 10 || day.lunarDay === 20
+    );
+    
+    if (specialDays.length > 0) {
+        result += "\n## ⭐ **NGÀY QUAN TRỌNG:**\n";
+        specialDays.forEach(day => {
+            let emoji = "";
+            if (day.lunarDay === 1) emoji = "🟡";
+            else if (day.lunarDay === 15) emoji = "🔴";
+            else if (day.lunarDay === 10 || day.lunarDay === 20) emoji = "⚪";
+            
+            const todayMark = isCurrentMonth && day.solar.day === today.getDate() ? " **📍HÔM NAY**" : "";
+            result += `> ${emoji} **${day.solar.day}/${mm}** - ${day.canChiDay}${todayMark}\n`;
+        });
+    }
+    
+    // Footer với hiệu ứng
+    result += "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+    result += `||*Lịch được tạo tự động - Múi giờ GMT+${timeZone}*||\n`;
+    result += "||**Nhấn vào biểu tượng để xem chi tiết**||";
+    
+    return result;
+}
 
 }
 

@@ -733,7 +733,6 @@ function getMonthLunarCalendar(yy, mm, timeZone = 7) {
             isLeap: info.lunar.leap,
             canChiDay: info.canChi.day,
             lucDieu: info.lucDieu,
-            // monthSequence: info.debug.monthSequence
         });
     }
 
