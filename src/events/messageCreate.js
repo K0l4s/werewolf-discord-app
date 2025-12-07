@@ -48,7 +48,7 @@ const handleMessageCreate = async (client, msg) => {
     const user = await UserService.findUserById(msg.author.id)
     user.exp += 10
     let levelsGained = 0;
-    let levelUpText = '';
+    let levelUpText;
     const originalLevel = user.lvl;
     const expToNextLevel = () => Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
 
@@ -65,10 +65,14 @@ const handleMessageCreate = async (client, msg) => {
         }
     }
     await user.save()
-    const em = new EmbedBuilder()
-        .setTitle("Level Up!")
-        .setDescription(`<@${msg.author.id}> ${levelUpText}`)
-    await msg.reply({ embeds: [em] })
+    if (levelUpText) {
+        // embed.addFields({ name: '<a:yellowsparklies:1437402422371815477> Thành tựu', value: levelUpText, inline: false });
+        const em = new EmbedBuilder()
+            .setTitle("Level Up!")
+            .setDescription(`<@${msg.author.id}> ${levelUpText}`)
+        await msg.reply({ embeds: [em] })
+    }
+
     // msg.reply()
     // Lấy prefix server từ DB
     let serverPrefixData = await Prefix.findOne({ guildId: msg.guild.id });
