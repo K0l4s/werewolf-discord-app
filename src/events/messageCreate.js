@@ -45,6 +45,31 @@ const handleMessageCreate = async (client, msg) => {
     // deleteSpam = await ServerController.deleteSpamMessages(msg);
 
     if (msg.author.bot || !msg.guild) return;
+    const user = await UserService.findUserById(msg.author.id)
+    user.exp += 10
+    let levelsGained = 0;
+    let levelUpText = '';
+    const originalLevel = user.lvl;
+    const expToNextLevel = () => Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
+
+    while (user.exp >= expToNextLevel()) {
+        user.exp -= expToNextLevel();
+        user.lvl += 1;
+        levelsGained += 1;
+    }
+    if (levelsGained > 0) {
+        if (levelsGained === 1) {
+            levelUpText = `<a:rocket:1433022000112074862> **Level Up!** Level ${originalLevel} → **${user.lvl}**`;
+        } else {
+            levelUpText = `<a:rocket:1433022000112074862> **Level Up!** +${levelsGained} levels (${originalLevel} → **${user.lvl}**)`;
+        }
+    }
+    await user.save()
+    const em = new EmbedBuilder()
+        .setTitle("Level Up!")
+        .setDescription(`<@${msg.author.id}> ${levelUpText}`)
+    await msg.reply({ embeds: [em] })
+    // msg.reply()
     // Lấy prefix server từ DB
     let serverPrefixData = await Prefix.findOne({ guildId: msg.guild.id });
     let serverPrefix = serverPrefixData ? serverPrefixData.prefix : 'k';
@@ -63,7 +88,7 @@ const handleMessageCreate = async (client, msg) => {
     // Cắt prefix ra khỏi message
     const args = msg.content.slice(usedPrefix.length).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
-    const user = await UserService.findUserById(msg.author.id)
+    // const user = await UserService.findUserById(msg.author.id)
 
     let lang = await LanguageController.getLang(msg.guild.id)
 
