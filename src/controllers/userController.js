@@ -70,8 +70,8 @@ class UserController {
         const spiritExpPercentage = (user.spiritExp / spiritMaxExp) * 100;
 
         // Tạo thanh exp progress bar
-        const expBar = this.createProgressBar(expPercentage, 15);
-        const spiritExpBar = this.createProgressBar(spiritExpPercentage, 15);
+        const expBar = this.createProgressBar(expPercentage, 10);
+        // const spiritExpBar = this.createProgressBar(spiritExpPercentage, 15);
 
         // Xác định thông tin user từ cả message và interaction
         // let userObject, username, avatarURL
@@ -98,21 +98,21 @@ class UserController {
                     value: `${expBar}\n\`${user.exp.toLocaleString("en-US")}/${maxExp.toLocaleString("en-US")} EXP (${Math.floor(expPercentage)}%)\``,
                     inline: false
                 },
-                {
-                    name: '✨ Spirit Level',
-                    value: `\`Level ${user.spiritLvl.toLocaleString("en-US")}\``,
-                    inline: true
-                },
-                {
-                    name: '✨ Spirit Title',
-                    value: `\`${SpiritController.getLvlTitle(user.spiritLvl.toLocaleString("en-US"))}\``,
-                    inline: true
-                },
-                {
-                    name: '🌟 EXP Spirit',
-                    value: `${spiritExpBar}\n\`${user.spiritExp.toLocaleString("en-US")}/${spiritMaxExp.toLocaleString("en-US")} EXP (${Math.floor(spiritExpPercentage)}%)\``,
-                    inline: false
-                },
+                // {
+                //     name: '✨ Spirit Level',
+                //     value: `\`Level ${user.spiritLvl.toLocaleString("en-US")}\``,
+                //     inline: true
+                // },
+                // {
+                //     name: '✨ Spirit Title',
+                //     value: `\`${SpiritController.getLvlTitle(user.spiritLvl.toLocaleString("en-US"))}\``,
+                //     inline: true
+                // },
+                // {
+                //     name: '🌟 EXP Spirit',
+                //     value: `${spiritExpBar}\n\`${user.spiritExp.toLocaleString("en-US")}/${spiritMaxExp.toLocaleString("en-US")} EXP (${Math.floor(spiritExpPercentage)}%)\``,
+                //     inline: false
+                // },
                 {
                     name: '⏰ Daily Cuối',
                     value: user.lastDaily ?
@@ -148,8 +148,8 @@ class UserController {
         const filledSquares = Math.floor((safePercent / 100) * length);
         const emptySquares = length - filledSquares;
 
-        const bar = '█'.repeat(filledSquares) + '░'.repeat(emptySquares);
-        return `[${bar}]`;
+        const bar = '⬢'.repeat(filledSquares) + '⬡'.repeat(emptySquares);
+        return `《${bar}》 ${safePercent.toFixed(2)}%`;
     }
 
 

@@ -7,7 +7,7 @@ const { calculateLuckyBuff } = require("../utils/calculateLuckyBuff");
 const { t } = require("../i18n");
 
 class MiniGameController {
-    static identifyMoney(bet) {
+    static identifyMoney(bet,user) {
         if (bet === "all") {
             bet = Math.min(user.coin, 300000);
         } else {
@@ -228,8 +228,9 @@ ${t("oneTwoThree.bot_choice_load", lang)} ${randomIcon}`
 
 
     static async bauCua(userId, money) {
-        const bet = parseInt(this.identifyMoney(money))
         const user = await UserService.findUserById(userId)
+                const bet = this.identifyMoney(money, user);
+
         if (user.coin < bet) return "🚫 Bạn không đủ coin để đặt cược!";
 
         const list = [
@@ -366,7 +367,7 @@ ${t("oneTwoThree.bot_choice_load", lang)} ${randomIcon}`
             let win = -bet;
             const matches = result.filter(r => r === userChoice).length;
             if (matches > 0) win = bet * matches;
-
+            console.log(bet, matches, win);
             user.coin += win;
             await user.save();
 

@@ -3,6 +3,7 @@ const BoxDropRate = require("../models/BoxDropRate");
 const Inventory = require("../models/Inventory");
 const Item = require("../models/Item");
 const ItemService = require("../services/itemService");
+const { default: mongoose } = require("mongoose");
 
 class BoxController {
     static randomDrop(dropList) {
@@ -21,135 +22,154 @@ class BoxController {
 
         return null
     }
-    static async openBox(itemRef, userId, quantity) {
-        try {
-            // 0. Limit số lượng mở 1 lần
-            if (quantity > 15) quantity = 15;
+  static async openBox(itemRef, userId, quantity) {
+    try {
+        if (quantity > 15) quantity = 15;
 
-            const item = await ItemService.getItemByRef(itemRef);
-            if (!item) throw new Error("Not found item");
+        const item = await ItemService.getItemByRef(itemRef);
+        if (!item) throw new Error("Item not found");
 
-            const inv = await Inventory.findOne({ item: item._id, userId });
-            if (!inv || inv.quantity < quantity) {
-                throw new Error(`You don't have enough ${item.icon} **${item.name}**`);
-            }
+        const inv = await Inventory.findOne({ item: item._id, userId });
+        if (!inv || inv.quantity < quantity) {
+            throw new Error(`You don't have enough ${item.icon} **${item.name}**`);
+        }
 
-            const box = await BoxDropRate.findOne({ box: item._id });
-            if (!box) throw new Error("This item can't open!");
+        const box = await BoxDropRate.findOne({ box: item._id });
+        if (!box) throw new Error("This item can't open!");
 
-            const dropList = box.items;
-            if (!dropList || dropList.length === 0) {
-                throw new Error("This box has no drop items!");
-            }
+        const dropList = box.items;
+        if (!dropList || dropList.length === 0) {
+            throw new Error("This box has no drop items!");
+        }
 
-            // Kết quả tổng sau khi mở nhiều box
-            const finalRewards = new Map(); // id → { quantity, dropRate }
+        // ==============================================
+        // 1. PRELOAD item info để không cần findById 100 lần
+        // ==============================================
+        const itemIds = dropList.map(i => i.id);
+        const itemDocs = await Item.find({ _id: { $in: itemIds } });
+        const itemMap = new Map();
+        itemDocs.forEach(it => itemMap.set(it._id.toString(), it));
 
-            // ===============================
-            // 1. Lặp theo số lượng box
-            // ===============================
-            for (let i = 0; i < quantity; i++) {
-                const rawRewards = [];
+        // ==============================================
+        // 2. DROP TỪNG LẦN MỞ
+        // ==============================================
+        const allDrops = []; 
+        const summary = new Map();
 
-                // Random cho từng box
-                for (const drop of dropList) {
-                    if (Math.random() < drop.dropRate) {
-                        const qty = drop.maxQuantity > 1
-                            ? Math.floor(Math.random() * drop.maxQuantity) + 1
-                            : 1;
+        for (let i = 0; i < quantity; i++) {
+            const raw = [];
 
-                        rawRewards.push({
-                            id: drop.id,
-                            quantity: qty,
-                            dropRate: drop.dropRate
-                        });
-                    }
-                }
+            for (const drop of dropList) {
+                if (Math.random() < drop.dropRate) {
+                    const qty = drop.maxQuantity > 1
+                        ? Math.floor(Math.random() * drop.maxQuantity) + 1
+                        : 1;
 
-                // Nếu box không rớt gì → bỏ qua box đó
-                if (rawRewards.length === 0) continue;
-
-                // Giới hạn số item theo maxDrop
-                const limited = rawRewards
-                    .sort((a, b) => b.dropRate - a.dropRate)
-                    .slice(0, box.maxDrop);
-
-                // Gộp vào finalRewards
-                for (const r of limited) {
-                    if (!finalRewards.has(r.id)) {
-                        finalRewards.set(r.id, {
-                            quantity: r.quantity,
-                            dropRate: r.dropRate
-                        });
-                    } else {
-                        finalRewards.get(r.id).quantity += r.quantity;
-                    }
-                }
-            }
-
-            // ===============================
-            // 2. Trừ số lượng box đã mở
-            // ===============================
-            inv.quantity -= quantity;
-            if (inv.quantity <= 0) await Inventory.deleteOne({ _id: inv._id });
-            else await inv.save();
-
-            // ===============================
-            // 3. Cộng item rơi vào inventory
-            // ===============================
-            for (const [id, rw] of finalRewards) {
-                let rewardInv = await Inventory.findOne({ userId, item: id });
-
-                if (!rewardInv) {
-                    rewardInv = new Inventory({
-                        userId,
-                        item: id,
-                        quantity: rw.quantity
+                    raw.push({
+                        id: drop.id.toString(),
+                        quantity: qty,
+                        dropRate: drop.dropRate
                     });
-                } else {
-                    rewardInv.quantity += rw.quantity;
                 }
-
-                await rewardInv.save();
             }
 
-            // ===============================
-            // 4. Build embed result
-            // ===============================
-            const detailed = [];
-            for (const [id, rw] of finalRewards) {
-                const rwItem = await Item.findById(id);
-                detailed.push({
-                    name: rwItem.name,
-                    icon: rwItem.icon,
-                    quantity: rw.quantity
-                });
+            if (raw.length === 0) {
+                allDrops.push([]); // lần này không rớt gì
+                continue;
             }
 
-            const fields = detailed.map(it => ({
-                name: `${it.icon} ${it.name}`,
-                value: `Số lượng: **${it.quantity}**`,
-                inline: true
-            }));
+            const limited = raw
+                .sort((a, b) => b.dropRate - a.dropRate)
+                .slice(0, box.maxDrop);
 
-            const embed = new EmbedBuilder()
-                .setTitle(`🎁 Bạn đã mở x${quantity} ${item.icon} ${item.name}!`)
-                .setDescription(`Bạn nhận được **${detailed.length}** loại vật phẩm:`)
-                .addFields(fields)
-                .setColor(0xffd700)
-                .setTimestamp();
+            allDrops.push(limited);
 
-            return {
-                success: true,
-                message: { embeds: [embed] }
-            };
-        } catch (e) {
-            return {
-                success: false,
-                message: e.message
+            // Gộp summary
+            for (const r of limited) {
+                if (!summary.has(r.id)) summary.set(r.id, r.quantity);
+                else summary.set(r.id, summary.get(r.id) + r.quantity);
             }
         }
+
+        // ==============================================
+        // 3. TRỪ BOX
+        // ==============================================
+        inv.quantity -= quantity;
+        if (inv.quantity <= 0) await Inventory.deleteOne({ _id: inv._id });
+        else await inv.save();
+
+        // ==============================================
+        // 4. CỘNG ITEM RƠI VÀO INVENTORY
+        // ==============================================
+        for (const [id, qty] of summary) {
+            const objId = new mongoose.Types.ObjectId(id);
+
+            let rewardInv = await Inventory.findOne({ userId, item: objId });
+
+            if (!rewardInv) {
+                rewardInv = new Inventory({
+                    userId,
+                    item: objId,
+                    quantity: qty
+                });
+            } else {
+                rewardInv.quantity += qty;
+            }
+
+            await rewardInv.save();
+        }
+
+        // ==============================================
+        // 5. BUILD EMBED CHI TIẾT
+        // ==============================================
+        const allDropsDesc = [];
+        let count = 1;
+
+        for (const dropListOne of allDrops) {
+            if (dropListOne.length === 0) {
+                allDropsDesc.push(`**Lần ${count}**: Không rớt gì 😢`);
+            } else {
+                let line = "";
+
+                for (const dr of dropListOne) {
+                    const rwItem = itemMap.get(dr.id);
+                    line += `• ${rwItem.icon} ${rwItem.name} x **${dr.quantity}**\n`;
+                }
+
+                allDropsDesc.push(`**Lần ${count}**:\n${line}`);
+            }
+
+            count++;
+        }
+
+        // Summary text
+        let summaryText = "";
+        for (const [id, qty] of summary) {
+            const it = itemMap.get(id);
+            summaryText += `${it.icon} ${it.name}: **${qty}**\n`;
+        }
+
+        const embed = new EmbedBuilder()
+            .setTitle(`🎁 Mở ${quantity} ${item.icon} ${item.name}`)
+            .setDescription(`**🎲 Chi tiết từng lần mở:**\n\n${allDropsDesc.join("\n")}`)
+            .addFields({
+                name: "📦 Tổng kết",
+                value: summaryText || "Không có vật phẩm nào."
+            })
+            .setColor(0xffd700)
+            .setTimestamp();
+
+        return { success: true, message: { embeds: [embed] } };
+
+    } catch (e) {
+        return {
+            success: false,
+            message: e.message
+        };
     }
+}
+
+
 
 
 
