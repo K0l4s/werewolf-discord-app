@@ -148,7 +148,7 @@ class UserController {
         const filledSquares = Math.floor((safePercent / 100) * length);
         const emptySquares = length - filledSquares;
 
-        const bar = '⬢'.repeat(filledSquares) + '⬡'.repeat(emptySquares);
+        const bar = '<:fullbottle:1448206374357045299>'.repeat(filledSquares) + '<:empty_bottle:1448206371987259402>'.repeat(emptySquares);
         return `《${bar}》 ${safePercent.toFixed(2)}%`;
     }
 
