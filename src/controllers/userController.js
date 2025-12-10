@@ -94,7 +94,7 @@ class UserController {
                     inline: true
                 },
                 {
-                    name: '📈 EXP Thường',
+                    name: '📈 Linh Lực',
                     value: `${expBar}\n\`${user.exp.toLocaleString("en-US")}/${maxExp.toLocaleString("en-US")} EXP (${Math.floor(expPercentage)}%)\``,
                     inline: false
                 },
