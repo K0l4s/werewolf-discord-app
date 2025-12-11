@@ -8,7 +8,7 @@ class SettingController {
         try {
             console.log(guildId)
             const notificationConfig = await Notification.findOne({ guildId })
-                // .populate("channels.embed");
+                .populate("channels.embed");
             console.log("Noti", notificationConfig)
             if (!notificationConfig) return;
 
@@ -21,60 +21,103 @@ class SettingController {
             if (!channel) return;
 
             if (channelConfig.isEmbed) {
-                if (!channelConfig.embed)
-                    return
+                // Nếu object embed không tồn tại thì dừng
+                if (!channelConfig.embed) return;
+
                 const data = channelConfig.embed;
-                const embed = new EmbedBuilder()
-                // if (data.title)
-                embed.setTitle(data.title)
-                // if (data.description)
-                let description = data.description
-                    .replace(/{user}/g, member.user.tag)
-                    .replace(/{user.id}/g, member.user.id)
-                    .replace(/{user.mention}/g, member.toString())
-                    .replace(/{guild}/g, member.guild.name)
-                    .replace(/{memberCount}/g, member.guild.memberCount);
-                embed.setDescription(description)
-                // if (data.color)
-                embed.setColor(data.color)
-                // if (data.thumbnail)
-                embed.setThumbnail(data.thumbnail)
-                // if (data.image)
-                embed.setImage(data.image)
-                // if (data.timestamp)
-                embed.setTimestamp()
-                if (data.footer && data.footerIcon)
-                    embed.setFooter({ text: data.footer, iconURL: data.footerIcon })
-                else if (data.footer)
-                    embed.setFooter({ text: data.footer })
-                else if (data.footerIcon)
-                    embed.setFooter({ iconURL: data.footerIcon })
-                data.fields.map(i => {
-                    embed.addFields(
-                        {
-                            name: i.name,
-                            value: i.value,
-                            inline: i.inline
+                const embed = new EmbedBuilder();
+
+                // 1. Title: Kiểm tra có dữ liệu mới set
+                if (data.title) {
+                    embed.setTitle(data.title);
+                }
+
+                // 2. Description: Kiểm tra có dữ liệu mới replace và set
+                if (data.description) {
+                    let description = data.description
+                        .replace(/{user}/g, member.user.tag)
+                        .replace(/{user.id}/g, member.user.id)
+                        .replace(/{user.mention}/g, member.toString())
+                        .replace(/{guild}/g, member.guild.name)
+                        .replace(/{memberCount}/g, member.guild.memberCount);
+                    embed.setDescription(description);
+                }
+
+                // 3. Color: Kiểm tra có mã màu không
+                if (data.color) {
+                    embed.setColor(data.color);
+                }
+
+                // 4. Thumbnail: Kiểm tra có link ảnh không
+                if (data.thumbnail) {
+                    embed.setThumbnail(data.thumbnail);
+                }
+
+                // 5. Image: Kiểm tra có link ảnh to không
+                if (data.image) {
+                    embed.setImage(data.image);
+                }
+
+                // 6. Timestamp: Kiểm tra xem user có bật timestamp không (thường là boolean true/false)
+                if (data.timestamp) {
+                    embed.setTimestamp();
+                }
+
+                // 7. Footer: Logic gộp gọn gàng hơn
+                // Nếu có text footer thì mới set, icon có thể có hoặc không
+                if (data.footer) {
+                    embed.setFooter({
+                        text: data.footer,
+                        iconURL: data.footerIcon ? data.footerIcon : undefined
+                    });
+                }
+
+                // 8. Fields: Kiểm tra kỹ mảng fields
+                // Phải đảm bảo fields tồn tại VÀ là một mảng (Array) VÀ có phần tử bên trong
+                if (data.fields && Array.isArray(data.fields) && data.fields.length > 0) {
+                    data.fields.forEach(i => {
+                        // Quan trọng: Field của Discord bắt buộc phải có cả Name và Value
+                        // Nếu name hoặc value bị rỗng, Discord sẽ báo lỗi
+                        if (i.name && i.value) {
+                            embed.addFields({
+                                name: i.name,
+                                value: i.value,
+                                inline: i.inline ? true : false // Ép kiểu về boolean cho an toàn
+                            });
                         }
-                    )
-                })
-                console.log(embed)
-                let returnMsg =  channelConfig.message
-                    .replace(/{user}/g, member.user.tag)
-                    .replace(/{user.id}/g, member.user.id)
-                    .replace(/{user.mention}/g, member.toString())
-                    .replace(/{guild}/g, member.guild.name)
-                    .replace(/{memberCount}/g, member.guild.memberCount);
-                return await channel.send({ embeds: [embed],content: returnMsg})
-            }
-            else{
-                let returnMsg =  channelConfig.message
-                    .replace(/{user}/g, member.user.tag)
-                    .replace(/{user.id}/g, member.user.id)
-                    .replace(/{user.mention}/g, member.toString())
-                    .replace(/{guild}/g, member.guild.name)
-                    .replace(/{memberCount}/g, member.guild.memberCount);
-                return await channel.send({content:returnMsg})
+                    });
+                }
+
+                // Console log để debug nếu cần
+                // console.log(embed);
+
+                // Chuẩn bị message content đi kèm (nếu có)
+                let returnMsg = "";
+                if (channelConfig.message) {
+                    returnMsg = channelConfig.message
+                        .replace(/{user}/g, member.user.tag)
+                        .replace(/{user.id}/g, member.user.id)
+                        .replace(/{user.mention}/g, member.toString())
+                        .replace(/{guild}/g, member.guild.name)
+                        .replace(/{memberCount}/g, member.guild.memberCount);
+                }
+
+                // Gửi tin nhắn
+                // Lưu ý: Nếu returnMsg rỗng, chỉ gửi embeds. Nếu có cả 2 thì gửi cả 2.
+                return await channel.send({ embeds: [embed], content: returnMsg || null });
+
+            } else {
+                // Trường hợp không dùng Embed (Chỉ gửi tin nhắn thường)
+                if (channelConfig.message) {
+                    let returnMsg = channelConfig.message
+                        .replace(/{user}/g, member.user.tag)
+                        .replace(/{user.id}/g, member.user.id)
+                        .replace(/{user.mention}/g, member.toString())
+                        .replace(/{guild}/g, member.guild.name)
+                        .replace(/{memberCount}/g, member.guild.memberCount);
+
+                    return await channel.send({ content: returnMsg });
+                }
             }
             // Thay thế các biến trong nội dung
             // let description = channelConfig.description
