@@ -29,7 +29,13 @@ class SettingController {
 
                 // 1. Title: Kiểm tra có dữ liệu mới set
                 if (data.title) {
-                    embed.setTitle(data.title);
+                    let title = data.title
+                        .replace(/{user}/g, member.user.tag)
+                        .replace(/{user.id}/g, member.user.id)
+                        .replace(/{user.mention}/g, member.toString())
+                        .replace(/{guild}/g, member.guild.name)
+                        .replace(/{memberCount}/g, member.guild.memberCount);
+                    embed.setTitle(title);
                 }
 
                 // 2. Description: Kiểm tra có dữ liệu mới replace và set
