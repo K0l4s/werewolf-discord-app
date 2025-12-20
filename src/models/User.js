@@ -12,6 +12,8 @@ const userSchema = new mongoose.Schema(({
     luckyBoost: { type: Number, require: true, default: 0 },
     token: { type: Number, require: false, default: 0 },
     premiumExpiredDate: { type: Date, default: null },
+    lastDailyReset: { type: Date, default: Date.now,require:false }, 
+    dailyExpAccumulated: { type: Number, default: 0, require: false }
 }));
 userSchema.virtual('isPremium').get(function () {
     if(!this.premiumExpiredDate)

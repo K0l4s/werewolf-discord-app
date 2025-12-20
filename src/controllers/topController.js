@@ -21,7 +21,7 @@ class TopController {
 
             if (!topData || topData.topUsers.length === 0) {
                 return this.sendResponse(interactionOrMessage, {
-                    content: '<a:pressf:1433016927231545414> Không có dữ liệu leaderboard!',
+                    content: '<a:dragon:1440808141162942525> Không có dữ liệu leaderboard!',
                 }, isSlash);
             }
 
@@ -33,7 +33,7 @@ class TopController {
         } catch (error) {
             console.error('Error in handleTopCommand:', error);
             return this.sendResponse(interactionOrMessage, {
-                content: '<a:pressf:1433016927231545414> Đã có lỗi xảy ra khi lấy leaderboard!',
+                content: '<a:dragon:1440808141162942525> Đã có lỗi xảy ra khi lấy leaderboard!',
             }, isSlash);
         }
     }

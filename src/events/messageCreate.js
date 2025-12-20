@@ -45,34 +45,92 @@ const handleMessageCreate = async (client, msg) => {
     // deleteSpam = await ServerController.deleteSpamMessages(msg);
 
     if (msg.author.bot || !msg.guild) return;
-    const user = await UserService.findUserById(msg.author.id)
-    user.exp += 10
-    let levelsGained = 0;
-    let levelUpText;
-    const originalLevel = user.lvl;
-    const expToNextLevel = () => Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
+    // const user = await UserService.findUserById(msg.author.id)
+    // user.exp += 10
+    // let levelsGained = 0;
+    // let levelUpText;
+    // const originalLevel = user.lvl;
+    // const expToNextLevel = () => Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
 
-    while (user.exp >= expToNextLevel()) {
-        user.exp -= expToNextLevel();
-        user.lvl += 1;
-        levelsGained += 1;
-    }
-    if (levelsGained > 0) {
-        if (levelsGained === 1) {
-            levelUpText = `<a:rocket:1433022000112074862> **Level Up!** Level ${originalLevel} → **${user.lvl}**`;
-        } else {
-            levelUpText = `<a:rocket:1433022000112074862> **Level Up!** +${levelsGained} levels (${originalLevel} → **${user.lvl}**)`;
+    // while (user.exp >= expToNextLevel()) {
+    //     user.exp -= expToNextLevel();
+    //     user.lvl += 1;
+    //     levelsGained += 1;
+    // }
+    // if (levelsGained > 0) {
+    //     if (levelsGained === 1) {
+    //         levelUpText = `<a:rocket:1433022000112074862> **Level Up!** Level ${originalLevel} → **${user.lvl}**`;
+    //     } else {
+    //         levelUpText = `<a:rocket:1433022000112074862> **Level Up!** +${levelsGained} levels (${originalLevel} → **${user.lvl}**)`;
+    //     }
+    // }
+    // await user.save()
+    // --- CẤU HÌNH ---
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000; // 24 giờ tính bằng mili giây
+    const EXP_PER_MSG = 10;                 // Exp nhận được mỗi tin nhắn
+    // const BASE_EXP = Number(DEFAULT_EXP_LVL1); // Base EXP của bạn
+
+    const user = await UserService.findUserById(msg.author.id);
+    const now = new Date();
+
+    // --- BƯỚC 1: RESET NGÀY MỚI ---
+    // Kiểm tra nếu chưa có thời gian reset hoặc đã qua 24h kể từ lần reset cuối
+    // Hoặc logic reset theo 00:00 mỗi ngày (tùy bạn chọn, ở đây mình dùng rolling 24h)
+    if (!user.lastDailyReset || (now - user.lastDailyReset > ONE_DAY_MS)) {
+        user.lastDailyReset = now;
+        user.dailyExpAccumulated = 0; // Reset số exp đã cày trong ngày về 01000
+
+        // --- BƯỚC 2: TÍNH GIỚI HẠN (CAP) ---
+        // Công thức: Base EXP * Level * 50
+        const maxDailyExp = user.lvl * 5000;
+
+        // --- BƯỚC 3: KIỂM TRA GIỚI HẠN ---
+        // Nếu số exp đã cày hôm nay + số sắp nhận vượt quá giới hạn -> Dừng lại
+        if (user.dailyExpAccumulated >= maxDailyExp) {
+            // Có thể return luôn hoặc log ra console
+            // console.log(`${msg.author.tag} đã đạt giới hạn EXP trong ngày.`);
+            return;
+        }
+
+        // --- BƯỚC 4: CỘNG EXP ---
+        // Nếu cộng thêm 10 exp mà vượt quá giới hạn, chỉ cộng phần còn thiếu (tùy chọn)
+        // Ở đây mình làm đơn giản: Còn chỗ trống thì cộng đủ 10.
+        user.exp += EXP_PER_MSG;
+        user.dailyExpAccumulated += EXP_PER_MSG;
+
+
+        // --- BƯỚC 5: XỬ LÝ LEVEL UP (GIỮ NGUYÊN CODE CŨ CỦA BẠN) ---
+        let levelsGained = 0;
+        let levelUpText;
+        const originalLevel = user.lvl;
+        const expToNextLevel = () => Number(user.lvl) * Number(DEFAULT_EXP_LVL1) * Number(STEP_EXP);
+
+        while (user.exp >= expToNextLevel()) {
+            user.exp -= expToNextLevel();
+            user.lvl += 1;
+            levelsGained += 1;
+        }
+
+        // Nếu user lên cấp, giới hạn exp ngày hôm đó có thể tăng lên (do lvl tăng)
+        // User có thể cày tiếp 1 chút nữa nếu muốn, logic này tự động hỗ trợ điều đó.
+
+        if (levelsGained > 0) {
+            if (levelsGained === 1) {
+                levelUpText = `<a:rocket:1433022000112074862> **Level Up!** Level ${originalLevel} → **${user.lvl}**`;
+            } else {
+                levelUpText = `<a:rocket:1433022000112074862> **Level Up!** +${levelsGained} levels (${originalLevel} → **${user.lvl}**)`;
+            }
+        }
+
+        await user.save();
+        if (levelUpText) {
+            // embed.addFields({ name: '<a:yellowsparklies:1437402422371815477> Thành tựu', value: levelUpText, inline: false });
+            const em = new EmbedBuilder()
+                .setTitle("Level Up!")
+                .setDescription(`<@${msg.author.id}> ${levelUpText}`)
+            await msg.reply({ embeds: [em] })
         }
     }
-    await user.save()
-    if (levelUpText) {
-        // embed.addFields({ name: '<a:yellowsparklies:1437402422371815477> Thành tựu', value: levelUpText, inline: false });
-        const em = new EmbedBuilder()
-            .setTitle("Level Up!")
-            .setDescription(`<@${msg.author.id}> ${levelUpText}`)
-        await msg.reply({ embeds: [em] })
-    }
-
     // msg.reply()
     // Lấy prefix server từ DB
     let serverPrefixData = await Prefix.findOne({ guildId: msg.guild.id });

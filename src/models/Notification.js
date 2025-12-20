@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema({
             channelId: { type: String, required: true },
             channelType: {
                 type: String,
-                enum: ["welcome", "goodbye", "booster"]
+               enum : ["welcome", "goodbye", "booster"]
             },
             message: { type: String, required: false },
             isEmbed: { type: Boolean, default: false },

@@ -218,8 +218,6 @@ module.exports = async (interaction, client) => {
         const cateType = args[1];
         await TicketController.createTicket(client, cateType, interaction.user.id, interaction.guild.id);
         await interaction.editReply({ content: "✅ Ticket created successfully!", ephemeral: true });
-        // xóa tin nhắn
-        setI
     }
     else if (actionType === 'ticket_setup') {
         const act = args[1];

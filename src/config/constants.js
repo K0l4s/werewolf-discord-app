@@ -34,7 +34,8 @@ module.exports = {
 
         RING: 'ring',
         WOOD: 'wood',
-        FRUIT: 'fruit'
+        FRUIT: 'fruit',
+        GHOST: 'ghost', // item bắt ma
     },
     ITEM_RARITY:{
         C:'Common',

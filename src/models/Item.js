@@ -18,16 +18,13 @@ const itemSchema = new mongoose.Schema(
         },
         rarity: {
             type: String,
-            enum: [ITEM_RARITY.C, ITEM_RARITY.SM, ITEM_RARITY.R, ITEM_RARITY.SR,
-            ITEM_RARITY.E, ITEM_RARITY.SE, ITEM_RARITY.L, ITEM_RARITY.SL,
-            ITEM_RARITY.MY, ITEM_RARITY.SMY
-            ],
+            enum: Object.values(ITEM_RARITY),
             required: true,
             default: ITEM_RARITY.C
         },
         type: {
             type: String,
-            enum: [ITEM_TYPE.NORMAL,ITEM_TYPE.GIFT, ITEM_TYPE.PRESENT_BOX, ITEM_TYPE.PET_FOOD, ITEM_TYPE.MINERAL,ITEM_TYPE.RING,ITEM_TYPE.WOOD,ITEM_TYPE.PICKACE,ITEM_TYPE.AXE,ITEM_TYPE.FRUIT],
+            enum: Object.values(ITEM_TYPE),
             required: true,
             default: ITEM_TYPE.NORMAL
         },
