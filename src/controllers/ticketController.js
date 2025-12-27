@@ -1,4 +1,4 @@
-const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ChannelType, PermissionsBitField } = require("discord.js");
+const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ChannelType, PermissionsBitField, StringSelectMenuBuilder } = require("discord.js");
 const TicketService = require("../services/ticketService");
 const Notification = require("../models/Notification");
 const cron = require('node-cron');
@@ -7,6 +7,45 @@ const Ticket = require("../models/Ticket");
 const UserService = require("../services/userService");
 
 class TicketController {
+    static async getTicketSelections(guildId) {
+        try {
+            const notification = await Notification.findOne({ guildId });
+            if (!notification || !notification.ticketCate || notification.ticketCate.length === 0) {
+                return {
+                    status: "Error",
+                    message: "Server chưa có thiết lập ticket"
+                };
+            } else {
+                const options = notification.ticketCate.map(cate => ({
+                    label: cate.cateName || cate.cateType,
+                    description: cate.description || 'No description',
+                    value: cate.cateType
+                }));
+                // tạo embed với danh sách options
+                const embed = new EmbedBuilder()
+                    .setTitle("Chọn loại ticket")
+                    .setDescription("Vui lòng chọn loại ticket bạn muốn tạo:");
+                    // tạo string selection menu
+                const menu = new StringSelectMenuBuilder()
+                    .setCustomId(`ticket|`)
+                    .setPlaceholder('Chọn loại ticket')
+                    .addOptions(options);
+                
+                const row = new ActionRowBuilder().addComponents(menu);
+                return {
+                    status: "Success",
+                    message: { embeds: [embed], components: [row]}
+                };
+            }
+        }
+        catch (e) {
+            return {
+                status: "Error",
+                message: e.message || "Lỗi khi lấy danh sách ticket"
+            };
+        }
+    }
+
     static async storageTicket(channelId, guildId, userId, client, lang = "en") {
         try {
             const ticket = await Ticket.findOne({ channelId });
@@ -589,11 +628,11 @@ class TicketController {
                 .setColor('Green')
                 .setTitle('Đã đóng tất cả ticket mở')
                 .setDescription(`🎟️ Đã đóng tất cả ticket mở của bạn!`)
-            return { status: "Success", message: {embeds: [embed] }};
+            return { status: "Success", message: { embeds: [embed] } };
             // return { embeds: [embed] };
         }
         catch (e) {
-            return { status: "Error", message: e.message || "Lỗi khi đóng tất cả ticket"  };
+            return { status: "Error", message: e.message || "Lỗi khi đóng tất cả ticket" };
         }
     }
     static async sendCreateRoom(client, guildId, cateType = 'general') {

@@ -320,9 +320,10 @@ const handleMessageCreate = async (client, msg) => {
 
 
     if (cmd === "ticket") {
-        const cateType = args[0] || 'general'
+        // const cateType = args[0] || 'general'
 
-        const result = await TicketController.createTicket(client, cateType, msg.author.id, msg.guild.id)
+        // const result = await TicketController.createTicket(client, cateType, msg.author.id, msg.guild.id)
+        const result = await TicketController.getTicketSelections( msg.guild.id)
         return msg.reply(result.message)
     }
     if (cmd === "ticket_close_all") {

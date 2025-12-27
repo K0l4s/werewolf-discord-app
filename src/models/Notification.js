@@ -21,7 +21,7 @@ const notificationSchema = new mongoose.Schema({
     gaReqChannelId: { type: String },
     gaResChannelId: { type: String },
     gaCreateChannelId: { type: String },
-    isChannelEnabled: { type: Boolean, default: false },
+    isChannelEnabled: { type: Boolean, default: true },
     isEmbedEnabled: { type: Boolean, default: true },
     isStreakEnabled: { type: Boolean, default: true },
     isLinkDisable: { type: Boolean, default: false },

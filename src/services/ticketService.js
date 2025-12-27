@@ -3,22 +3,27 @@ const Notification = require("../models/Notification");
 
 class TicketService {
     static async findGuildAndNotification(client, guildId) {
-        if (!guildId) {
-            throw new Error('Thiếu tham số bắt buộc: guildId');
-        }
-
-        const guild = client.guilds.cache.get(guildId);
-        if (!guild) {
-            throw new Error('Không tìm thấy guild với ID provided');
-        }
-
-        const notification = await Notification.findOne({ guildId });
-        if (!notification) {
-            throw new Error('Không tìm thấy cấu hình ticket cho guild này');
-        }
-
-        return { guild, notification };
+    if (!guildId) {
+        throw new Error('Thiếu tham số bắt buộc: guildId');
     }
+
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) {
+        throw new Error('Không tìm thấy guild với ID provided');
+    }
+
+    let notification = await Notification.findOne({ guildId });
+
+    // 👉 Nếu chưa có thì tạo mới
+    if (!notification) {
+        notification = await Notification.create({
+            guildId
+        });
+    }
+
+    return { guild, notification };
+}
+
 
     static async findCategory(notification, cateType) {
         if (!cateType) {

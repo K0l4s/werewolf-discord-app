@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const Notification = require("../models/Notification");
+const { findGuildAndNotification } = require("../services/ticketService");
 
 class NotificationController {
     static async changeRoomAnnouncement(client, oldState, newState) {
@@ -9,10 +10,20 @@ class NotificationController {
 
         const user = member.user;
         const getNotificationSettings = async (guildId) => {
-            const setting = await Notification.findOne({ guildId });
+            let setting = await Notification.findOne({ guildId });
+
+            // Nếu chưa có thì tạo mới
+            if (!setting) {
+                setting = await Notification.create({
+                    guildId,
+                    isChannelEnabled: true,   // default mày muốn
+                    isEmbedEnabled: true       // default true
+                });
+            }
+
             return {
-                isEnabled: setting && setting.isChannelEnabled,
-                isEmbed: setting ? setting.isEmbedEnabled : true // Default to true if not set
+                isEnabled: setting.isChannelEnabled,
+                isEmbed: setting.isEmbedEnabled
             };
         };
 

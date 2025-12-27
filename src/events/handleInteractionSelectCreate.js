@@ -1,10 +1,12 @@
 const BattleController = require("../controllers/DauLaDaiLuc/battleController");
 const GameController = require("../controllers/gameController");
 const MiniGameController = require("../controllers/miniGameController");
+const TicketController = require("../controllers/ticketController");
 const GameService = require("../services/gameService");
 const RoleService = require("../services/roleService");
+const TicketService = require("../services/ticketService");
 
-module.exports = async (interaction) => {
+module.exports = async (interaction,client) => {
     if (!interaction.isStringSelectMenu() && !interaction.isButton()) return;
     if (interaction.customId.startsWith('accept_battle_')) {
         const battleId = interaction.customId.replace('accept_battle_', '');
@@ -94,6 +96,30 @@ module.exports = async (interaction) => {
         // await interaction.message.edit({components:[]})
         const choice = interaction.values[0]
         return await MiniGameController.bauCuaFinal(bet, userId, choice, interaction)
+    }
+    else if (actionType === "ticket") {
+        const ticketType = interaction.values[0]; // cate.cateType
+
+        // gọi service tạo ticket
+        const result = await TicketController.createTicket(
+            client,
+            ticketType,
+            interaction.user.id,
+            interaction.guild.id
+        );
+
+        if (result.status === "Error") {
+            return interaction.reply({
+                content: result.message,
+                ephemeral: true
+            });
+        }
+
+        return interaction.update({
+            content: "🎫 Ticket của bạn đã được tạo!",
+            embeds: [],
+            components: [],
+        });
     }
     return null;
 

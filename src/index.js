@@ -214,7 +214,7 @@ async function startServer() {
                 if (interaction.isCommand() || interaction.isChatInputCommand()) {
                     return await require('./events/handleInteractionCreate')(interaction, client);
                 } else if (interaction.isStringSelectMenu() || interaction.isSelectMenu()) {
-                    return await require('./events/handleInteractionSelectCreate')(interaction);
+                    return await require('./events/handleInteractionSelectCreate')(interaction,client);
                 } else if (interaction.isButton()) {
                     return await require('./events/handleButtonInteraction')(interaction, client);
                 }
