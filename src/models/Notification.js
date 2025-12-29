@@ -41,5 +41,7 @@ const notificationSchema = new mongoose.Schema({
         }]
         , required: false,
     },
+
+    logChannelId: {type:String,required:false}
 })
 module.exports = mongoose.model('Notification', notificationSchema);  

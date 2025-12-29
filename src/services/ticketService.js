@@ -94,7 +94,7 @@ class TicketService {
 
     static async createCategory(guild, cateName, cateType, description, roleIds = [], userIds = [], requiredRoleIds = []) {
         if (!cateName) {
-            cateName = '🎟️' + cateType.toString().toUpperCase();
+            cateName = '🎟️' + cateName.toString().toUpperCase();
         }
 
         const category = await guild.channels.create({

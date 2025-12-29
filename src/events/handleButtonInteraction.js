@@ -361,21 +361,21 @@ module.exports = async (interaction, client) => {
         }
         else if (act == "storage") {
             reply = await TicketController.storageTicket(interaction.channel.id, interaction.guild.id, interaction.user.id, client)
-
-            if (interaction.isButton() && reply?.includes("Ticket")) {
-                try {
-                    const row = new ActionRowBuilder()
-                        .addComponents(
-                            new ButtonBuilder()
-                                .setCustomId(`ticket|close|${interaction.channel.id}`)
-                                .setLabel('Đóng Ticket')
-                                .setStyle(ButtonStyle.Danger)
-                                .setEmoji('<a:trash:1433806006915432538>'))
-                    await interaction.message.edit({ components: [row] });
-                } catch (err) {
-                    console.error("Không thể xóa button:", err);
-                }
-            }
+            // interaction.reply(reply)
+            // if (interaction.isButton() && reply?.includes("Ticket")) {
+            //     try {
+            //         const row = new ActionRowBuilder()
+            //             .addComponents(
+            //                 new ButtonBuilder()
+            //                     .setCustomId(`ticket|close|${interaction.channel.id}`)
+            //                     .setLabel('Đóng Ticket')
+            //                     .setStyle(ButtonStyle.Danger)
+            //                     .setEmoji('<a:trash:1433806006915432538>'))
+            //         await interaction.message.edit({ components: [row] });
+            //     } catch (err) {
+            //         console.error("Không thể xóa button:", err);
+            //     }
+            // }
         }
 
         return interaction.editReply(reply || "Ticket processed.");

@@ -318,7 +318,14 @@ const handleMessageCreate = async (client, msg) => {
         }
     }
 
-
+    if(cmd === "create_ticket_request") {
+        const result = await TicketController.getTicketSelections(msg.guild.id,"Global")
+        const target = msg.mentions.channels.first()
+        if(!target){
+            return msg.reply("Missing channels!")
+        }
+        return target.send(result.message)
+    }
     if (cmd === "ticket") {
         // const cateType = args[0] || 'general'
 
@@ -327,6 +334,9 @@ const handleMessageCreate = async (client, msg) => {
         return msg.reply(result.message)
     }
     if (cmd === "ticket_close_all") {
+         if (!msg.member.permissions.has("Administrator") && !msg.member.permissions.has("ManageGuild")) {
+            return msg.reply(`❌ ${t('e.permission', lang)}`);
+        }
         const result = await TicketController.closeAllTicket(client, msg.author.id, msg.guild.id)
         return msg.reply(result.message)
     }

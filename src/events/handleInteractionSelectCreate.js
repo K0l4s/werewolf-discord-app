@@ -6,7 +6,7 @@ const GameService = require("../services/gameService");
 const RoleService = require("../services/roleService");
 const TicketService = require("../services/ticketService");
 
-module.exports = async (interaction,client) => {
+module.exports = async (interaction, client) => {
     if (!interaction.isStringSelectMenu() && !interaction.isButton()) return;
     if (interaction.customId.startsWith('accept_battle_')) {
         const battleId = interaction.customId.replace('accept_battle_', '');
@@ -99,6 +99,7 @@ module.exports = async (interaction,client) => {
     }
     else if (actionType === "ticket") {
         const ticketType = interaction.values[0]; // cate.cateType
+        console.log(refId)
 
         // gọi service tạo ticket
         const result = await TicketController.createTicket(
@@ -114,12 +115,30 @@ module.exports = async (interaction,client) => {
                 ephemeral: true
             });
         }
+        if (refId != "Global") {
+            interaction.update({
+                content: "🎫 Ticket của bạn đã được tạo!",
+                embeds: [],
+                components: [],
+            });
+        }
+        else {
+            const ticketMsg = await TicketController.getTicketSelections(interaction.guild.id, "Global")
+            if (ticketMsg.status === "Success") {
+                 await interaction.update(ticketMsg.message);
+                 return interaction.reply({
+                content: "🎫 Ticket của bạn đã được tạo!",
+                embeds: [],
+                components: [],
+                ephemeral: true
+            });
+            }
+            else if(ticketMsg.status === "Success") {
+                return interaction.reply({content:`Lỗi: ${ticketMsg.message}`})
+            }
 
-        return interaction.update({
-            content: "🎫 Ticket của bạn đã được tạo!",
-            embeds: [],
-            components: [],
-        });
+           
+        }
     }
     return null;
 

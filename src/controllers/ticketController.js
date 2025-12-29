@@ -2,12 +2,12 @@ const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ChannelType,
 const TicketService = require("../services/ticketService");
 const Notification = require("../models/Notification");
 const cron = require('node-cron');
-
+const discordTranscripts = require('discord-html-transcripts');
 const Ticket = require("../models/Ticket");
 const UserService = require("../services/userService");
 
 class TicketController {
-    static async getTicketSelections(guildId) {
+    static async getTicketSelections(guildId, msgType) { //msgType: User/ Global
         try {
             const notification = await Notification.findOne({ guildId });
             if (!notification || !notification.ticketCate || notification.ticketCate.length === 0) {
@@ -25,16 +25,16 @@ class TicketController {
                 const embed = new EmbedBuilder()
                     .setTitle("Chọn loại ticket")
                     .setDescription("Vui lòng chọn loại ticket bạn muốn tạo:");
-                    // tạo string selection menu
+                // tạo string selection menu
                 const menu = new StringSelectMenuBuilder()
-                    .setCustomId(`ticket|`)
+                    .setCustomId(`ticket|${msgType}`)
                     .setPlaceholder('Chọn loại ticket')
                     .addOptions(options);
-                
+
                 const row = new ActionRowBuilder().addComponents(menu);
                 return {
                     status: "Success",
-                    message: { embeds: [embed], components: [row]}
+                    message: { embeds: [embed], components: [row] }
                 };
             }
         }
@@ -48,46 +48,116 @@ class TicketController {
 
     static async storageTicket(channelId, guildId, userId, client, lang = "en") {
         try {
-            const ticket = await Ticket.findOne({ channelId });
-            if (!ticket) return "Not found!";
+            const settings = await Notification.findOne({ guildId });
+            if (!settings) throw new Error("Không tìm thấy setting!");
 
-            const guild = await client.guilds.fetch(guildId);
-            const member = await guild.members.fetch(userId);
-            const channel = await guild.channels.fetch(ticket.channelId).catch(() => {
-                console.log("⚠️ Channel không tìm thấy hoặc đã bị xóa!");
-                return null;
+            const logId = settings.logChannelId;
+            if (!logId) throw new Error("Không tìm thấy log channel!");
+
+            const ticket = await Ticket.findOne({ channelId });
+            if (!ticket) throw new Error("Không tìm thấy ticket!");
+
+            const channel = await client.channels.fetch(channelId);
+
+            // 1. Tạo file transcript
+            const attachment = await discordTranscripts.createTranscript(channel, {
+                limit: -1,
+                returnType: 'attachment',
+                filename: `ticket-${channel.name}.html`,
+                saveImages: true,
+                poweredBy: false
             });
 
-            const settings = await Notification.findOne({ guildId });
+            const logChannel = await client.channels.fetch(logId);
 
-            const hasPermission =
-                member.permissions.has('Administrator') ||
-                member.permissions.has('ManageGuild') ||
-                (settings?.ticket?.roleIds?.some(roleId => member.roles.cache.has(roleId))) ||
-                (settings?.ticket?.userIds?.includes(userId));
+            // Tạo Embed cơ bản
+            const embed = new EmbedBuilder()
+                .setTitle(`Ticket Log của **${channel.name}** được lưu thành công`)
+                .setDescription(`Lưu lại bởi <@${userId}>`)
+                .addFields([
+                    { name: "Tạo bởi", value: `<@${ticket.hostId}>`, inline: true },
+                    { name: "Được tạo vào", value: `<t:${Math.floor(Number(ticket.createdBy) / 1000)}:F>`, inline: true },
+                    { name: "Được nhận bởi", value: ticket.acceptId ? `<@${ticket.acceptId}>` : "Chưa có người nhận", inline: true }
+                ])
+                .setColor("Green")
+                .setTimestamp();
 
-            if (!hasPermission) return "You don't have permission";
+            // 2. Gửi tin nhắn kèm file TRƯỚC (để lấy URL)
+            // Lưu ý: Chưa gửi button vội
+            if (logChannel) {
+                const msg = await logChannel.send({
+                    embeds: [embed],
+                    files: [attachment]
+                });
 
-            await channel.permissionOverwrites.delete(ticket.hostId).catch(console.error);
-            ticket.status = 'storage'
-            await ticket.save()
-            await channel.send({
-                embeds: [
-                    new EmbedBuilder()
-                        .setColor('Green')
-                        .setTitle('Đã lên lưu trữ ticket')
-                        .setDescription(`🎟️ Ticket đã lưu trữ, Bạn cũng có thể xóa ticket này!`)
-                ],
-            })
-            return `Đã xóa quyền của Người Tạo cho Ticket này thành công! Vui lòng chọn nút xóa nếu muốn xóa ticket!`;
-        } catch (err) {
-            console.error("❌ Lỗi deleteTicket:", err);
-            return "Internal error";
+                // 3. Lấy URL của file vừa gửi
+                const fileUrl = msg.attachments.first()?.url;
+
+                if (fileUrl) {
+                    // Encode URL để tránh lỗi ký tự đặc biệt khi truyền qua đường dẫn
+                    const redirectUrl = `http://localhost:5173/ticket?transcript=${encodeURIComponent(fileUrl)}`;
+
+                    // 4. Tạo button Link trỏ về React App
+                    const row = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setLabel('Xem tệp trên Web')
+                            .setEmoji('🌐')
+                            .setStyle(ButtonStyle.Link) // Dạng Link bắt buộc phải có url
+                            .setURL(redirectUrl) // Truyền link localhost kèm tham số
+                    );
+
+                    // Cập nhật lại tin nhắn đó với button
+                    await msg.edit({ components: [row] });
+                }
+            }
+            return { content: "Tạo log thành công!" };
+        } catch (e) {
+            console.error(e);
+            return e.message;
         }
     }
 
+    // try {
+    //     const ticket = await Ticket.findOne({ channelId });
+    //     if (!ticket) return "Not found!";
+
+    //     const guild = await client.guilds.fetch(guildId);
+    //     const member = await guild.members.fetch(userId);
+    //     const channel = await guild.channels.fetch(ticket.channelId).catch(() => {
+    //         console.log("⚠️ Channel không tìm thấy hoặc đã bị xóa!");
+    //         return null;
+    //     });
+
+    //     const settings = await Notification.findOne({ guildId });
+
+    //     const hasPermission =
+    //         member.permissions.has('Administrator') ||
+    //         member.permissions.has('ManageGuild') ||
+    //         (settings?.ticket?.roleIds?.some(roleId => member.roles.cache.has(roleId))) ||
+    //         (settings?.ticket?.userIds?.includes(userId));
+
+    //     if (!hasPermission) return "You don't have permission";
+
+    //     await channel.permissionOverwrites.delete(ticket.hostId).catch(console.error);
+    //     ticket.status = 'storage'
+    //     await ticket.save()
+    //     await channel.send({
+    //         embeds: [
+    //             new EmbedBuilder()
+    //                 .setColor('Green')
+    //                 .setTitle('Đã lên lưu trữ ticket')
+    //                 .setDescription(`🎟️ Ticket đã lưu trữ, Bạn cũng có thể xóa ticket này!`)
+    //         ],
+    //     })
+    //     return `Đã xóa quyền của Người Tạo cho Ticket này thành công! Vui lòng chọn nút xóa nếu muốn xóa ticket!`;
+    // } catch (err) {
+    //     console.error("❌ Lỗi deleteTicket:", err);
+    //     return "Internal error";
+    // }
+
     static async deleteTicket(channelId, guildId, userId, client, lang = "en") {
         try {
+
             const ticket = await Ticket.findOne({ channelId });
             if (!ticket) return "Not found!";
 
@@ -98,7 +168,7 @@ class TicketController {
                 return null;
             });
 
-            const settings = await Notification.findOne({ guildId });
+
 
             // ✅ Kiểm tra quyền
             const hasPermission =
@@ -232,7 +302,9 @@ class TicketController {
             }
 
             // 🔹 Tạo channel mới trong category
-            const channelName = `ticket-${hostId.slice(0, 5)}`;
+            const user = await client.users.fetch(hostId)
+            const username = user.username || "khong-xac-dinh"
+            const channelName = `ticket-${username}`;
             const channel = await guild.channels.create({
                 name: channelName,
                 type: 0, // Text channel
@@ -265,7 +337,7 @@ class TicketController {
                 guildId,
                 hostId,
                 channelId: channel.id,
-                createdBy: hostId,
+                createdBy: Date.now(),
                 status: "open",
                 deleteAt: null
             });
@@ -296,7 +368,12 @@ class TicketController {
                     .setCustomId(`ticket|storage`)
                     .setLabel('Lưu trữ ticket')
                     .setEmoji('<a:storage:1433807724365221898>')
-                    .setStyle(ButtonStyle.Success)
+                    .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
+                    .setCustomId(`ticket|receive`)
+                    .setLabel('Nhận ticket')
+                    .setEmoji('<a:trash:1433806006915432538>')
+                    .setStyle(ButtonStyle.Secondary)
             )
             await channel.send({
                 content: mentions.length > 0 ? `Host: <@${hostId}>\n Support: ${mentions}` : `Host: <@${hostId}>`,
@@ -635,7 +712,7 @@ class TicketController {
             return { status: "Error", message: e.message || "Lỗi khi đóng tất cả ticket" };
         }
     }
-    static async sendCreateRoom(client, guildId, cateType = 'general') {
+    static async sendCreateRoom(client, guildId, cateType = 'general', descript) {
         if (!guildId || !cateType)
             throw new Error("Missing required field");
         const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId);
@@ -678,9 +755,10 @@ class TicketController {
                 { $set: { "ticketCate.$.createRoomId": channel.id } }
             );
         }
+        let des = descript || `Nhấn nút bên dưới để tạo ticket hỗ trợ cho kênh ${selectedCategory.cateName}!`
         const embed = new EmbedBuilder()
             .setTitle(`🎟️ Tạo Ticket Hỗ Trợ cho kênh ${selectedCategory.cateName}`)
-            .setDescription(`Nhấn nút bên dưới để tạo ticket hỗ trợ cho kênh ${selectedCategory.cateName}!`)
+            .setDescription(des)
             .setColor('Blue');
         const createButton = new ButtonBuilder()
             .setCustomId(`ticket_create|${cateType}`)
@@ -718,6 +796,7 @@ class TicketController {
             const newCategory = {
                 description,
                 cateType,
+                cateName: cateName,
                 cateId: category.id,
                 roleIds,
                 userIds,
@@ -734,7 +813,7 @@ class TicketController {
             }
 
             await TicketService.saveNotification(notification);
-            await this.sendCreateRoom(client, guildId, cateType);
+            await this.sendCreateRoom(client, guildId, cateType, description);
             return {
                 success: true,
                 message: `Đã tạo category thành công ${isBought ? 'Tốn 5 token cho lượt này' : ''}`,
