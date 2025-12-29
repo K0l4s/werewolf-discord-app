@@ -94,7 +94,7 @@ class TicketController {
                 const fileUrl = msg.attachments.first()?.url;
 
                 if (fileUrl) {
-                    const fe =  process.env.FE;
+                    const fe =  process.env.FE_URL;
                     // Encode URL để tránh lỗi ký tự đặc biệt khi truyền qua đường dẫn
                     const redirectUrl = `${fe}/ticket?transcript=${encodeURIComponent(fileUrl)}`;
 
@@ -105,6 +105,12 @@ class TicketController {
                             .setEmoji('🌐')
                             .setStyle(ButtonStyle.Link) // Dạng Link bắt buộc phải có url
                             .setURL(redirectUrl) // Truyền link localhost kèm tham số
+                            ,
+                          new ButtonBuilder()
+                            .setLabel('Reset Link')
+                            .setCustomId('ticket|reset')
+                            .setEmoji('🌐')
+                            .setStyle(ButtonStyle.Primary) // Dạng Link bắt buộc phải có url
                     );
 
                     // Cập nhật lại tin nhắn đó với button
