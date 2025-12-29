@@ -94,8 +94,9 @@ class TicketController {
                 const fileUrl = msg.attachments.first()?.url;
 
                 if (fileUrl) {
+                    const fe =  process.env.FE;
                     // Encode URL để tránh lỗi ký tự đặc biệt khi truyền qua đường dẫn
-                    const redirectUrl = `http://localhost:5173/ticket?transcript=${encodeURIComponent(fileUrl)}`;
+                    const redirectUrl = `${fe}/ticket?transcript=${encodeURIComponent(fileUrl)}`;
 
                     // 4. Tạo button Link trỏ về React App
                     const row = new ActionRowBuilder().addComponents(
