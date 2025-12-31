@@ -762,13 +762,13 @@ const handleMessageCreate = async (client, msg) => {
     else if (cmd === "join" || cmd === "j") {
         // await GameController.handleJoinCommand(msg);
         // return;
-        const result = await GameController.handleJoinCommand(msg.channel.id, msg.author.id, lang);
-        await msg.reply(result);
+        // const result = await GameController.handleJoinCommand(msg.channel.id, msg.author.id, lang);
+        await msg.reply("The werewolf game function is temporarily unavailable.");
         return;
     }
     else if (cmd === "new" || cmd === "n") {
-        const embed = await GameController.handleCreateNewRoom(msg.channel.id, lang);
-        await msg.reply({ embeds: [embed] });
+        // const embed = await GameController.handleCreateNewRoom(msg.channel.id, lang);
+        await msg.reply("The werewolf game function is temporarily unavailable.");
         return;
     }
     // else if (cmd === "create" || cmd === "c") {
@@ -776,7 +776,8 @@ const handleMessageCreate = async (client, msg) => {
     //     return;
     // }
     else if (cmd === "start" || cmd === "s") {
-        await GameController.handleStartGame(msg, lang);
+        // await GameController.handleStartGame(msg, lang);
+        await msg.reply("The werewolf game function is temporarily unavailable.")
         return;
     }
     else if (cmd === "sell") {
