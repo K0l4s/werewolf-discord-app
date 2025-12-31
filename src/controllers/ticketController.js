@@ -45,7 +45,25 @@ class TicketController {
             };
         }
     }
+    static async setTicketLog(guildId, logChannelId) {
+        try {
+            await Notification.findOneAndUpdate(
+                { guildId: guildId }, // Điều kiện tìm kiếm
+                {
+                    $set: { logChannelId: logChannelId } // Dữ liệu cần update/set
+                },
+                {
+                    new: true,   // Trả về dữ liệu mới sau khi update
+                    upsert: true, // QUAN TRỌNG: Nếu không tìm thấy thì tự tạo mới
+                    setDefaultsOnInsert: true // Áp dụng các giá trị default trong Schema nếu tạo mới
+                }
+            );
 
+            return `Gắn channel ticket log thành công cho <#${logChannelId}>`;
+        }catch(e){
+            return "Có lỗi"
+        }
+}
     static async storageTicket(channelId, guildId, userId, client, lang = "en") {
         try {
             const settings = await Notification.findOne({ guildId });
@@ -94,7 +112,7 @@ class TicketController {
                 const fileUrl = msg.attachments.first()?.url;
 
                 if (fileUrl) {
-                    const fe =  process.env.FE_URL;
+                    const fe = process.env.FE_URL;
                     // Encode URL để tránh lỗi ký tự đặc biệt khi truyền qua đường dẫn
                     const redirectUrl = `${fe}/ticket?transcript=${encodeURIComponent(fileUrl)}`;
 
@@ -105,8 +123,8 @@ class TicketController {
                             .setEmoji('🌐')
                             .setStyle(ButtonStyle.Link) // Dạng Link bắt buộc phải có url
                             .setURL(redirectUrl) // Truyền link localhost kèm tham số
-                            ,
-                          new ButtonBuilder()
+                        ,
+                        new ButtonBuilder()
                             .setLabel('Reset Link')
                             .setCustomId('ticket|reset')
                             .setEmoji('🌐')

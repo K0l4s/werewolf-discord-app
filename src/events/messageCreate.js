@@ -593,6 +593,13 @@ const handleMessageCreate = async (client, msg) => {
             const embed = await CommonController.setEmbedAnounce(msg.guild.id, newE, lang);
             return msg.reply(embed);
         }
+        if (args[0] === "ticket_log"){
+            const channel = msg.mentions.channels.first()
+            if(!channel)
+                return msg.reply(`⚠️ ${t('e.miss_cmd', lang)}`);
+            const repl = await TicketController.setTicketLog(msg.guild.id,channel)
+            return msg.reply(repl)
+        }
     }
     // else if (cmd === "awake") {
     //     const userId = msg.author.id;

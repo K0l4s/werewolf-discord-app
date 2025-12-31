@@ -317,19 +317,21 @@ module.exports = async (interaction, client) => {
         // }
 
         case 'join': {
-            await interaction.deferReply();
-            const result = await GameController.handleJoinCommand(interaction.channel.id, interaction.user.id, lang);
-            await interaction.editReply(result);
-            // await GameController.handleJoinCommand(interactionToMessage(interaction), lang);
-            return;
+            // await interaction.deferReply();
+            // const result = await GameController.handleJoinCommand(interaction.channel.id, interaction.user.id, lang);
+            // await interaction.editReply(result);
+            // // await GameController.handleJoinCommand(interactionToMessage(interaction), lang);
+            // return;
+            return interaction.reply("The werewolf game function is temporarily unavailable.")
         }
 
         case 'new': {
-            await interaction.deferReply();
+            // await interaction.deferReply();
 
-            const embed = await GameController.handleCreateNewRoom(interaction.channel.id, lang);
-            await interaction.editReply({ embeds: [embed] });
-            return;
+            // const embed = await GameController.handleCreateNewRoom(interaction.channel.id, lang);
+            // await interaction.editReply({ embeds: [embed] });
+            // return;
+            return interaction.reply("The werewolf game function is temporarily unavailable.")
         }
 
         case 'give': {
@@ -563,20 +565,21 @@ module.exports = async (interaction, client) => {
         }
 
         case 'start': {
-            await interaction.deferReply();
-            if (!interaction.guild) {
-                console.log("Interaction không ở trong server (guild) → guild = null");
-                interaction.reply("You must authorization for bot to access this guild!")
-                return;
-            }
+            return interaction.reply("The werewolf game function is temporarily unavailable.")
+            // await interaction.deferReply();
+            // if (!interaction.guild) {
+            //     console.log("Interaction không ở trong server (guild) → guild = null");
+            //     interaction.reply("You must authorization for bot to access this guild!")
+            //     return;
+            // }
 
-            if (!interaction.channel) {
-                console.log("Bot không truy cập được channel này → channel = null");
-                interaction.reply("You must authorization for bot to access this channel!")
-                return;
-            }
-            await GameController.handleStartGame(interactionToMessage(interaction), lang);
-            return;
+            // if (!interaction.channel) {
+            //     console.log("Bot không truy cập được channel này → channel = null");
+            //     interaction.reply("You must authorization for bot to access this channel!")
+            //     return;
+            // }
+            // await GameController.handleStartGame(interactionToMessage(interaction), lang);
+            // return;
         }
 
         case 'wallet': {

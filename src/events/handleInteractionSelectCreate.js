@@ -116,17 +116,18 @@ module.exports = async (interaction, client) => {
             });
         }
         if (refId != "Global") {
-            interaction.update({
+            return interaction.update({
                 content: "🎫 Ticket của bạn đã được tạo!",
                 embeds: [],
                 components: [],
             });
         }
         else {
+            await interaction.deferReply({ ephemeral: true });
             const ticketMsg = await TicketController.getTicketSelections(interaction.guild.id, "Global")
             if (ticketMsg.status === "Success") {
-                 await interaction.update(ticketMsg.message);
-                 return interaction.reply({
+                 await interaction.message.edit(ticketMsg.message);
+                 return interaction.editReply({
                 content: "🎫 Ticket của bạn đã được tạo!",
                 embeds: [],
                 components: [],
@@ -134,7 +135,7 @@ module.exports = async (interaction, client) => {
             });
             }
             else if(ticketMsg.status === "Success") {
-                return interaction.reply({content:`Lỗi: ${ticketMsg.message}`})
+                return interaction.editReply({content:`Lỗi: ${ticketMsg.message}`})
             }
 
            
